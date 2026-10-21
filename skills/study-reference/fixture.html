@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Study fixture with known numbers</title>
+<style>
+  :root { --ink: #16202a; --accent: #1f6feb; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Georgia, serif; color: var(--ink);
+         background: #ffffff; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+  section { padding-top: 96px; padding-bottom: 96px; }
+  /* the first screen fills the viewport, so everything the reveal probe
+     is meant to measure genuinely starts below the fold */
+  section:first-of-type { min-height: calc(100vh - 72px); }
+  section.alt { background: #f4f6f8; }
+  h1 { font-size: 48px; line-height: 56px; font-weight: 700;
+       letter-spacing: -0.5px; margin: 0 0 24px; }
+  h2 { font-size: 32px; line-height: 40px; font-weight: 700; margin: 0 0 16px; }
+  p  { font-size: 18px; line-height: 30px; margin: 0 0 16px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
+  .card { background: #ffffff; border-radius: 12px; padding: 24px;
+          box-shadow: rgba(16, 32, 42, 0.12) 0px 8px 24px 0px; }
+  .btn { background: var(--accent); color: #ffffff; border: 0;
+         border-radius: 8px; padding: 14px 28px; font-size: 16px;
+         transition: background-color 300ms ease-in-out, transform 300ms ease-in-out; }
+  .btn:hover { background: #0b4fc4; transform: scale(1.04); }
+  header { position: sticky; top: 0; height: 72px; background: #ffffff;
+           display: flex; align-items: center; }
+  .reveal { opacity: 0; transform: translateY(40px);
+            transition: opacity 600ms cubic-bezier(0.4, 0, 0.2, 1),
+                        transform 600ms cubic-bezier(0.4, 0, 0.2, 1); }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+  @keyframes drift { from { transform: translateY(0); }
+                     to { transform: translateY(-12px); } }
+  .badge { animation: drift 2400ms ease-in-out infinite alternate;
+           display: inline-block; }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { transition: none; opacity: 1; transform: none; }
+    .badge { animation: none; }
+  }
+</style>
+</head>
+<body>
+<header><div class="wrap"><strong>Fixture</strong></div></header>
+
+<section>
+  <div class="wrap">
+    <h1>A heading at forty eight pixels</h1>
+    <p>This first screen exists so that everything underneath it starts below
+      the fold, which is what the reveal probe needs in order to measure
+      anything at all.</p>
+    <p><span class="badge">Animated badge</span></p>
+    <button class="btn">Book a call</button>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="wrap">
+    <h2 class="reveal">Second section heading</h2>
+    <div class="grid">
+      <div class="card reveal"><h2>One</h2><p>The first card carries a short
+        paragraph so the measurement has something to read.</p></div>
+      <div class="card reveal"><h2>Two</h2><p>The second card carries a short
+        paragraph so the measurement has something to read.</p></div>
+      <div class="card reveal"><h2>Three</h2><p>The third card carries a short
+        paragraph so the measurement has something to read.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2 class="reveal">Third section heading</h2>
+    <p class="reveal">One more block of text far enough down the page that it
+      is certainly not visible when the page first loads.</p>
+  </div>
+</section>
+
+<script>
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+    }
+  }, { threshold: 0.1 });
+  document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
+</script>
+</body>
+</html>

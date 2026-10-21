@@ -1,0 +1,12 @@
+node_modules/
+__pycache__/
+*.pyc
+hook.log
+runs.log
+audit.json
+inventory.json
+.DS_Store
+gate-state.json
+qa/
+reference-study/
+parity-report.md

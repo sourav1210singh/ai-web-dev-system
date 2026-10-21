@@ -1,0 +1,7 @@
+# The tools here read and write LF. Keep it that way in the repository and on
+# checkout, on every platform, so a Windows clone does not rewrite every file.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary

@@ -149,6 +149,75 @@ def main():
     rc, out = run(job.cmd_diagnose, {"id": "no-such-job", "dir": tmp})
     ok("an unknown job id is refused, not invented", rc == 2)
 
+    # --- intake: reads, never changes ------------------------------------
+    job.run_recon = lambda d: ("registrar: Example Registrar Inc\n"
+                               "nameserver: ns1.example.test\n"
+                               "platform: WordPress 6.5\n"
+                               "mx: mail.example.test\n"
+                               "some noise line that is not a fact\n")
+    state["launch"] = "  llms       MISSING (404)"
+    state["rqa"] = []
+    rc, out = run(job.cmd_new, {"name": "New Client", "domain": "example.test",
+                                "dir": tmp, "type": "intake"})
+    jid3 = [l.split()[1] for l in out.splitlines()
+            if l.startswith("job ") and " opened" in l][0]
+    j, _p = job.find(jid3, tmp)
+    ok("intake starts at recon, not route", j["stage"] == "recon")
+    ok("intake says it changes nothing", "changes nothing" in out)
+
+    rc, out = run(job.cmd_diagnose, {"id": jid3, "dir": tmp})
+    j, _p = job.find(jid3, tmp)
+    ok("intake goes to report, never to apply", j["stage"] == "report")
+    ok("intake has no gate in its next steps", "gate" not in out)
+    ok("intake reports what the domain says",
+       "registrar: Example Registrar Inc" in out and "platform: WordPress 6.5" in out)
+    ok("recon keeps facts and drops noise",
+       "some noise line" not in out)
+    ok("intake does not run a parity check",
+       "parity" not in (j["snapshots"]["before"]["ran"]))
+
+    rc, out = run(job.cmd_close, {"id": jid3, "dir": tmp, "summary": "noted"})
+    ok("an intake job closes without a verify step", rc == 0)
+
+    # --- golive: refuses to close over a blocker --------------------------
+    state["launch"] = "  favicon    MISSING (404)"
+    state["rqa"] = [{"sev": "BLOCKER", "width": 390, "kind": "overflow",
+                     "msg": "sideways scroll"}]
+    rc, out = run(job.cmd_new, {"name": "Launch", "domain": "example.test",
+                                "dir": tmp, "type": "golive"})
+    jid4 = [l.split()[1] for l in out.splitlines()
+            if l.startswith("job ") and " opened" in l][0]
+    rc, out = run(job.cmd_diagnose, {"id": jid4, "dir": tmp})
+    ok("golive counts what is blocking the launch", "blocker(s) standing" in out)
+
+    rc, out = run(job.cmd_close, {"id": jid4, "dir": tmp, "summary": "ship it"})
+    ok("golive refuses to close over a standing blocker", rc == 1, "rc=%d" % rc)
+    ok("the refusal names the blockers", "favicon" in out or "sideways" in out)
+    j, _p = job.find(jid4, tmp)
+    ok("a refused close leaves the job open", j["stage"] != "closed")
+
+    rc, out = run(job.cmd_close, {"id": jid4, "dir": tmp, "summary": "ship it",
+                                  "force": "true"})
+    j, _p = job.find(jid4, tmp)
+    ok("--force closes it but records that it was a decision",
+       rc == 0 and j["stage"] == "closed" and
+       any("CLOSED OVER STANDING BLOCKERS" in h for h in j["history"]))
+
+    # a clean golive closes normally
+    state["launch"] = "  favicon    5430 bytes"
+    state["rqa"] = []
+    rc, out = run(job.cmd_new, {"name": "Clean launch", "domain": "example.test",
+                                "dir": tmp, "type": "golive"})
+    jid5 = [l.split()[1] for l in out.splitlines()
+            if l.startswith("job ") and " opened" in l][0]
+    run(job.cmd_diagnose, {"id": jid5, "dir": tmp})
+    rc, out = run(job.cmd_close, {"id": jid5, "dir": tmp, "summary": "live"})
+    ok("a clean golive closes without force", rc == 0, "rc=%d" % rc)
+
+    rc, out = run(job.cmd_new, {"name": "Nope", "domain": "example.test",
+                                "dir": tmp, "type": "nonsense"})
+    ok("an unknown job type is refused", rc == 2)
+
     ok("the job file lives in the project, not the temp folder",
        os.path.isfile(os.path.join(tmp, ".claude-context", "jobs",
                                    jid + ".json")))

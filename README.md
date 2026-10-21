@@ -64,7 +64,7 @@ verifying every file by checksum.
 
 | Skill | What it enforces |
 |---|---|
-| `fix-job` | Runs one client site fix as a job with state: route, read, diagnose everything at once, stop at the human gate, verify against the before snapshot, close. The gate exists because a Lovable prompt is never sent by Claude. |
+| `fix-job` | Runs client work as a job with state, in three types: `fix` (something live is wrong), `intake` (a new client: read everything, change nothing) and `golive` (the launch gate, which refuses to close while a blocker stands). Every check runs at once and verify diffs against the before snapshot. |
 | `verify-before-claiming` | Nothing is reported as done, fixed, working or live until that work has been checked from more than one angle and the result looked at. Carries the proof table, by kind of claim. |
 | `scope-discipline` | Change only what was asked. Capture the rendered HTML before, diff it after; anything but a whitespace difference is a regression. Report what changed, what did not, and what you noticed and left alone. |
 | `copy-standards` | No em or en dashes, no AI filler vocabulary, no invented facts. Clearly marked placeholders instead of plausible-sounding inventions. |
@@ -129,7 +129,7 @@ impressions.
 
 | Tool | What it does |
 |---|---|
-| `job.py` | The fix job runner: holds state in the client's own folder, runs the three checks in parallel, and diffs after against before |
+| `job.py` | The job runner: holds state in the client's own folder, runs every check in parallel, diffs after against before, and will not close a launch over a standing blocker |
 | `rqa.js` | Responsive QA across six viewports, with screenshots and a findings report |
 | `study.js` | Measures a reference page into a spec you can build to, and measures your own build the same way so the comparison is numbers against numbers |
 | `parity.py` | Old page against new, element by element, with the main-content coverage figure that nav and footer cannot inflate |
@@ -230,6 +230,6 @@ In daily use: 22 skills, one agent, eleven tools and four hooks — session star
 the context recorder, a guard on writes that land outside the project, and the
 claim gate.
 
-Test suites: 35 gate cases, 29 fix-job cases, 22 migration-parity cases, 38 study-reference
+Test suites: 35 gate cases, 44 fix-job cases, 22 migration-parity cases, 38 study-reference
 cases, 27 context-system cases, a full-file verifier and a leak check, all
 passing.

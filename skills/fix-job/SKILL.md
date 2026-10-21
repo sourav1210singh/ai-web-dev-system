@@ -1,9 +1,47 @@
 ---
 name: fix-job
-description: Run a client site fix end to end as one job - work out the route, read the real project, diagnose with every check at once, produce the change, stop at the human gate, then verify against the before state and close. Use whenever something on a live client site needs fixing, when a client reports a problem, or when picking up work left half done. Triggers on "fix karo", "ye issue hai", "client ne bola hai", "site pe problem", "form kaam nahi kar raha", "ye theek karo", "job", "resume".
+description: Run client site work end to end as a job with state, in three types - fix (something live is wrong), intake (a new client, read everything, change nothing) and golive (the launch gate, nothing ships with a blocker standing). Every check runs at once, the job stops at the human gate, and verify diffs against the before state. Use when a client reports a problem, when a new client arrives, before any launch, or when picking up work left half done. Triggers on "fix karo", "ye issue hai", "client ne bola hai", "form kaam nahi kar raha", "naya client", "new client", "intake", "go live", "launch", "live karna hai", "job", "resume".
 ---
 
-# One fix, run as a job
+# Client work, run as a job
+
+Three types, one runner. They differ in what they check, whether they stop at
+a gate, and what they refuse to do.
+
+| Type | For | Gate | Refuses |
+|---|---|---|---|
+| `fix` | something live is wrong | yes | nothing, but verify fails on a regression |
+| `intake` | a new client, before touching anything | no | it changes nothing at all |
+| `golive` | the launch gate | yes | to close while a blocker stands |
+
+```bash
+python job.py new "<name>" --domain <d> --dir "<project>" --type intake
+```
+
+## intake - read everything, change nothing
+
+For a new client or a takeover. Runs recon, launch files and responsive QA
+together, and reports what the domain says about itself: registrar,
+nameservers, the DNS actually being served, hosting, platform, mail records,
+TLS, analytics.
+
+It has **no apply stage and no gate**, because an intake that changes
+something is not an intake. It ends at `report`, where you write the three
+things that matter: the facts with how each was checked, the risks including
+what must survive a change, and the short list of what genuinely has to come
+from the client. See `site-recon` for what that report should contain.
+
+## golive - the launch gate
+
+Runs the same checks as `fix`, but **close refuses while a blocker is
+standing** and exits non-zero. A launch gate that waves things through is not
+a gate.
+
+If it ships anyway, that is a decision someone makes, not a check that is
+skipped. `--force` closes it and writes `CLOSED OVER STANDING BLOCKERS` into
+the job history, so the record says it was chosen rather than missed.
+
+## fix - one fix, end to end
 
 A fix is not one action. It is: work out where the site lives, read what is
 actually there, measure what is wrong, make the change, wait for the person

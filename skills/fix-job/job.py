@@ -28,8 +28,34 @@ CHECK = os.path.join(SKILLS, "launch-files", "check.py")
 RQA = os.path.join(SKILLS, "responsive-qa", "rqa.js")
 PARITY = os.path.join(SKILLS, "migration-parity", "parity.py")
 
-STAGES = ["route", "read", "diagnose", "apply", "verify", "close"]
+# Each type runs its own checks and takes its own path. intake changes
+# nothing, so it has no gate and no verify. golive refuses to close while a
+# blocker is still standing, because that is the whole point of a launch gate.
+JOB_TYPES = {
+    "fix": {
+        "stages": ["route", "read", "diagnose", "apply", "verify", "close"],
+        "checks": ["launch", "responsive", "parity"],
+        "gate": True, "strict": False,
+        "what": "something on a live site is wrong and has to change",
+    },
+    "intake": {
+        "stages": ["recon", "diagnose", "report", "close"],
+        "checks": ["recon", "launch", "responsive"],
+        "gate": False, "strict": False,
+        "what": "a new client: find out what exists before touching anything",
+    },
+    "golive": {
+        "stages": ["diagnose", "apply", "verify", "close"],
+        "checks": ["launch", "responsive", "parity"],
+        "gate": True, "strict": True,
+        "what": "the launch gate: nothing ships with a blocker standing",
+    },
+}
 ROUTES = ("lovable", "wordpress", "direct")
+
+
+def spec(job):
+    return JOB_TYPES.get(job.get("type") or "fix", JOB_TYPES["fix"])
 
 
 def now():
@@ -83,6 +109,34 @@ def run_rqa(url, out):
         return json.loads(io.open(f, encoding="utf-8").read())
     except Exception as e:
         return {"error": "findings.json unreadable: %s" % e}
+
+
+def run_recon(domain):
+    """Everything discoverable about a domain, for an intake job."""
+    recon = os.path.join(SKILLS, "site-recon", "recon.py")
+    if not os.path.isfile(recon):
+        return "recon.py not found"
+    try:
+        p = subprocess.run([sys.executable, "-X", "utf8", "-I", recon, domain],
+                           capture_output=True, text=True, timeout=300)
+        return p.stdout or p.stderr or "recon produced no output"
+    except Exception as e:
+        return "recon.py could not run: %s" % e
+
+
+def recon_facts(text):
+    """The lines worth putting in front of a person, not the whole dump."""
+    keep = []
+    for line in (text or "").splitlines():
+        s = line.strip()
+        if not s or s.startswith("#"):
+            continue
+        if re.search(r"(?i)^(registrar|registered|expires|nameserver|ns\d|"
+                     r"dns|a |aaaa|mx|spf|dmarc|txt|hosting|host|platform|"
+                     r"cms|server|tls|certificate|issuer|analytics|gtm|ga4|"
+                     r"email|phone|title|disagree|WARNING|MISMATCH)", s):
+            keep.append(s)
+    return keep[:40]
 
 
 def launch_problems(text):
@@ -149,26 +203,32 @@ def snapshot(job, label):
                        "%s-%s" % (job["id"], label))
     os.makedirs(out, exist_ok=True)
 
-    with ThreadPoolExecutor(max_workers=3) as ex:
-        f_check = ex.submit(run_check, domain)
-        f_rqa = ex.submit(run_rqa, url, out)
+    wants = spec(job)["checks"]
+    with ThreadPoolExecutor(max_workers=4) as ex:
+        f_check = ex.submit(run_check, domain) if "launch" in wants else None
+        f_rqa = ex.submit(run_rqa, url, out) if "responsive" in wants else None
+        f_recon = ex.submit(run_recon, domain) if "recon" in wants else None
         f_par = None
-        if job.get("old_url"):
+        if "parity" in wants and job.get("old_url"):
             f_par = ex.submit(
                 lambda: subprocess.run(
                     [sys.executable, "-X", "utf8", "-I", PARITY,
                      job["old_url"], url, "--out", out, "--quiet"],
                     capture_output=True, text=True, timeout=600).stdout)
-        check_txt = f_check.result()
-        rqa_data = f_rqa.result()
+        check_txt = f_check.result() if f_check else ""
+        rqa_data = f_rqa.result() if f_rqa else None
+        recon_txt = f_recon.result() if f_recon else ""
         par_txt = f_par.result() if f_par else ""
 
     snap = {
         "taken": now(),
-        "launch": launch_problems(check_txt),
-        "responsive": rqa_problems(rqa_data),
+        "launch": launch_problems(check_txt) if f_check else [],
+        "responsive": rqa_problems(rqa_data) if f_rqa else [],
         "parity": [l.strip() for l in (par_txt or "").splitlines()
                    if l.strip().startswith("- ")][:20],
+        "recon": recon_facts(recon_txt) if f_recon else [],
+        "ran": [k for k in ("launch", "responsive", "parity", "recon")
+                if k in wants],
         "qa_dir": out,
         "raw_launch": check_txt,
     }
@@ -176,11 +236,23 @@ def snapshot(job, label):
     return snap
 
 
+def blockers(snap):
+    """Everything that should stop a launch."""
+    return (snap.get("launch") or []) + (snap.get("responsive") or [])
+
+
 def digest(snap, title):
     L = ["## %s  (%s)" % (title, snap["taken"]), ""]
+    ran = snap.get("ran") or ["launch", "responsive", "parity"]
+    if snap.get("recon"):
+        L.append("**What the domain says about itself**")
+        L += ["  " + r for r in snap["recon"][:24]]
+        L.append("")
     for key, head in (("launch", "Launch files"),
                       ("responsive", "Responsive QA"),
                       ("parity", "Content parity")):
+        if key not in ran:
+            continue
         rows = snap.get(key) or []
         L.append("**%s** - %s" % (head, "clean" if not rows
                                   else "%d problem(s)" % len(rows)))
@@ -197,21 +269,33 @@ def cmd_new(a):
     project = os.path.abspath(a.get("dir") or os.getcwd())
     jid = re.sub(r"[^a-z0-9]+", "-", (a.get("name") or "fix").lower()).strip("-")
     jid = "%s-%s" % (jid[:28], time.strftime("%m%d%H%M"))
+    jtype = (a.get("type") or "fix").lower()
+    if jtype not in JOB_TYPES:
+        print("type must be one of: %s" % ", ".join(sorted(JOB_TYPES)))
+        return 2
     job = {"id": jid, "name": a.get("name") or jid, "domain": a["domain"],
-           "project": project, "route": a.get("route"),
-           "old_url": a.get("old-url"), "stage": "route",
+           "project": project, "type": jtype, "route": a.get("route"),
+           "old_url": a.get("old-url"),
+           "stage": JOB_TYPES[jtype]["stages"][0],
            "awaiting": None, "created": now(), "history": [], "snapshots": {}}
     if job["route"] and job["route"] not in ROUTES:
         print("route must be one of: %s" % ", ".join(ROUTES))
         return 2
-    log(job, "job opened for %s" % job["domain"])
-    if job["route"]:
+    log(job, "%s job opened for %s" % (jtype, job["domain"]))
+    if job["route"] and jtype == "fix":
         job["stage"] = "read"
         log(job, "route set to %s" % job["route"])
     save(job, os.path.join(jobs_dir(project), jid + ".json"))
-    print("job %s opened  (%s)" % (jid, job["domain"]))
+    print("job %s opened  (%s, %s)" % (jid, jtype, job["domain"]))
+    print("%s" % JOB_TYPES[jtype]["what"])
+    print("stages: %s" % " -> ".join(JOB_TYPES[jtype]["stages"]))
     print("stage: %s" % job["stage"])
-    print("\nnext: establish the route from evidence, then")
+    if jtype == "fix":
+        print("\nnext: establish the route from evidence, then")
+    elif jtype == "intake":
+        print("\nintake changes nothing. It reads, and it reports.")
+    else:
+        print("\nnext: measure before anything ships")
     print("  python job.py diagnose %s --dir \"%s\"" % (jid, project))
     return 0
 
@@ -222,14 +306,29 @@ def cmd_diagnose(a):
     if not job:
         print("no job %s in %s" % (a["id"], path))
         return 2
-    print("running launch-files, responsive QA%s together...\n"
-          % (" and parity" if job.get("old_url") else ""))
+    sp = spec(job)
+    print("running %s together...\n" % ", ".join(sp["checks"]))
     snap = snapshot(job, "before")
-    job["stage"] = "apply"
     log(job, "diagnosed: %d launch, %d responsive, %d parity"
         % (len(snap["launch"]), len(snap["responsive"]), len(snap["parity"])))
-    save(job, path)
     print(digest(snap, "Before"))
+
+    if job.get("type") == "intake":
+        job["stage"] = "report"
+        save(job, path)
+        print("\nstage: report. Nothing here changes anything.")
+        print("Write up the facts, the risks, and the short list of what has")
+        print("to come from the client. Then:")
+        print("  python job.py close %s --summary \"...\"" % job["id"])
+        return 0
+
+    job["stage"] = "apply"
+    save(job, path)
+    if sp["strict"]:
+        standing = blockers(snap)
+        print("\n%d blocker(s) standing. Nothing ships until these are gone."
+              % len(standing) if standing else
+              "\nNothing is blocking a launch on these checks.")
     print("\nstage: apply. Lovable and WordPress stop at the gate:")
     print("  python job.py gate %s --awaiting user-paste --note \"<file>\""
           % job["id"])
@@ -317,8 +416,25 @@ def cmd_close(a):
     if not job:
         print("no job %s" % a["id"])
         return 2
+    # a launch gate that closes over a standing blocker is not a gate
+    if spec(job)["strict"]:
+        snaps = job.get("snapshots") or {}
+        latest = snaps.get("after") or snaps.get("before")
+        standing = blockers(latest) if latest else []
+        if standing and not a.get("force"):
+            print("This is a golive job and %d blocker(s) are still standing:"
+                  % len(standing))
+            for r in standing[:10]:
+                print("  - %s" % r)
+            print("\nFix them and run verify again. If this is going out")
+            print("anyway as someone's decision, record that decision and")
+            print("pass --force, so the file says it was a choice.")
+            return 1
+
     job["stage"] = "closed"
     job["summary"] = a.get("summary") or ""
+    if a.get("force"):
+        log(job, "CLOSED OVER STANDING BLOCKERS by explicit decision")
     log(job, "closed: %s" % job["summary"])
     save(job, path)
     print("job %s closed" % job["id"])

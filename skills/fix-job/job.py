@@ -111,32 +111,58 @@ def run_rqa(url, out):
         return {"error": "findings.json unreadable: %s" % e}
 
 
-def run_recon(domain):
-    """Everything discoverable about a domain, for an intake job."""
+def run_recon(domain, out):
+    """Everything discoverable about a domain, for an intake job.
+
+    recon.py writes a report to --out and prints only progress to stdout, so
+    the report has to be read from the file. Without --out it writes a
+    recon-<domain> folder into the current directory, which on one run landed
+    client data inside the published repository.
+    """
     recon = os.path.join(SKILLS, "site-recon", "recon.py")
     if not os.path.isfile(recon):
         return "recon.py not found"
     try:
-        p = subprocess.run([sys.executable, "-X", "utf8", "-I", recon, domain],
-                           capture_output=True, text=True, timeout=300)
-        return p.stdout or p.stderr or "recon produced no output"
+        subprocess.run([sys.executable, "-X", "utf8", "-I", recon, domain,
+                        "--out", out], capture_output=True, text=True,
+                       timeout=400)
     except Exception as e:
         return "recon.py could not run: %s" % e
+    md = os.path.join(out, "recon.md")
+    if not os.path.isfile(md):
+        return "recon.py produced no report"
+    try:
+        return io.open(md, encoding="utf-8", errors="replace").read()
+    except Exception as e:
+        return "recon report unreadable: %s" % e
 
 
 def recon_facts(text):
-    """The lines worth putting in front of a person, not the whole dump."""
-    keep = []
-    for line in (text or "").splitlines():
+    """The facts worth putting in front of a person, not the whole report.
+
+    The report is markdown: `## Section` headings and `- **Key:** value`
+    bullets. Anything that reads as a failure or a disagreement is kept too,
+    because that is the part someone has to act on.
+    """
+    if not text or not text.lstrip().startswith("#"):
+        return [text.strip()] if text and len(text) < 200 else []
+    keep, section = [], ""
+    for line in text.splitlines():
         s = line.strip()
-        if not s or s.startswith("#"):
+        if s.startswith("## "):
+            section = s[3:].split("(")[0].strip()
             continue
-        if re.search(r"(?i)^(registrar|registered|expires|nameserver|ns\d|"
-                     r"dns|a |aaaa|mx|spf|dmarc|txt|hosting|host|platform|"
-                     r"cms|server|tls|certificate|issuer|analytics|gtm|ga4|"
-                     r"email|phone|title|disagree|WARNING|MISMATCH)", s):
-            keep.append(s)
-    return keep[:40]
+        m = re.match(r"^- \*\*(.+?):\*\*\s*(.*)$", s)
+        if m:
+            key, val = m.group(1), m.group(2)
+            keep.append("%s%s: %s" % (section + " / " if section else "",
+                                      key, val[:150]))
+            continue
+        if re.search(r"(?i)^- .*(failed|disagree|mismatch|not found|"
+                     r"no .* record|expires)", s):
+            keep.append("%s%s" % (section + " / " if section else "",
+                                  s[2:][:150]))
+    return keep[:30]
 
 
 def launch_problems(text):
@@ -207,7 +233,8 @@ def snapshot(job, label):
     with ThreadPoolExecutor(max_workers=4) as ex:
         f_check = ex.submit(run_check, domain) if "launch" in wants else None
         f_rqa = ex.submit(run_rqa, url, out) if "responsive" in wants else None
-        f_recon = ex.submit(run_recon, domain) if "recon" in wants else None
+        f_recon = (ex.submit(run_recon, domain, os.path.join(out, "recon"))
+                   if "recon" in wants else None)
         f_par = None
         if "parity" in wants and job.get("old_url"):
             f_par = ex.submit(

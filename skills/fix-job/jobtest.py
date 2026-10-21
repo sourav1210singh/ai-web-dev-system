@@ -150,11 +150,32 @@ def main():
     ok("an unknown job id is refused, not invented", rc == 2)
 
     # --- intake: reads, never changes ------------------------------------
-    job.run_recon = lambda d: ("registrar: Example Registrar Inc\n"
-                               "nameserver: ns1.example.test\n"
-                               "platform: WordPress 6.5\n"
-                               "mx: mail.example.test\n"
-                               "some noise line that is not a fact\n")
+    # the shape recon.py actually writes: a markdown report, read from a file
+    REPORT = ("# Site recon - example.test\n\n"
+              "Checked 2026-10-21T10:00.\n\n"
+              "## Domain\n\n"
+              "- **Registrar:** Example Registrar Inc\n"
+              "- RDAP lookup failed: HTTP 400\n\n"
+              "## Hosting\n\n"
+              "- **Server header:** cloudflare\n"
+              "- **TLS:** Example CA, expires Jan 9 2027\n\n"
+              "## Site\n\n"
+              "- **Platform / CMS:** ['WordPress']\n"
+              "- **Title:** Example Title\n"
+              "some noise line that is not a fact\n")
+    job.run_recon = lambda d, out: REPORT
+
+    facts = job.recon_facts(REPORT)
+    ok("recon parses the real report format, not progress output",
+       any(f.startswith("Domain / Registrar:") for f in facts), facts[:1])
+    ok("recon keeps the section a fact came from",
+       any(f.startswith("Hosting / TLS:") for f in facts))
+    ok("recon keeps a lookup failure, because someone has to act on it",
+       any("RDAP lookup failed" in f for f in facts))
+    ok("recon drops lines that are not facts",
+       not any("some noise line" in f for f in facts))
+    ok("a short error string survives as its own line",
+       job.recon_facts("recon.py not found") == ["recon.py not found"])
     state["launch"] = "  llms       MISSING (404)"
     state["rqa"] = []
     rc, out = run(job.cmd_new, {"name": "New Client", "domain": "example.test",
@@ -170,8 +191,9 @@ def main():
     ok("intake goes to report, never to apply", j["stage"] == "report")
     ok("intake has no gate in its next steps", "gate" not in out)
     ok("intake reports what the domain says",
-       "registrar: Example Registrar Inc" in out and "platform: WordPress 6.5" in out)
-    ok("recon keeps facts and drops noise",
+       "Domain / Registrar: Example Registrar Inc" in out and
+       "Site / Platform / CMS" in out)
+    ok("the digest drops lines that are not facts",
        "some noise line" not in out)
     ok("intake does not run a parity check",
        "parity" not in (j["snapshots"]["before"]["ran"]))

@@ -36,7 +36,10 @@ PLATFORM = [
     ("WordPress", r"wp-content|wp-includes|wp-json|/wp-admin"),
     ("Elementor", r"elementor"),
     ("Kadence", r"kadence"),
-    ("Divi", r"et_pb_|divi"),
+    # a bare "divi" matches Tailwind's divide-y and divide-x utilities, and
+    # reported a React site as Divi. A wrong platform sends the whole job
+    # down the wrong route, so this needs a real Divi marker.
+    ("Divi", r"et_pb_|/themes/[Dd]ivi|divi-builder|divi\.css"),
     ("WooCommerce", r"woocommerce"),
     ("Webflow", r"webflow\.(io|com)|data-wf-page"),
     ("Lovable", r"lovable\.(app|dev)|gpteng|lovable_verify"),
@@ -50,6 +53,20 @@ PLATFORM = [
     ("Wix", r"wix\.com|wixstatic"),
     ("GoHighLevel", r"gohighlevel|msgsndr"),
     ("Tailwind", r"tailwind|tw-"),
+]
+
+# Read from the hostname and the reverse DNS of the serving IPs, not from
+# the markup. This is how a site with no give-away in its HTML still gets
+# identified.
+HOST_PLATFORM = [
+    ("Lovable", r"lovable\.app|lovable-app|l5e\.io"),
+    ("Vercel", r"vercel\.app|vercel-dns|vercel"),
+    ("Netlify", r"netlify\.app|netlify\.com"),
+    ("WP Engine", r"wpengine|wpenginepowered"),
+    ("Shopify", r"shopify|myshopify"),
+    ("Webflow", r"webflow"),
+    ("GitHub Pages", r"github\.io|githubusercontent"),
+    ("Cloudflare Pages", r"pages\.dev"),
     ("Supabase", r"supabase\.co"),
 ]
 
@@ -295,6 +312,15 @@ def main():
     html = apex.get("html") or www.get("html") or ""
     R["page"] = page_facts(html, domain)
 
+    # The markup does not always name the platform. A server-rendered React
+    # site can look like nothing at all, while the host it is served from says
+    # exactly what it is. Reported separately so it is never mistaken for
+    # something found in the page itself.
+    where = " ".join([domain] + [v or "" for v in
+                                 R["hosting"]["reverse_dns"].values()])
+    R["page"]["platform_from_host"] = [
+        n for n, rx in HOST_PLATFORM if re.search(rx, where, re.I)]
+
     sys.stderr.write("robots / sitemap...\n")
     rb = fetch("https://%s/robots.txt" % domain)
     R["robots"] = {"status": rb.get("status"),
@@ -389,7 +415,9 @@ def main():
           "- **apex:** HTTP %s via %s -> %s" % (apex.get("status"), apex.get("chain"), apex.get("final_url")),
           "- **www:** HTTP %s -> %s" % (www.get("status"), www.get("final_url")), ""]
     p = R["page"]
-    for k, label in [("platform", "Platform / CMS"), ("analytics", "Analytics"),
+    for k, label in [("platform", "Platform / CMS"),
+                     ("platform_from_host", "Platform (from the host, not the page)"),
+                     ("analytics", "Analytics"),
                      ("title", "Title"), ("meta_description", "Meta description"),
                      ("h1", "H1"), ("lang", "lang"), ("favicons", "Favicon"),
                      ("logo_candidates", "Logo"), ("og_image", "OG image"),

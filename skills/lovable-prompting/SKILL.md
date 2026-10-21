@@ -8,6 +8,19 @@ description: How to write a prompt for the Lovable agent so it costs under a cre
 Credits are the constraint. A sprawling prompt costs eight credits and comes
 back having changed things you did not ask for. A narrow one costs under one.
 
+## First: does this project have a repository?
+
+If the Lovable project is connected to a git repository, **do not write a
+prompt at all**. Clone it, make the change in the code, commit and push.
+Lovable picks the change up and publishes it. No credit is spent, nothing has
+to be described in words, and the diff is reviewable.
+
+A prompt is a way of asking someone else to edit the code. If you can edit
+the code, that is strictly better: it is exact, it is free, and it cannot be
+misunderstood.
+
+Everything below applies to projects without a repository.
+
 ## You write the prompt. You never send it.
 
 Write it, save it in the project, say it is ready, and stop. **Pressing enter

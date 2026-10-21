@@ -91,7 +91,8 @@ easiest to get wrong once a connector makes everything possible.
 
 | Route | What Claude does | What stays with the user |
 |---|---|---|
-| Lovable | Reads the project, writes the prompt, saves it in the project folder, says it is ready | **Sending it.** Every time, unless told to send in that same session |
+| Lovable, with a repo | Clones, edits the code, commits, pushes. Lovable publishes it. No prompt, no credit | nothing |
+| Lovable, no repo | Reads the project, writes the prompt, saves it in the project folder, says it is ready | **Sending it.** Every time, unless told to send in that same session |
 | WordPress | Everything inside the session the user opened: read, analyse, implement, verify | Signing in. Claude never enters a credential or creates an account |
 | Direct build | The whole thing: build, run, look at it, fix, verify | Nothing, until it goes anywhere public |
 

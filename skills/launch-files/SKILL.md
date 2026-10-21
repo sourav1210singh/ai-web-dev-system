@@ -5,6 +5,21 @@ description: The small files a site is launched without and then nobody notices 
 
 # Launch files
 
+## Making the share card
+
+```bash
+python "C:\Claude-Code\.ai-system\skills\launch-files\ogcard.py" <photo> <out.jpg> --logo <logo.png>
+```
+
+1200x630 from a photo the site already owns, with a gradient scrim so the logo
+reads over it. Not a screenshot of the homepage: that is the wrong ratio, it
+goes stale the moment the page changes, and it carries whatever placeholder
+text was on the page that day.
+
+Then look at it. A card can measure correctly and still read badly. The first
+one built for a site this week was 1200x630, inside budget, and unusable: a
+white logo on bright concrete.
+
 These are small, they are always left to last, and the favicon one is hard to
 undo once Google has cached it.
 

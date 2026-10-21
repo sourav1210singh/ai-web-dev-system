@@ -5,7 +5,7 @@ with a system that carries what every project already knows, checks its own
 work before it claims anything, and refuses to ship the things that make a site
 look AI-made.
 
-This repository is that system: 22 skills, one agent, four hooks and eleven
+This repository is that system: 22 skills, one agent, four hooks and twelve
 tools, all built out of real client work and the mistakes it produced.
 
 ---
@@ -134,6 +134,7 @@ impressions.
 | `study.js` | Measures a reference page into a spec you can build to, and measures your own build the same way so the comparison is numbers against numbers |
 | `parity.py` | Old page against new, element by element, with the main-content coverage figure that nav and footer cannot inflate |
 | `recon.py` | Domain, DNS from two resolvers, registrar via RDAP, hosting, TLS, platform, analytics, brand assets. No API keys. |
+| `ogcard.py` | Builds a 1200x630 share card from a photo the site already owns, with a gradient scrim so the logo stays readable, under a size budget |
 | `check.py` | favicon, `robots.txt`, `llms.txt`, sitemap and `og:image` across any number of domains |
 | `preflight.py` | Before a demo goes to GitHub: secrets, `.gitignore`, dashes in visible content, clean tree, and that the production build passes |
 | `clog.py` | Add to and search the client log |
@@ -226,10 +227,11 @@ what the skill is for.
 
 ## Status
 
-In daily use: 22 skills, one agent, eleven tools and four hooks — session start,
+In daily use: 22 skills, one agent, twelve tools and four hooks — session start,
 the context recorder, a guard on writes that land outside the project, and the
 claim gate.
 
-Test suites: 35 gate cases, 44 fix-job cases, 22 migration-parity cases, 38 study-reference
+Test suites: 35 gate cases, 49 fix-job cases, 22 migration-parity cases, 11 ogcard
+cases, 38 study-reference
 cases, 27 context-system cases, a full-file verifier and a leak check, all
 passing.

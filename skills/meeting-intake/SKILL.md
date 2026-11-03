@@ -1,6 +1,6 @@
 ---
 name: meeting-intake
-description: Take a meeting recording, transcript or client file and work out what it actually means - the whole of it, nothing skipped, screen as well as speech - then say what has to be done, how, and why. Use whenever a video, audio file, transcript, minutes, brief or client document is handed over, or a path to one is given. Triggers on "meeting", "recording", "transcript", "minutes", "call", "video dekho", "ye file dekho", "sir ne bheja hai", "client ne bheja hai", "ye samjho", "kya karna hai isme".
+description: Take a meeting recording, transcript or client file and work out what it actually means - the whole of it, nothing skipped, screen as well as speech - then say what has to be done, how, and why. Use whenever a video, audio file, transcript, minutes, brief or client document is handed over, or a path to one is given. This is the one for a SINGLE recording, transcript or set of minutes. When it arrives with scope documents, a crawl or a folder of other material, project-intake runs the whole thing and calls this for the recording. Triggers on "meeting", "recording", "transcript", "minutes", "call", "meeting ka video", "video dekho", "call sun ke batao", "kya decide hua".
 ---
 
 # Read the whole thing before deciding anything

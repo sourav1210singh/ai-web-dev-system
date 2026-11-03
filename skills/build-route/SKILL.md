@@ -1,6 +1,6 @@
 ---
 name: build-route
-description: Decide which of the three routes a piece of website work takes — Lovable (read the project through its MCP first, then one narrow prompt), WordPress (work carefully inside the live install), or built directly here in Claude Code — and never assume the route. Use at the start of any website task, when a new client arrives, or when it is unclear where the site actually lives. Triggers on "website banao", "ye kaam kaise karein", "new client site", "kahan banayein", "lovable ya wordpress", "naya project".
+description: Decide which of the three routes a piece of website work takes — Lovable (read the project through its MCP first, then one narrow prompt), WordPress (work carefully inside the live install), or built directly here in Claude Code — and never assume the route. Use at the start of any website task, when a new client arrives, or when it is unclear where the site actually lives. Triggers on "website banao", "ye kaam kaise karein", "new client site", "kahan banayein", "lovable ya wordpress", "kis platform pe". Runs AFTER the project is understood - for a new client with material to read, project-intake comes first.
 ---
 
 # Which route does this work take

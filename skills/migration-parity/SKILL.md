@@ -1,6 +1,6 @@
 ---
 name: migration-parity
-description: Everything on the client's old page must exist on the page that replaces it - every heading, paragraph, phone number, email address, form field, image, alt text and outbound link. Use when rebuilding an existing site, moving a site to a new platform, replacing a page, or before any go-live that retires old URLs. Triggers on "migration", "old site", "purani website", "redesign", "rebuild", "content carry over", "same content", "old page se sab", "go live", "redirect".
+description: Everything on the client's old page must exist on the page that replaces it - every heading, paragraph, phone number, email address, form field, image, alt text and outbound link. Use when rebuilding an existing site, moving a site to a new platform, replacing a page, or before any go-live that retires old URLs. Triggers on "migration", "old site", "purani website", "redesign", "rebuild", "content carry over", "same content", "old page se sab", "redirect".
 ---
 
 # Nothing from the old page may quietly disappear

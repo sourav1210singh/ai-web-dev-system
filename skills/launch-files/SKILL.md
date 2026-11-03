@@ -1,6 +1,6 @@
 ---
 name: launch-files
-description: The small files a site is launched without and then nobody notices — favicon (the real .ico, not just head tags), llms.txt, robots.txt, sitemap and og:image — plus the rule that every one of them must carry the live domain, never a lovable.app or preview URL. Use before any go-live, after a domain is pointed, when a platform's default icon is still showing, or when asked about favicon, llms.txt, robots.txt, sitemap or share image. Triggers on "favicon", "llms.txt", "robots.txt", "sitemap", "og image", "share image", "go live", "launch checklist".
+description: The small files a site is launched without and then nobody notices — favicon (the real .ico, not just head tags), llms.txt, robots.txt, sitemap and og:image — plus the rule that every one of them must carry the live domain, never a lovable.app or preview URL. Use before any go-live, after a domain is pointed, when a platform's default icon is still showing, or when asked about favicon, llms.txt, robots.txt, sitemap or share image. Triggers on "favicon", "llms.txt", "robots.txt", "sitemap", "og image", "share image", "launch checklist", "favicon missing".
 ---
 
 # Launch files

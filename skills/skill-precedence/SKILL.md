@@ -50,6 +50,40 @@ was more specific about the task.
 - Rate limits, daily caps and posting rules. An executor that says "twenty a
   day" knows something these skills do not.
 
+## The account skills that cover the same ground
+
+These pairs fire on the same request. The executor runs the process; the
+standard beside it still decides what may be claimed and what good looks like.
+
+| Account skill | House skill | Who decides what |
+|---|---|---|
+| `lovable-credit-discipline` | `lovable-prompting` | either may write the prompt; the house rule that **nothing is sent without the user pressing enter** is not theirs to relax |
+| `screaming-frog-seo`, `ahrefs-recommendation`, `wp-seo-implementor` | `seo-complete` | they run the crawl and the report; the house limits on titles, meta, schema and redirects decide what gets changed |
+| `wp-page-builder` | `wordpress-work` | it knows the editor; the house rules on pulling before uploading, the saves that do not save and the caches that hide a change still apply |
+| `stop-slop`, `content-writer` | `copy-standards` | they draft; the house bans on dashes, filler and invented facts are absolute |
+| `competitor-gap-analysis` | `study-reference` | it gathers; a claim about how a competitor's page behaves still needs the page measured, not described |
+| `skill-creator` | this skill | see below |
+
+## A new skill is a last resort
+
+`skill-creator` will happily make a new skill out of any instruction. Most
+instructions are not new subjects.
+
+> **Find the skill that already owns that ground and edit it.** Create a new
+> one only when nothing covers the subject at all.
+
+Two skills that half-cover one subject route worse than one that covers it
+fully, and the knowledge splits: the rule ends up in one file and the trap
+that proves it in another, so whichever one fires is missing half the reason.
+This has already happened once here - a rule about looking at a file before
+describing it was written as its own skill when `verify-before-claiming`
+already had a section called "Looking at it is not optional". It was folded
+back in.
+
+Before writing a new `SKILL.md`, name the closest existing skill out loud. If
+a new one is created anyway, say in one line why no existing skill fitted. The
+same goes for hooks, scripts and agents.
+
 ## When they genuinely conflict
 
 Say so in the reply, in one line: which two skills, what each wanted, which

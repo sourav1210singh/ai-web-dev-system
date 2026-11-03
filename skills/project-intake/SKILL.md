@@ -1,6 +1,6 @@
 ---
 name: project-intake
-description: Files were handed over with little or no instruction - a folder, a meeting recording, a transcript, a scope document, a crawl export, a client's old site - and the job is to work out by yourself what the project is, what has to be done, how and why, then stop and get that understanding approved before building anything. Use whenever a path, a folder or a set of files arrives and the request is thin, whenever a project folder appears with documents in it, and at the start of any new client. Triggers on "ye dekho", "ye files dekho", "ye folder dekho", "ye sab samjho", "meeting ka video h", "transcript bhi h", "scope of work", "client ne bheja h", "sir ne bheja h", "ab batao kya karna h", "kaam samjho", a bare file path, a bare folder path, or a message that is only attachments.
+description: Files were handed over with little or no instruction - a folder, a meeting recording, a transcript, a scope document, a crawl export, a client's old site - and the job is to work out by yourself what the project is, what has to be done, how and why, then stop and get that understanding approved before building anything. Use whenever a path, a folder or a set of files arrives and the request is thin, whenever a project folder appears with documents in it, and at the start of any new client. This is the one for a SET of materials or a whole folder, where the project itself is not yet understood. For a single recording or transcript on its own use meeting-intake; for page copy supplied to build from use client-content-audit; to look at one file properly use verify-before-claiming. Triggers on "ye sab dekho", "ye folder dekho", "ye files dekho", "ye sab samjho", "scope of work", "naya project", "ab batao kya karna h", "kaam samjho", a bare folder path, several paths at once, or a message that is only attachments.
 ---
 
 # Work it out, do not ask what it is
@@ -44,7 +44,7 @@ and the summary line has none of them.
 **And the text is not the document.** Render every one of them and look:
 
 ```bash
-python "C:\Claude-Code\.ai-system\skills\look-first\render.py" "<folder>"\* \
+python "C:\Claude-Code\.ai-system\skills\verify-before-claiming\render.py" "<folder>"\* \
   --out "<project>\rendered" --pages all
 ```
 
@@ -53,7 +53,7 @@ flow was run against, the extraction returned 3,504 words from the scope
 document and the entire project schedule - hand-over deadline, staging
 sign-off, go-live, support window - was in an embedded chart that contained
 none of those words. A brief written from the text alone would have had no
-schedule in it, and nothing would have said so. Follow `look-first`.
+schedule in it, and nothing would have said so. Follow `verify-before-claiming`.
 
 ## Stage 2 - the recording, if there is one
 

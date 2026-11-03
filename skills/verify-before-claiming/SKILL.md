@@ -1,6 +1,6 @@
 ---
 name: verify-before-claiming
-description: What counts as proof, by the kind of claim, and the answer shape for anything a client will read. Nothing is reported as done, fixed, working, live or deployed until that same piece of work has been checked, from more than one angle, with the result looked at. Use before writing any reply that states an outcome, and whenever a tool or another agent reports success. Triggers on "done", "ho gaya", "kar diya", "fixed", "is it working", "verify karo", "test karo", "check karo", "confirm".
+description: What counts as proof, by the kind of claim, and the answer shape for anything a client will read. Also the rule that nothing with a visual form - a PDF, Word or Excel file, video, recording, image, design or page - is ever described from its extracted text: it is rendered into images and looked at first. Nothing is reported as done, fixed, working, live or deployed until that same piece of work has been checked, from more than one angle, with the result looked at. Use before writing any reply that states an outcome, and whenever a tool or another agent reports success. Triggers on "done", "ho gaya", "kar diya", "fixed", "is it working", "verify karo", "test karo", "check karo", "confirm", "ye file dekho", "ye video dekho", "ye pdf dekho", "dekh ke batao", "kaisa lag raha hai", "screenshot".
 ---
 
 # Verify before claiming
@@ -53,6 +53,49 @@ pane's screenshot action is enough.
 Then **read the screenshots**. Taking one and not looking at it is the same as
 not taking it. If anything is wrong, fix it and look again before replying.
 
+### The same rule for a file, not only a page
+
+A parser returns the words in a document and drops everything else without
+saying so, and silence reads exactly like there was nothing there. So anything
+with a visual form - a PDF, a Word, Excel or PowerPoint file, a video, an audio
+recording, a photograph, a design - is **rendered into images and opened**
+before a word is said about what is in it.
+
+```bash
+python "C:\Claude-Code\.ai-system\skills\verify-before-claiming\render.py" \
+  <file-or-url...> --out "<project>\rendered" --pages 12 --every 90
+```
+
+A PDF becomes page images. A .docx, .xlsx or .pptx gives up the pictures buried
+in its zip. A recording becomes frames across the whole of it. A page becomes
+screenshots at phone and desktop width. An image too large to open comes back
+scaled. Then **open every file it lists** - it prints the count on purpose, and
+that is the number to open, not a suggestion.
+
+What this has already caught:
+
+- **A client's whole project schedule existed only as an embedded chart.** Text
+  extraction returned 3,504 words from the document and not one of them was a
+  date on it: the hand-over deadline, the staging sign-off, the go-live and the
+  support window were all in a picture. A brief written from the text would
+  have had no schedule in it and would not have said so.
+- **A table in a PDF extracts as prose.** `pdftotext -layout` interleaves the
+  columns, so a clean three-column table comes out as a run-on sentence. Diffed
+  against the same document as a .docx that produced 960 "changes", none of
+  them real. As a page image the table was readable and added up.
+- **What is on a shared screen is never read out loud**, so it is in the
+  recording and in none of the transcript.
+- **A share card that measured perfectly was unusable** - correct dimensions,
+  correct margins, white logo on bright concrete. Every measurement passed.
+
+**Say what you could not see.** The tool reports what it failed to render
+rather than skipping it, and so do you. LibreOffice is not installed here, so a
+.docx page layout cannot be rendered at all: the words come from the text, the
+pictures come out of the zip, and the layout is simply unseen. "I read the text
+and recovered one embedded chart; the page layout I have not seen" is honest.
+Describing the document as though you had read it is not. A file that produced
+nothing to look at is a finding, not a blank.
+
 ## What counts as proof
 
 | Claim | What proves it |
@@ -67,6 +110,7 @@ not taking it. If anything is wrong, fix it and look again before replying.
 | the code is correct | the build or the tests actually run, with their output |
 | a setting is saved | the admin page reloaded and the value read back, with cache bypassed |
 | a file uploaded | a checksum compared. Upload tools report success on failure |
+| what a document says | its pages rendered and looked at. Never its extracted text, which drops every table, chart and diagram in silence |
 | a count or a total | reconciled two independent ways, and the disagreement explained |
 
 ## Three or four angles, not the same one repeated
@@ -88,7 +132,7 @@ different layers:
 - **A 403, a timeout or an empty response.** That may be about you, not the
   site. One client site returns 403 to a browser user agent and 200 to curl's
   own and to Googlebot. Try another identity before saying anything is down.
-- **Your own tool's first result.**- **A scroll you did not confirm.** On a page running a smooth-scroll
+- **A scroll you did not confirm.** On a page running a smooth-scroll
   library, `window.scrollTo` and `scrollIntoView` return normally and move
   nothing. Anything that mounts on becoming visible then stays absent, and it
   reads as missing content. Drive a real wheel event and read `scrollY` back

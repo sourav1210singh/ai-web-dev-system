@@ -1,6 +1,6 @@
 ---
 name: fix-job
-description: Run client site work end to end as a job with state, in three types - fix (something live is wrong), intake (a new client, read everything, change nothing) and golive (the launch gate, nothing ships with a blocker standing). Every check runs at once, the job stops at the human gate, and verify diffs against the before state. Use when a client reports a problem, when a new client arrives, before any launch, or when picking up work left half done. Triggers on "fix karo", "ye issue hai", "client ne bola hai", "form kaam nahi kar raha", "naya client", "new client", "intake", "go live", "launch", "live karna hai", "job", "resume".
+description: Run client site work end to end as a job with state, in three types - fix (something live is wrong), intake (a new client, read everything, change nothing) and golive (the launch gate, nothing ships with a blocker standing). Every check runs at once, the job stops at the human gate, and verify diffs against the before state. Use when a client reports a problem, when a new client arrives, before any launch, or when picking up work left half done. Triggers on "fix karo", "ye issue hai", "client ne bola hai", "form kaam nahi kar raha", "naya client", "new client", "intake", "go live", "launch", "live karna hai", "job", "resume". It owns "go live": the launch gate runs site-recon, migration-parity, responsive-qa and launch-files as its checks, so those do not need calling separately.
 ---
 
 # Client work, run as a job

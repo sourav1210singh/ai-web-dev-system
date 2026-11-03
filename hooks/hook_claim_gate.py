@@ -128,11 +128,22 @@ def last_turn(rows):
 UI_FILE = re.compile(r"(?i)\.(tsx|jsx|ts|js|css|scss|sass|less|html?|vue|svelte|"
                      r"astro|php|twig|liquid|mdx)$")
 VISUAL_CLAIM = re.compile(
-    r"(?i)\b(page|site|website|hero|header|footer|nav|menu|button|section|"
+    r"(?i)\b(page|site|website|hero|header|footer|nav|menu|button|"
     r"layout|design|responsive|mobile|desktop|tablet|looks?|ui|component|"
     r"animation|animate|scroll|hover|colou?r|font|spacing|padding|margin|"
     r"image|banner|card|grid|slider|carousel|modal|dropdown|form|"
     r"dikhta|dikh raha|layout thik|design thik)\b")
+# "section" on its own is not evidence of a visual claim here. Every skill,
+# every document and every brief this system writes is made of sections, so
+# "the section already existed in the older skill" tripped the visual tier and
+# demanded a screenshot of a Markdown file. A real visual use of the word
+# arrives with page context on one side or a visual property on the other, and
+# that is what this matches.
+VISUAL_SECTION = re.compile(
+    r"(?i)\b(?:(hero|page|landing|footer|header|nav|banner|top|bottom|first|"
+    r"last|this)\s+sections?\b|sections?\s+(?:is|are|ko|ka|ki)?\s*"
+    r"(overlap|cut|clipped|stacked|centred|centered|aligned|layout|spacing|"
+    r"padding|margin|colou?r|background|height|width|gap|visible|hidden))")
 VISUAL_EVIDENCE_ACTIONS = {"screenshot", "zoom"}
 VISUAL_EVIDENCE_TOOL = re.compile(r"(?i)screenshot|gif_creator")
 VISUAL_EVIDENCE_BASH = re.compile(r"(?i)\brqa\.js\b|--?screenshot|playwright.*shot|"
@@ -177,7 +188,8 @@ def claim_is_visual(prose):
     visual claim and catching the word "button".
     """
     for s in SENTENCE.findall(prose):
-        if CLAIM.search(s) and VISUAL_CLAIM.search(s):
+        if CLAIM.search(s) and (VISUAL_CLAIM.search(s) or
+                                VISUAL_SECTION.search(s)):
             return True
     return False
 

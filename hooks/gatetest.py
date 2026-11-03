@@ -195,6 +195,28 @@ def main():
     _rc, blocked, _r, _e = run(t)
     ok("claim and visual word in the SAME sentence -> BLOCKS", blocked)
 
+    # "section" means a section of a document at least as often as a section
+    # of a page. Every skill and brief this system writes is made of them, and
+    # treating the bare word as visual demanded a screenshot of a Markdown file.
+    reset(); transcript(t, "32 passing checks, and the older skill already "
+                           "had a section saying the same thing.",
+                        [("Write", {"file_path": "SKILL.md", "content": "x"}),
+                         ("Bash", {"command": "pytest -q"})])
+    _rc, blocked, _r, _e = run(t)
+    ok("a document section in a claim -> allowed", not blocked)
+
+    reset(); transcript(t, "Done, the hero section is cut off on mobile now.",
+                        [("Write", {"file_path": "build.py", "content": "x"}),
+                         ("Bash", {"command": "pytest -q"})])
+    _rc, blocked, _r, _e = run(t)
+    ok("a hero section in a claim -> still BLOCKS", blocked)
+
+    reset(); transcript(t, "The section padding is fixed and matches now.",
+                        [("Write", {"file_path": "notes.md", "content": "x"}),
+                         ("Bash", {"command": "pytest -q"})])
+    _rc, blocked, _r, _e = run(t)
+    ok("a section's visual property in a claim -> still BLOCKS", blocked)
+
     # a claim word inside quoted speech is not the reply's own claim
     reset(); transcript(t, 'When you say "ho gaya", I will re-check the page.',
                         [CSS])

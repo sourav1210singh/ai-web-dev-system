@@ -5,6 +5,30 @@ description: How the per-site MCP servers in this workspace are built, secured, 
 
 # Building a per-site MCP
 
+## A database view can be writable even when the table is locked
+
+Row level security protects tables, not views. A plain auto-updatable view
+owned by the database superuser keeps the default grants, so the anonymous
+role can INSERT, UPDATE and DELETE through it with nothing but the publishable
+key - and because the write runs with the owner's rights, the base table's RLS
+never applies.
+
+Found on a live library: a PATCH and a DELETE through the public view came
+back 200 with the browser key. Anyone could have rewritten or emptied it. The
+view looked read-only because nothing in the app ever wrote to it.
+
+For every view a browser can reach: check the grants, then
+
+```sql
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER
+  ON <view> FROM anon, authenticated;
+```
+
+Probe it safely with a PATCH filtered on a key that cannot exist. A 200 means
+open; a permission-denied means closed. If it was open, check for tampering
+before moving on: row counts, and `updated_at` against hours anyone was
+actually working.
+
 Half a dozen of these already exist in this workspace, one per client site.
 They are the same server with different credentials, so build the next one the
 same way rather than inventing a new shape.

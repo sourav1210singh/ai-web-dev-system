@@ -60,6 +60,7 @@ not taking it. If anything is wrong, fix it and look again before replying.
 | the page works | HTTP status read from the live URL, plus a screenshot at 390 and 1440 |
 | the form works | a real test submission, then the row, email or admin entry confirmed to have arrived |
 | it is deployed | the build hash changed. Not the deploy tool saying success |
+| a deploy landed | a string only the new code contains, found in the served bundle. Not the deployment id, which changes either way |
 | it is fixed | the failure reproduced first, then shown gone |
 | content matches | an element-by-element diff. Never a grep, never a word count |
 | nothing else broke | the rendered HTML diffed against the capture taken before the change |
@@ -87,6 +88,12 @@ different layers:
 - **A 403, a timeout or an empty response.** That may be about you, not the
   site. One client site returns 403 to a browser user agent and 200 to curl's
   own and to Googlebot. Try another identity before saying anything is down.
+- **Your own tool's first result.**- **A scroll you did not confirm.** On a page running a smooth-scroll
+  library, `window.scrollTo` and `scrollIntoView` return normally and move
+  nothing. Anything that mounts on becoming visible then stays absent, and it
+  reads as missing content. Drive a real wheel event and read `scrollY` back
+  before believing you are where you think you are. This was reported as lost
+  content four separate times before the cause was found.
 - **Your own tool's first result.** Three tools built here cried wolf on their
   first run: lazy-load placeholders read as broken images, a screen-reader skip
   link read as a tiny tap target, a blocked request read as a missing file.

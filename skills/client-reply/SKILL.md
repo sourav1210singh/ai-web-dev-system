@@ -5,6 +5,26 @@ description: Write the reply that goes to the client — short, plain English, n
 
 # Replying to a client
 
+## Decide it yourself. Ask only the big ones.
+
+A reply that hands the client a wall of questions is not thoroughness, it is
+the work going back unfinished. One list went out with 312 rows, 96 of them
+marked "your decision", plus four more questions. The answer that came back
+was the right one: if we ask the client everything, what are we developers
+for.
+
+Make the call on every item the evidence supports - their own earlier
+decisions, the old site, file and folder names, duplicates already present,
+rules they have already stated. Record the decision and a one-line reason.
+Never write "your decision" against something you could have worked out.
+
+Escalate only what is genuinely big or irreversible: paid content going free,
+a rule of theirs that cannot be met as written. Phrase each as a short yes or
+no with your default in it, so a single word answers it.
+
+Showing the reasoning is what makes this safe. The client can overrule a
+decision they can see; they cannot overrule one you never made.
+
 The user pastes what you write straight into email. It has to arrive looking
 exactly as written, say only things that are true, and be short enough to read
 on a phone.

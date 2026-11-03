@@ -5,6 +5,21 @@ description: Make a form actually deliver a lead, and keep the lead's personal d
 
 # Forms and leads
 
+## When leads stop, check the form still exists
+
+On one set of landing pages the lead endpoint, its validation, its database
+table and its email were all intact and working. Thirteen leads arrived over
+three weeks, then zero for two months. Nothing had broken: the forms had been
+replaced with links to an off-site "schedule a call" page during a CTA tidy-up,
+and one page ended up with seventeen of them.
+
+The leftovers were visible in the code the whole time - a component still
+named for a form that rendered only a link, and a prop nothing read.
+
+So when conversions go to zero, before debugging delivery: open the page and
+confirm there is still a form on it. A working endpoint that nothing calls
+looks exactly like a working system from the server side.
+
 Forms are the most broken thing on these projects: 396 mentions across 18 of
 them. They break silently, which is why they stay broken.
 

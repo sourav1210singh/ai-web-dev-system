@@ -5,6 +5,26 @@ description: The house defaults for every website built or changed here — smoo
 
 # House build standards
 
+## A route file is not private to its route
+
+In TanStack Start a route splits into a lazy component chunk and a shared part
+holding the loader, the head and anything evaluated at module scope. Every
+shared part lands in the entry chunk that all visitors download, because the
+generated route tree imports all of them.
+
+So a top-level import in one route file is paid for by someone reading a
+different page. On one build the entry chunk was 293 KB gzipped and a third of
+it belonged to three pages: a whole database client pulled in by generated
+middleware the app never used, and a page's content file sitting next to a
+head helper. Moving the helper and awaiting the client inside each function
+took it to 184 KB.
+
+Do not guess which import is costing you; guessing wasted two builds there.
+Add a throwaway Rollup plugin to the Vite config, group each chunk's modules
+by package or source path, sum the rendered lengths and print the top thirty.
+Append to the report rather than overwrite it, because the plugin runs once
+per build environment. Delete it before committing.
+
 Every one of these exists because it was asked for on a real project, usually
 more than once. Apply them by default. If one does not fit, say which and why
 rather than skipping it silently.

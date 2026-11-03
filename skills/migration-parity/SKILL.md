@@ -42,6 +42,40 @@ python parity.py https://old-site.test/services rendered-services.html --out qa
 
 **A page that could not be compared is never a pass.** The exit code says so.
 
+## Missing is not the same as deleted
+
+On a React site, content that a fetch-based check reports as missing is very
+often still there, mounted only when it becomes visible or when something is
+clicked. Reporting it as lost content has happened four times on one rebuild:
+two lead forms behind an intersection observer, eighteen FAQ answers inside
+accordions that unmount when closed, and a video whose component renders only
+a poster, so the page carries a thumbnail URL and never the video id.
+
+Before telling anyone content was removed: scroll the element into view with a
+real wheel event, confirm `scrollY` actually moved, click any disclosure
+control, re-query, and screenshot it. Only call it deleted once it is absent
+from the live DOM after interaction.
+
+The second-order point is still worth reporting separately. Content absent
+from the delivered HTML is not crawlable even when a visitor can reach it.
+That is a real SEO defect, just not a deletion.
+
+## Count the things inside a section, not just the pages
+
+A section can be present, correctly titled and visually plausible while an
+item inside it is gone. On one rebuild every URL, redirect, document, form and
+heading matched, and a logo row shipped five marks where the old site had six.
+Nobody noticed until the client did.
+
+For every section that repeats items - logo rows, card grids, carousels,
+lists - diff the old page's `<img alt>` set against the new one. A one-item
+gap shows up immediately.
+
+When restoring one, measure it rather than matching the row. In that case the
+old seal rendered at 80x80 among wordmarks at 150x42, because it is square;
+copying it at the row's uniform height would have looked wrong. Read the
+computed style off the old page.
+
 ## What it reports
 
 **MISSING** is a blocker: a heading, a phone number, an email address, a form,

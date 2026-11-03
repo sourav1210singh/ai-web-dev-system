@@ -12,6 +12,15 @@ Every rule here comes from something that actually broke on a client site.
 The user signs in themselves, on their own browser profile, and hands you the
 session. You never create an account, reset a password, or type a credential.
 
+**Use the profile they named, and only that one.** Browser profiles get
+similar names, and an automation browser often shares a name with a personal
+one while having its own empty cookie jar. Being signed in to one proves
+nothing about the other. If the named profile cannot be reached from here, say
+so and ask - do not reach for a similarly named browser because it happens to
+be available. The login page you land on will otherwise be read as "the
+account is logged out" or "the site is down", which is a false report built on
+the wrong window.
+
 Once you are in, the work does not start with the change. It starts with
 looking, and the order is not optional:
 

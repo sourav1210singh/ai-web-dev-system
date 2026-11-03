@@ -27,7 +27,9 @@ GENERIC = {"all", "check", "extra", "use", "water", "green", "environment",
            "process", "solution", "dance", "park", "garage", "portfolios",
            "thriver", "mitigation", "salesforce", "trucking", "lp",
            # ordinary English words that happen to be in a folder name
-           "hero", "river", "mount", "studio", "group", "media", "design"}
+           "hero", "river", "mount", "studio", "group", "media", "design",
+           "dashboard", "portal", "admin", "client", "project", "system",
+           "template", "demo", "test", "site", "sites", "page", "pages"}
 
 SECRETS = [
     ("credential", re.compile(

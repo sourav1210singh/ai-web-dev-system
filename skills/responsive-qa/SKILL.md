@@ -5,6 +5,33 @@ description: Check a page at real device widths and find the layout, tap-target,
 
 # Responsive QA
 
+## Two things this script does not do
+
+**It runs Chromium only.** Calling a page "checked" after it leaves two
+engines untested. Firefox and WebKit are installed alongside Chromium with
+Playwright, so a three-engine pass is available when a layout matters.
+
+Measure before reporting a difference between engines. A reduced-scale JPEG
+made one engine look like it was missing a bold run; measuring gave the same
+weight, the same font and the same width in all three.
+
+**It does not judge contrast, and sampling pixels will lie to you.** On small
+anti-aliased text almost every ink pixel is a partially covered edge pixel, so
+a screenshot sample reads far lighter than the real colour. One eyebrow
+measured 3.3:1 from pixels and failed; the specified colours put it at 5.97:1
+and passing.
+
+WCAG is defined on the specified colours. Read them from the browser:
+
+```js
+const c = document.createElement("canvas").getContext("2d");
+c.fillStyle = getComputedStyle(el).color;
+const [r, g, b] = (c.fillRect(0, 0, 1, 1), c.getImageData(0, 0, 1, 1).data);
+```
+
+Walk up from the element for the first non-transparent background. Check the
+method on a control first: white on black must come out at exactly 21.00.
+
 A page is not finished because the code looks right. It is finished when it has
 been opened at the widths real people use and nothing is broken there.
 

@@ -21,6 +21,33 @@ misunderstood.
 
 Everything below applies to projects without a repository.
 
+### A deploy fired straight after a push builds the previous commit
+
+Seen repeatedly. `deploy_project` called right after `git push` returns a new
+deployment id, the site starts serving it, and the bundle is still built from
+the commit before. The change looks like it failed, and the hunt for a bug
+that does not exist begins.
+
+**A changed deployment id proves nothing.** Verify the artefact:
+
+```bash
+curl -s --compressed <page> | grep -ao '/assets/[A-Za-z0-9_-]*\.js' | sort -u
+curl -s --compressed <site><chunk> | grep -c "<a string only the new code has>"
+```
+
+A changed chunk hash is the reliable signal. Give the push twenty seconds
+before deploying. If the artefact is stale, deploy again rather than wait: the
+second one usually picks it up.
+
+Check the project's reported latest commit before deploying, too. It has
+lagged for twenty minutes through four deploys while the repository already
+had the commit; an empty commit pushed on top re-fired the sync within a
+minute.
+
+For a component that mounts lazily, the chunk is not referenced in the page
+HTML at all, so grepping the server-rendered markup will never find it. Read
+the rendered element's attribute in the browser instead.
+
 ## You write the prompt. You never send it.
 
 Write it, save it in the project, say it is ready, and stop. **Pressing enter

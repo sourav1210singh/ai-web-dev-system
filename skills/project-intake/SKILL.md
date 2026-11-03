@@ -58,7 +58,29 @@ decisions are.
 This is the trap, and it arrives often: an old PDF and an updated doc, or a
 scope and a revised scope. The script reports when it sees more than one.
 
-- **Read both in full.** Diff them.
+```bash
+python "C:\Claude-Code\.ai-system\skills\project-intake\materials.py" --diff \
+  "<project>\materials\text\<old>.txt" "<project>\materials\text\<new>.txt"
+```
+
+**Never diff the two line by line.** The same document exported as a PDF and
+as a .docx differs on almost every line, because `pdftotext -layout`
+interleaves table columns while Word gives clean paragraphs. On a real pair
+that produced 960 changed lines and not one of them was a revision. `--diff`
+compares whole sentences and counts every figure on both sides, which is what
+survives the formatting.
+
+Reading its output:
+
+- **The figure table is the money.** A count that appears in one and not the
+  other is a revised estimate. Decimals that differ by a leading digit
+  (`1.1` against `4.1`) are usually a table column bleeding into the next in
+  the PDF, not a change - check the sentence they came from before raising it.
+- **A dropped line and an added line that say the same thing** are one line
+  reformatted. The finding is the entry with no partner: on the real pair,
+  eighteen entries resolved to one new sentence, and that sentence extended
+  the support period by a month. That is a scope change, and it was invisible
+  in the line diff.
 - **The newer one is not automatically the complete one.** A line that existed
   in the old version and is absent from the new one is either a deliberate cut
   or an accident, and only the client knows which.

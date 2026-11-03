@@ -188,6 +188,40 @@ def main():
             ok("a recording with no transcript says to transcribe it",
                "--transcribe" in out)
 
+        # --- comparing two versions of one document ----------------------
+        ok("a number that did not change is not reported",
+           m.compare("The build is 56 hours of work in total.",
+                     "In total the build is 56 hours.")[2] == [])
+        revised = sorted(m.compare("It is 56 hours.", "It is 62 hours.")[2])
+        ok("a revised figure is reported with both values",
+           revised == [("56 hours", 1, 0), ("62 hours", 0, 1)], revised)
+        ok("a figure inside a table row is still compared",
+           ("172 urls", 1, 0) in
+           m.compare("Part Count\nTotal live URLs 172 137 from CMS",
+                     "Part Count\nTotal live URLs 181 137 from CMS")[2],
+           m.compare("Total live URLs 172", "Total live URLs 181")[2])
+
+        a = ("The migration moves the site off its platform. "
+             "Forms stop working once the code is exported. "
+             "Payment pages have to be rebuilt or retired.")
+        b = ("The migration moves the site off its platform. "
+             "Payment pages have to be rebuilt or retired.")
+        g, add, _ = m.compare(a, b)
+        ok("a sentence dropped between versions is found",
+           len(g) == 1 and "Forms stop working" in g[0], g)
+        ok("nothing is invented as added", add == [], add)
+        ok("reflowed whitespace is not reported as a change",
+           m.compare("One two three four five six.",
+                     "One  two\nthree   four five\tsix.")[0] == [])
+        ok("one new sentence cannot account for two old ones",
+           len(m.gone_from(["the quick brown fox jumps over",
+                            "the quick brown fox jumps over"],
+                           ["the quick brown fox jumps over"])) == 1)
+        code, out = run_main(m, ["--diff", d1, d2])
+        ok("--diff runs over two real documents", code == 0, code)
+        ok("--diff reports the revised figure",
+           "56 hours" in out and "62 hours" in out, out[:400])
+
         # --- nothing to read -------------------------------------------
         code, out = run_main(m, [os.path.join(tmp, "nope")])
         ok("a path that does not exist is reported, not ignored",

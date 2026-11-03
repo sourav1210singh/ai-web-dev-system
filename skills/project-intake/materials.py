@@ -161,6 +161,93 @@ def hms(s):
         else ("%d:%02d" % (s // 60, s % 60))
 
 
+def text_of(path):
+    """The words in a document, whatever kind it is.
+
+    Returns ("", None) for a file that is not a document at all, so a
+    spreadsheet or a recording is never mistaken for one that read empty.
+    """
+    ext = os.path.splitext(path)[1].lower()
+    if ext == ".pdf":
+        return pdf_text(path)
+    if ext == ".docx":
+        return docx_text(path)
+    if ext in (".md", ".txt", ".rtf"):
+        return io.open(path, encoding="utf-8-sig",
+                       errors="replace").read(), "plain"
+    return "", None
+
+
+# --- comparing two versions of one document ---------------------------
+def units(text):
+    """Sentence-sized pieces, normalised.
+
+    A line-by-line diff of the same document exported as a PDF and as a
+    .docx reports almost every line as changed, because `pdftotext -layout`
+    interleaves table columns while Word gives clean paragraphs. That is a
+    format diff pretending to be a version diff, and it buries the one real
+    change in nine hundred lines of noise.
+    """
+    t = re.sub(r"\s+", " ", text or "").strip()
+    out = []
+    for s in re.split(r"(?<=[.!?])\s+", t):
+        s = s.strip()
+        if len(s.split()) >= 5:
+            out.append(s)
+    return out
+
+
+def claims(text):
+    """Every phrase carrying a number: hours, counts, money, percentages.
+
+    Tables survive this where they do not survive a sentence split, and an
+    argument about a scope document is always an argument about a number.
+    """
+    t = re.sub(r"\s+", " ", text or "")
+    unit = (r"hours?|hrs?|tasks?|weeks?|days?|pages?|posts?|items?|urls?|"
+            r"episodes?|redirects?|templates?")
+    out = []
+    for m in re.finditer(r"([$]?\d[\d,.]*)\s*(%|(?:" + unit + r")\b)",
+                         t, re.I):                       # "56 hours", "20%"
+        out.append(("%s %s" % (m.group(1), m.group(2))).lower().rstrip("."))
+    # A table puts the label first and the count after it, so "Total live
+    # URLs 172" carries its number on the wrong side of the word. Normalised
+    # to the same key, it compares against "172 URLs" written in prose.
+    for m in re.finditer(r"\b(" + unit + r")\s+([$]?\d[\d,.]*)", t, re.I):
+        out.append(("%s %s" % (m.group(2), m.group(1))).lower().rstrip("."))
+    return out
+
+
+def gone_from(old, new, fuzz=0.86):
+    """Pieces of `old` with nothing in `new` to account for them.
+
+    Each new piece can account for exactly one old piece. Without that, four
+    surviving paragraphs match eight similar ones and half a deleted section
+    reads as present.
+    """
+    import difflib
+    pool, gone = list(new), []
+    for item in old:
+        if item in pool:
+            pool.remove(item)
+            continue
+        m = difflib.get_close_matches(item, pool, n=1, cutoff=fuzz)
+        if m:
+            pool.remove(m[0])
+            continue
+        gone.append(item)
+    return gone
+
+
+def compare(a, b):
+    """What is in one document and not the other, in prose and in numbers."""
+    from collections import Counter
+    ca, cb = Counter(claims(a)), Counter(claims(b))
+    nums = [(k, ca[k], cb[k]) for k in sorted(set(ca) | set(cb))
+            if ca[k] != cb[k]]
+    return gone_from(units(a), units(b)), gone_from(units(b), units(a)), nums
+
+
 def classify(path, text, sheet=None):
     """What this file is for, from its name and what is in it.
 
@@ -219,6 +306,44 @@ def main():
         if a.startswith("--") or a in skip:
             continue
         targets.append(a)
+    if "--diff" in argv:
+        if len(targets) != 2:
+            print("--diff takes exactly two documents")
+            return 2
+        a, b = targets
+        ta, _ = text_of(a)
+        tb, _ = text_of(b)
+        if not ta or not tb:
+            print("one of them has no readable text, so they cannot be "
+                  "compared")
+            return 2
+        gone, added, nums = compare(ta, tb)
+        print("# Two versions of one document\n")
+        print("A: %s (%d words)" % (os.path.basename(a), len(ta.split())))
+        print("B: %s (%d words)\n" % (os.path.basename(b), len(tb.split())))
+        if nums:
+            print("## The numbers that differ\n")
+            print("| figure | in A | in B |")
+            print("|---|---|---|")
+            for k, x, y in nums:
+                print("| %s | %d | %d |" % (k, x, y))
+            print("")
+        else:
+            print("**Every number appears the same number of times in both.** "
+                  "The estimate has not been revised.\n")
+        for label, rows in (("Only in A, so dropped from B", gone),
+                            ("Only in B, so added", added)):
+            print("## %s (%d)\n" % (label, len(rows)))
+            for r in rows[:40]:
+                print("- %s" % r[:300])
+            if len(rows) > 40:
+                print("- ... and %d more" % (len(rows) - 40))
+            print("")
+        print("A sentence here that carries an obligation is the one that "
+              "gets quoted back at you. Read both lists before deciding which "
+              "version you are working to.")
+        return 0
+
     if not targets:
         print(__doc__)
         return 2
@@ -251,17 +376,10 @@ def main():
         ext = os.path.splitext(p)[1].lower()
         rec = {"path": os.path.abspath(p), "name": os.path.basename(p),
                "mb": round(os.path.getsize(p) / 1048576.0, 2), "ext": ext}
-        text = ""
-        if ext == ".pdf":
-            text, how = pdf_text(p)
+        text, how = text_of(p)
+        if how:
             rec["read_with"] = how
-        elif ext == ".docx":
-            text, how = docx_text(p)
-            rec["read_with"] = how
-        elif ext in (".md", ".txt", ".rtf"):
-            text = io.open(p, encoding="utf-8-sig", errors="replace").read()
-            rec["read_with"] = "plain"
-        elif ext in SHEET_EXT:
+        if ext in SHEET_EXT:
             rec["sheet"] = sheet_summary(p)
         elif ext in MEDIA_EXT:
             rec["media"] = media_info(p)

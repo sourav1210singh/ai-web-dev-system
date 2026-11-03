@@ -98,6 +98,8 @@ verifying every file by checksum.
 | Skill | What it keeps |
 |---|---|
 | `meeting-intake` | Takes a recording, transcript or client file and works out what was decided, what has to be done and why, from the whole of it. Checks a supplied transcript against the recording's real length, and reads the frames too, because what is on a shared screen is almost never said out loud. |
+| `project-intake` | Files handed over with no instruction - a folder, a recording, two versions of a scope document, a crawl export - read end to end, reconciled against each other and against the live site, and turned into a brief that stops for approval before anything is built. |
+| `look-first` | Anything with a visual form is rendered into images and opened before a word is said about it. A parser returns the words; the tables, charts, diagrams and layouts it drops are dropped in silence, and silence reads like there was nothing there. |
 | `site-recon` | Everything discoverable about a client's existing site, and the short list of what genuinely has to come from them |
 | `client-log` | A dated, append-only record of everything the client gave or said, with the files filed beside it |
 | `client-content-audit` | What arrived, what is thin, what is truncated, and what to refuse to publish |
@@ -229,12 +231,11 @@ what the skill is for.
 
 ## Status
 
-In daily use: 23 skills, one agent, thirteen tools and four hooks — session start,
+In daily use: 25 skills, one agent, thirteen tools and four hooks — session start,
 the context recorder, a guard on writes that land outside the project, and the
 claim gate.
 
-Test suites: 35 gate cases, 49 fix-job cases, 22 migration-parity cases,
-19 meeting-intake cases, 11 ogcard
-cases, 38 study-reference
-cases, 27 context-system cases, a full-file verifier and a leak check, all
+Test suites: 35 gate cases, 49 fix-job cases, 42 project-intake cases,
+22 migration-parity cases, 19 meeting-intake cases, 17 look-first cases,
+11 ogcard cases, 38 study-reference cases, 27 context-system cases, a full-file verifier and a leak check, all
 passing.

@@ -41,6 +41,20 @@ measures every recording. It writes the full text of each document to
 not the content. A 3,500 word scope document has about forty obligations in it
 and the summary line has none of them.
 
+**And the text is not the document.** Render every one of them and look:
+
+```bash
+python "C:\Claude-Code\.ai-system\skills\look-first\render.py" "<folder>"\* \
+  --out "<project>\rendered" --pages all
+```
+
+This is not optional and it is not a formality. On the first real folder this
+flow was run against, the extraction returned 3,504 words from the scope
+document and the entire project schedule - hand-over deadline, staging
+sign-off, go-live, support window - was in an embedded chart that contained
+none of those words. A brief written from the text alone would have had no
+schedule in it, and nothing would have said so. Follow `look-first`.
+
 ## Stage 2 - the recording, if there is one
 
 ```bash

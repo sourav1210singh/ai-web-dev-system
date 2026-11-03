@@ -25,6 +25,35 @@ no with your default in it, so a single word answers it.
 Showing the reasoning is what makes this safe. The client can overrule a
 decision they can see; they cannot overrule one you never made.
 
+## Design the question so one round ends it
+
+When something genuinely has to be asked, the cost is not the question, it is
+the round trip. A vague question comes back with a vague answer and the same
+point gets raised three times, wasting their time and yours.
+
+A question is ready to send when all four are true:
+
+1. **It can be answered in one word or one line.** Give the options, or give
+   your default and ask for a yes or no.
+2. **The answer tells you what to do.** If a yes still leaves you guessing,
+   the question was not specific enough yet.
+3. **It carries the context they need** to answer without going to look
+   something up.
+4. **It is the only question**, or one of very few. A list of questions gets
+   the easy ones answered and the hard ones skipped.
+
+Bad: "How should we handle the old blog posts?"
+Good: "The 31 posts from before 2024 have no traffic. I plan to redirect them
+to the blog index rather than rebuild them. Shall I, or do you want any of
+them kept?"
+
+## When you are genuinely stuck
+
+Say so early rather than guessing or stalling. Ask the person you are working
+with first, since they usually know; go to the client only for what only the
+client can answer. Either way, bring what you already established and the
+specific thing that is blocking, not the whole problem.
+
 The user pastes what you write straight into email. It has to arrive looking
 exactly as written, say only things that are true, and be short enough to read
 on a phone.

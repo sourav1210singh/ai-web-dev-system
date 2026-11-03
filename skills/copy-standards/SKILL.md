@@ -5,6 +5,18 @@ description: How client-facing words are written here — no em or en dashes, no
 
 # Client-facing copy
 
+## Everything written down is in English
+
+Chat can be Hinglish, and usually is. **Nothing that gets saved is.**
+
+File names, folder names, file contents, document headings, commit messages,
+code comments, variable names, client replies, reports, prompt files: all
+English. A Hinglish file name is unsearchable, breaks on another machine, and
+cannot be handed to a client or a colleague without rewriting it.
+
+The split is simple. Hinglish is how the work is discussed. English is what
+the work leaves behind.
+
 A client once called a mockup "designed by AI" and the project was nearly lost.
 Everything here protects against that.
 

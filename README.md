@@ -5,7 +5,7 @@ with a system that carries what every project already knows, checks its own
 work before it claims anything, and refuses to ship the things that make a site
 look AI-made.
 
-This repository is that system: 22 skills, one agent, four hooks and twelve
+This repository is that system: 23 skills, one agent, four hooks and thirteen
 tools, all built out of real client work and the mistakes it produced.
 
 ---
@@ -97,6 +97,7 @@ verifying every file by checksum.
 
 | Skill | What it keeps |
 |---|---|
+| `meeting-intake` | Takes a recording, transcript or client file and works out what was decided, what has to be done and why, from the whole of it. Checks a supplied transcript against the recording's real length, and reads the frames too, because what is on a shared screen is almost never said out loud. |
 | `site-recon` | Everything discoverable about a client's existing site, and the short list of what genuinely has to come from them |
 | `client-log` | A dated, append-only record of everything the client gave or said, with the files filed beside it |
 | `client-content-audit` | What arrived, what is thin, what is truncated, and what to refuse to publish |
@@ -133,6 +134,7 @@ impressions.
 | `rqa.js` | Responsive QA across six viewports, with screenshots and a findings report |
 | `study.js` | Measures a reference page into a spec you can build to, and measures your own build the same way so the comparison is numbers against numbers |
 | `parity.py` | Old page against new, element by element, with the main-content coverage figure that nav and footer cannot inflate |
+| `meeting.py` | Measures a recording, reports where a transcript fails to cover it, pulls frames across the whole of it, and transcribes the audio when asked |
 | `recon.py` | Domain, DNS from two resolvers, registrar via RDAP, hosting, TLS, platform, analytics, brand assets. No API keys. |
 | `ogcard.py` | Builds a 1200x630 share card from a photo the site already owns, with a gradient scrim so the logo stays readable, under a size budget |
 | `check.py` | favicon, `robots.txt`, `llms.txt`, sitemap and `og:image` across any number of domains |
@@ -227,11 +229,12 @@ what the skill is for.
 
 ## Status
 
-In daily use: 22 skills, one agent, twelve tools and four hooks — session start,
+In daily use: 23 skills, one agent, thirteen tools and four hooks — session start,
 the context recorder, a guard on writes that land outside the project, and the
 claim gate.
 
-Test suites: 35 gate cases, 49 fix-job cases, 22 migration-parity cases, 11 ogcard
+Test suites: 35 gate cases, 49 fix-job cases, 22 migration-parity cases,
+19 meeting-intake cases, 11 ogcard
 cases, 38 study-reference
 cases, 27 context-system cases, a full-file verifier and a leak check, all
 passing.

@@ -59,9 +59,21 @@ def client_terms():
         p = os.path.join(ROOT, name)
         if not os.path.isdir(p) or name.startswith("."):
             continue
-        for w in re.split(r"[^A-Za-z0-9]+", name):
-            if len(w) > 3 and w.lower() not in GENERIC:
-                terms.add(w.lower())
+        words = [w for w in re.split(r"[^A-Za-z0-9]+", name) if w]
+        if len(words) > 1:
+            # A folder called "Beyond Border Marketing" is three ordinary
+            # English words, and taking them separately flagged "border-box"
+            # in a stylesheet. What identifies that client is the whole name,
+            # so match the phrase and the joined form, not the pieces. Real
+            # leaks of a multi-word client arrive as the full name or as a
+            # domain, and the domains below cover the second case.
+            joined = "".join(words).lower()
+            spaced = " ".join(words).lower()
+            if joined not in GENERIC:
+                terms.add(joined)
+                terms.add(spaced)
+        elif words and len(words[0]) > 3 and words[0].lower() not in GENERIC:
+            terms.add(words[0].lower())
     # domains mentioned in any project's memory
     for dp, dn, fn in os.walk(ROOT):
         if os.path.basename(dp) != "memory":
@@ -144,12 +156,32 @@ def main():
         for i, line in enumerate(text.splitlines(), 1):
             low = line.lower()
             for t in terms:
-                if re.search(r"\b%s\b" % re.escape(t), low):
+                # a stored space matches any run of whitespace, so a client
+                # name wrapped across two lines is still caught
+                pat = re.escape(t).replace(r"\ ", r"\s+").replace(" ", r"\s+")
+                if re.search(r"\b%s\b" % pat, low):
                     hits.append(("client name '%s'" % t, rel, i, line.strip()[:90]))
             for label, rx in SECRETS:
                 m = rx.search(line)
                 if m:
                     hits.append((label, rel, i, line.strip()[:90]))
+
+        # A client name written across a line break is invisible to a
+        # line-by-line scan however flexible the pattern is, and prose wraps.
+        # Multi-word terms therefore get one pass over the whole file.
+        low_all = text.lower()
+        for t in terms:
+            if " " not in t:
+                continue
+            pat = r"\b%s\b" % re.escape(t).replace(r"\ ", r"\s+")
+            m = re.search(pat, low_all)
+            if not m:
+                continue
+            line_no = low_all.count("\n", 0, m.start()) + 1
+            if any(h[0] == "client name '%s'" % t and h[1] == rel for h in hits):
+                continue                      # already reported on one line
+            hits.append(("client name '%s'" % t, rel, line_no,
+                         " ".join(text[m.start():m.end() + 40].split())[:90]))
 
     print("# Leak check - %s\n" % HERE)
     print("checked %d file(s) against %d client term(s)\n"

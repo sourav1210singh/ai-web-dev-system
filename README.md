@@ -65,7 +65,7 @@ verifying every file by checksum.
 | Skill | What it enforces |
 |---|---|
 | `fix-job` | Runs client work as a job with state, in three types: `fix` (something live is wrong), `intake` (a new client: read everything, change nothing) and `golive` (the launch gate, which refuses to close while a blocker stands). Every check runs at once and verify diffs against the before snapshot. |
-| `verify-before-claiming` | Nothing is reported as done, fixed, working or live until that work has been checked from more than one angle and the result looked at. Carries the proof table, by kind of claim. |
+| `verify-before-claiming` | Finishing is not the goal; work that is right is. Analyse before deciding, read the whole thing before changing it, never fill a gap with something plausible. Nothing with a visual form is described from its extracted text - it is rendered and looked at. Nothing is reported as done, fixed, working or live until that work has been checked from more than one angle and the result looked at. Carries the proof table, by kind of claim. |
 | `scope-discipline` | Change only what was asked. Capture the rendered HTML before, diff it after; anything but a whitespace difference is a regression. Report what changed, what did not, and what you noticed and left alone. |
 | `copy-standards` | No em or en dashes, no AI filler vocabulary, no invented facts. Clearly marked placeholders instead of plausible-sounding inventions. |
 | `skill-precedence` | What happens when two skills both apply: the one that knows how a system is operated, and the one that sets what good work is. The second does not lose for being less specific. |

@@ -11,6 +11,9 @@ not bad edits, they were edits that quietly broke something adjacent.
 
 ## Before you touch anything
 
+None of this is quick, and it is not meant to be. `verify-before-claiming`
+has the rule on pace: finishing is not the goal, work that is right is.
+
 1. **Find out what is already confirmed working.** Read the project's CONTEXT
    and memory first. A previous session may have verified exactly the thing you
    are about to "improve". Re-doing confirmed work is how regressions get

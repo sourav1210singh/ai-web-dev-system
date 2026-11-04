@@ -32,8 +32,13 @@ function loadPlaywright() {
 }
 const { chromium } = loadPlaywright();
 
-const DEFAULT_WIDTHS = [360, 390, 768, 1024, 1440, 1920];
-const HEIGHTS = { 360: 640, 390: 844, 768: 1024, 1024: 768, 1440: 900, 1920: 1080 };
+// 2560 is in the sweep because the complaint this tool exists for - "bade
+// desktop pe responsive nahi hai" - is a page that passes every breakage check
+// and still does not use the screen. A container capped at 1200px leaves 670px
+// of white each side at 2560, and nothing below 2000px shows it.
+const DEFAULT_WIDTHS = [360, 390, 768, 1024, 1440, 1920, 2560];
+const HEIGHTS = { 360: 640, 390: 844, 768: 1024, 1024: 768, 1440: 900,
+                  1920: 1080, 2560: 1440 };
 
 function arg(name, fallback) {
   const i = process.argv.indexOf("--" + name);
@@ -44,8 +49,18 @@ function arg(name, fallback) {
 /* eslint-disable no-undef */
 function auditInPage(isMobile) {
   const out = [];
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
+  // The layout viewport, not the visual one.
+  //
+  // On a mobile context the browser zooms out to fit content that overflows,
+  // so window.innerWidth GROWS to match the overflow: a 700px block on a
+  // 390px phone reported innerWidth 700, and `scrollWidth > innerWidth` was
+  // then false. Measured: every element between about 400px and 1500px wide
+  // went unreported on a phone, which is most real overflow there is, while
+  // the comment below called it the single most common responsive bug.
+  // documentElement.clientWidth stays at the width the page is laid out
+  // against, which is the width the question is about.
+  const vw = document.documentElement.clientWidth || window.innerWidth;
+  const vh = document.documentElement.clientHeight || window.innerHeight;
   const add = (sev, kind, msg, el, extra) =>
     out.push({
       sev, kind, msg,

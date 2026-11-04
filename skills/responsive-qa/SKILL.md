@@ -1,6 +1,6 @@
 ---
 name: responsive-qa
-description: Check a page at real device widths and find the layout, tap-target, image and heading problems a developer would catch by looking — measured, not eyeballed. Use after building or changing any page, before telling the user it works, and whenever they report that something "looks broken" on a phone or tablet. Also use to audit a client's existing site. Triggers on "check responsive", "mobile pe dekho", "test on devices", "koi bug to nahi", "is it working on mobile", "page check karo", or any claim about a page being done.
+description: Check a page at real device widths - phone through to a 2560px desktop, never stopping at 1440 - and find the layout, tap-target, image and heading problems a developer would catch by looking — measured, not eyeballed. Use after building or changing any page, before telling the user it works, and whenever they report that something "looks broken" on a phone or tablet. Also use to audit a client's existing site. Triggers on "check responsive", "mobile pe dekho", "test on devices", "koi bug to nahi", "is it working on mobile", "page check karo", or any claim about a page being done.
 ---
 
 # Responsive QA
@@ -9,11 +9,27 @@ description: Check a page at real device widths and find the layout, tap-target,
 
 **It runs Chromium only.** Calling a page "checked" after it leaves two
 engines untested. Firefox and WebKit are installed alongside Chromium with
-Playwright, so a three-engine pass is available when a layout matters.
+Playwright, so run the three-engine pass beside it when a layout matters:
+
+```bash
+node "C:\Claude-Code\.ai-system\skills\responsive-qa\crossbrowser.js" <url> \
+  --routes /,/about,/contact --out <project>\.claude-context\qa\crossbrowser
+```
+
+It opens every route in all three engines at every width, and reports **only
+the differences that survive measurement** - status, overflow, h1 size, weight
+and font, which image the browser chose off the srcset, broken images,
+background. It exits 1 when the engines disagree or a page fails to load.
 
 Measure before reporting a difference between engines. A reduced-scale JPEG
 made one engine look like it was missing a bold run; measuring gave the same
-weight, the same font and the same width in all three.
+weight, the same font and the same width in all three. The script compares
+numbers for that reason and never the pictures.
+
+This exists in the house system because a client project needed it, wrote its
+own, and that copy quietly drifted: it swept two widths while this one swept
+six, so nothing above 1440 was opened in any engine for weeks. **A tool worth
+keeping belongs here, with the client's routes passed in as arguments.**
 
 **It does not judge contrast, and sampling pixels will lie to you.** On small
 anti-aliased text almost every ink pixel is a partially covered edge pixel, so
@@ -44,8 +60,15 @@ reported.
 node "C:\Claude-Code\.ai-system\skills\responsive-qa\rqa.js" <url> --out <project>\.claude-context\qa\<name>
 ```
 
-Options: `--widths 360,390,768,1024,1440,1920` (default is all six),
-`--full` for full-page screenshots instead of viewport-only.
+Options: `--widths 360,390,768,1024,1440,1920,2560` (default is all
+seven), `--full` for full-page screenshots instead of viewport-only.
+
+**Desktop is checked past 2000px, not stopped at 1440.** A page that
+looks right on the laptop it was built on is the usual way a container
+with a fixed max-width ships: at 2560 it leaves hundreds of pixels of
+white down each side, and nothing below 2000 shows it. Narrowing the
+sweep with `--widths` is for re-checking one width after a fix, never
+for the first pass.
 
 It writes `report.md`, `findings.json` and one screenshot per width, and exits
 **1** when a BLOCKER or MAJOR finding exists. Put the output inside the

@@ -52,9 +52,16 @@ An MCP gives a model **tools**. Most of what matters here is not a tool, it is
 that must never be skipped belongs in hooks, because a rule in a document is
 forgotten once the context fills up, while a hook fires every single time.
 
-Master copies live in the project folder, so they travel with it and survive an
-account switch. `install.py` copies them to where Claude Code loads them from,
-verifying every file by checksum.
+Master copies live in the project folder, so they travel with it. None of what
+they install is tied to a Claude account: skills load from `~/.claude/skills`
+and hooks from `~/.claude/settings.json`, both of which belong to the machine's
+user, so signing in as somebody else changes nothing.
+
+`install.py` sets up all three parts, verifying every file by checksum: the
+skills and agents, the context system that records each session beside the
+projects, and the four hooks that run them. Every path is worked out from where
+the files actually are, so a clone onto another machine or into another folder
+needs no editing.
 
 ---
 
@@ -141,7 +148,7 @@ impressions.
 | `check.py` | favicon, `robots.txt`, `llms.txt`, sitemap and `og:image` across any number of domains |
 | `preflight.py` | Before a demo goes to GitHub: secrets, `.gitignore`, dashes in visible content, clean tree, and that the production build passes |
 | `clog.py` | Add to and search the client log |
-| `install.py` | Sync skills and agents to where Claude Code loads them, checksum verified |
+| `install.py` | Set the whole system up on a machine: skills, agents, the context system and the hooks, every file checksum verified and every path resolved from where the files are |
 | `leakcheck.py` | Reads the client names off the machine and refuses to let any of them into this repository |
 | `gatetest.py` | 35 cases proving the claim gate fires exactly when it should and never otherwise |
 
@@ -191,12 +198,30 @@ whom.
 ## Using it
 
 ```bash
-python install.py --apply     # sync skills and agents, checksum verified
+python install.py --apply     # skills, agents, context system and hooks
 python install.py --status    # what is installed, and whether it has drifted
 ```
 
+On a machine that has never seen this before, those two lines are the whole
+setup:
+
+```bash
+git clone <this repo> .ai-system
+cd .ai-system
+python install.py --apply
+```
+
+The folder the repo sits in becomes the workspace: projects, context files and
+memory live beside it, and the absolute commands printed inside the skills are
+rewritten to match as they are copied.
+
 Skills load at session start and fire on their own from the words in a request.
-Most of the time nothing has to be invoked by name.
+Most of the time nothing has to be invoked by name. Hooks need no loading at
+all; they run every session from the moment they are registered.
+
+What does not travel is the history itself. The context files, the memory and
+the per-machine history corrections stay where they were written, because they
+are that machine's record and nobody else's.
 
 ---
 
@@ -234,8 +259,7 @@ In daily use: 24 skills, one agent, thirteen tools and four hooks — session st
 the context recorder, a guard on writes that land outside the project, and the
 claim gate.
 
-Test suites: 35 gate cases, 49 fix-job cases, 42 project-intake cases,
-22 migration-parity cases, 19 meeting-intake cases,
-17 render cases,
-11 ogcard cases, 38 study-reference cases, 27 context-system cases, a full-file verifier and a leak check, all
-passing.
+Test suites: 38 gate cases, 49 fix-job cases, 42 project-intake cases,
+22 migration-parity cases, 19 meeting-intake cases, 19 install cases,
+17 render cases, 11 ogcard cases, 38 study-reference cases,
+27 context-system cases, a full-file verifier and a leak check, all passing.

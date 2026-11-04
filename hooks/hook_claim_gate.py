@@ -14,7 +14,13 @@ import io, json, os, re, sys, traceback
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SYS = os.path.dirname(HERE)
-sys.path.insert(0, os.path.join(r"C:\Claude-Code", ".context-system"))
+# The context helper sits beside this system, not inside it. Working the path
+# out from this file's own location is what lets the whole thing be cloned to
+# another machine: hard-coding one folder meant the gate could import nothing
+# anywhere else, and a gate that cannot import is a gate that does not run.
+_HOOKS = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(
+    os.path.dirname(os.path.dirname(_HOOKS)), ".context-system"))
 LOG = os.path.join(SYS, "hook.log")
 STATE = os.path.join(SYS, "gate-state.json")
 CONFIG = os.path.join(SYS, "gate.json")

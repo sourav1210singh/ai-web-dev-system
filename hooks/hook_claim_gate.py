@@ -60,7 +60,11 @@ EVIDENCE_TOOL_SUBSTR = (
 EVIDENCE_BASH = re.compile(
     r"(?i)\b("
     r"curl|wget|rqa\.js|verify\.py|selftest\.py|check\.py|preflight\.py|"
-    r"recon\.py|leakcheck\.py|gatetest\.py|install\.py --status|"
+    r"recon\.py|leakcheck\.py|install\.py --status|"
+    # This system verifies itself with suites named <thing>test.py and
+    # <thing>test.js. Only gatetest.py was listed, so running ten of its
+    # own suites and saying so was read as no evidence at all.
+    r"(python|node)\s+\S*test\S*\.(py|js)|"
     r"npm (run )?(build|test|lint)|npx .*(build|test)|"
     r"pytest|jest|vitest|playwright|git diff|git status|git log|"
     r"md5sum|sha256sum|certutil|diff |cmp |"
@@ -200,11 +204,40 @@ def claim_is_visual(prose):
     return False
 
 
+# A .js is usually a page, and sometimes it is a command-line tool. This
+# system is largely built out of the second kind, and demanding a screenshot
+# of a page that was never written is how a gate gets switched off. Requiring
+# a Node built-in is the line: a file that reads the filesystem or argv runs in
+# Node, and no browser file does either. Checked against the file on disk,
+# because an Edit only ever shows the fragment that changed.
+SCRIPT_EXT = re.compile(r"(?i)\.(m?js|cjs|ts)$")
+NODE_ONLY = re.compile(
+    r"""require\(\s*["'](?:fs|path|os|http|https|child_process|zlib|crypto|"""
+    r"""url|readline|net|stream|events)["']\s*\)"""
+    r"|^\s*#!.*\bnode\b"
+    r"|\bprocess\.argv\b"
+    r"|^\s*module\.exports\b", re.M)
+
+
+def is_node_script(path):
+    try:
+        with io.open(path, encoding="utf-8", errors="replace") as fh:
+            head = fh.read(8000)
+    except Exception:
+        return False
+    return bool(NODE_ONLY.search(head))
+
+
 def touched_ui(tools):
     for name, inp in tools:
-        if name in ("Write", "Edit", "MultiEdit"):
-            if UI_FILE.search(str(inp.get("file_path") or "")):
-                return True
+        if name not in ("Write", "Edit", "MultiEdit"):
+            continue
+        p = str(inp.get("file_path") or "")
+        if not UI_FILE.search(p):
+            continue
+        if SCRIPT_EXT.search(p) and is_node_script(p):
+            continue
+        return True
     return False
 
 

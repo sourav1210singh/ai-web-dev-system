@@ -217,6 +217,65 @@ def main():
     _rc, blocked, _r, _e = run(t)
     ok("a section's visual property in a claim -> still BLOCKS", blocked)
 
+
+    # A .js is usually a page and sometimes a command-line tool. This system is
+    # largely the second kind, and asking for a screenshot of a page that was
+    # never written is how a gate gets switched off.
+    node_js = os.path.join(TEST_FOLDER, "tool.js")
+    io.open(node_js, "w", encoding="utf-8").write(
+        'const fs = require("fs");\nmodule.exports = { go() { return 1; } };\n')
+    browser_js = os.path.join(TEST_FOLDER, "widget.js")
+    io.open(browser_js, "w", encoding="utf-8").write(
+        'document.querySelector(".hero").classList.add("ready");\n')
+
+    reset(); transcript(t, "Done, 30 checks pass.",
+                        [("Write", {"file_path": node_js, "content": "x"}),
+                         ("Bash", {"command": "npm test"})])
+    _rc, blocked, _r, _e = run(t)
+    ok("a Node command-line script is not a page -> allowed", not blocked)
+
+    reset(); transcript(t, "Done, 30 checks pass.",
+                        [("Write", {"file_path": browser_js, "content": "x"}),
+                         ("Bash", {"command": "npm test"})])
+    _rc, blocked, _r, _e = run(t)
+    ok("a browser script with no Node markers -> still BLOCKS", blocked)
+
+    reset(); transcript(t, "Done, the build passes.",
+                        [("Write", {"file_path": os.path.join(TEST_FOLDER, "Hero.tsx"),
+                                    "content": "x"}),
+                         ("Bash", {"command": "npm run build"})])
+    _rc, blocked, _r, _e = run(t)
+    ok("a component file -> still BLOCKS", blocked)
+
+    reset(); transcript(t, "Done, the build passes.",
+                        [("Write", {"file_path": os.path.join(TEST_FOLDER, "site.css"),
+                                    "content": "x"}),
+                         ("Bash", {"command": "npm run build"})])
+    _rc, blocked, _r, _e = run(t)
+    ok("a stylesheet -> still BLOCKS", blocked)
+
+    reset(); transcript(t, "Done, 30 checks pass.",
+                        [("Write", {"file_path": os.path.join(TEST_FOLDER, "gone.js"),
+                                    "content": "x"}),
+                         ("Bash", {"command": "npm test"})])
+    _rc, blocked, _r, _e = run(t)
+    ok("a .js that cannot be read is treated as a page -> BLOCKS", blocked)
+
+
+    # Only gatetest.py was named, so running ten of this system's own suites
+    # and saying so was read as no evidence at all.
+    for suite in ("python materialstest.py", "node designmdtest.js",
+                  "node perftest.js"):
+        reset(); transcript(t, "Done, every suite passes.",
+                            [WRITE, ("Bash", {"command": suite})])
+        _rc, blocked, _r, _e = run(t)
+        ok("running %s counts as evidence" % suite.split()[-1], not blocked)
+
+    reset(); transcript(t, "Done, every suite passes.",
+                        [WRITE, ("Bash", {"command": "echo all good"})])
+    _rc, blocked, _r, _e = run(t)
+    ok("an echo is still not evidence", blocked)
+
     # a claim word inside quoted speech is not the reply's own claim
     reset(); transcript(t, 'When you say "ho gaya", I will re-check the page.',
                         [CSS])

@@ -17,8 +17,33 @@ those numbers can be read straight off the rendered page.
 node "C:\Claude-Code\.ai-system\skills\study-reference\study.js" <url> --out <project>\.claude-context\reference
 ```
 
-Writes `spec.md`, `spec.json` and a screenshot per width. Default widths are
-390 and 1440.
+Writes `spec.md`, `spec.json`, **`DESIGN.md`** and a screenshot per width.
+Default widths are 390 and 1440.
+
+### DESIGN.md is the one to hand to an agent
+
+`spec.md` is for a person. `DESIGN.md` is the format coding agents read -
+Google Stitch's convention, and what the published brand design systems are
+being written in. It carries the tokens as machine-readable front matter and
+the reasoning underneath, so an agent building a second page produces something
+that matches the first instead of inventing a new system each time.
+
+Drop it in the project root and point the agent at it. To rebuild it from a
+study taken earlier, without opening a browser again:
+
+```bash
+node "C:\Claude-Code\.ai-system\skills\study-reference\designmd.js" <out>\spec.json --name "Client"
+```
+
+It describes the **widest** viewport that was studied, because a phone view has
+a compressed type scale and a stacked layout and describes the breakpoint
+rather than the design. The width it used is named at the top of the file.
+
+**It never invents.** Component padding, heights, hover, focus, disabled and
+dark mode are not measured, and the file says so under "Not measured" instead
+of filling them with plausible values. Those are yours to supply from the real
+design. A design document that guesses is worse than a short one, because the
+next person builds on it.
 
 ## Use it only where you are entitled to
 

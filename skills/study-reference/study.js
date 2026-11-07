@@ -666,6 +666,19 @@ function buildReport(url, views, reduced) {
     fs.writeFileSync(path.join(outDir, "spec.json"),
       JSON.stringify({ url, measured: new Date().toISOString(), views, reduced },
         null, 1), "utf8");
+    // A measurement is only worth taking if something can act on it, and the
+    // format agents actually read is DESIGN.md. Written here so it is never
+    // the step somebody forgets to run.
+    try {
+      const { build } = require(path.join(__dirname, "designmd.js"));
+      const nameFor = url.replace(/^https?:\/\//, "").split("/")[0];
+      fs.writeFileSync(path.join(outDir, "DESIGN.md"),
+        build({ url, measured: new Date().toISOString(), views, reduced },
+              nameFor), "utf8");
+    } catch (e) {
+      console.error(`DESIGN.md not written: ${e.message}`);
+    }
+
     console.log(report);
     console.log(`\nwritten to ${outDir}`);
     const usable = views.filter((v) => !v.error).length;

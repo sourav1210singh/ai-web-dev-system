@@ -31,6 +31,19 @@ GENERIC = {"all", "check", "extra", "use", "water", "green", "environment",
            "dashboard", "portal", "admin", "client", "project", "system",
            "template", "demo", "test", "site", "sites", "page", "pages"}
 
+# Tools and platforms, which are not clients even though their domains turn up
+# in the project memories. A note saying a client's site is on Webflow puts
+# webflow.com in a memory file, the domain scan reads it as a client domain,
+# and then every skill that names the platform - which they have to, to say how
+# to work on it - reads as a leak. Naming a platform is not naming a client.
+PLATFORMS = {
+    "claude", "anthropic", "github", "google", "microsoft", "cloudflare",
+    "lovable", "supabase", "vercel", "netlify", "npmjs", "schema", "example",
+    "wordpress", "webflow", "squarespace", "shopify", "framer", "elementor",
+    "figma", "typekit", "gravatar", "linkedin", "playwright", "tailwind",
+    "hubspot", "mailchimp", "notion", "airtable", "screamingfrog", "semrush",
+}
+
 SECRETS = [
     ("credential", re.compile(
         r"(?i)\b(api[_-]?key|secret|token|passwd|password|client[_-]?secret)\b"
@@ -91,9 +104,7 @@ def client_terms():
                     r"(?:com|in|ae|org|net|de|co|global|app|dev)\b", t, re.I):
                 if d.lower() not in GENERIC and len(d) > 4:
                     terms.add(d.lower())
-    terms -= {"claude", "github", "google", "lovable", "supabase", "vercel",
-              "npmjs", "anthropic", "schema", "wordpress", "example",
-              "cloudflare", "microsoft", "typekit", "gravatar", "linkedin"}
+    terms -= PLATFORMS
     return sorted(terms)
 
 

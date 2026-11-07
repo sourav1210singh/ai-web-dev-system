@@ -153,6 +153,51 @@ numbers, team names or review counts. A mockup once carried an invented history
 and a competitor's ownership model. Put a clearly marked placeholder and ask,
 every time.
 
+### The structural tells, which are harder to spot than the words
+
+These come from reading how real brand design systems are written down. They
+are what separates a page built from a system from a page assembled section by
+section.
+
+**One system, stated in tokens, referenced everywhere.** A component gets
+`{colors.primary}` and `{spacing.lg}`, never `#ff385c` and `24px`. The
+hard-coded one is the component that gets missed when the palette changes, and
+a page where three buttons are three slightly different reds is the giveaway.
+
+**Six to eight font sizes, not fourteen.** A scale a person can hold in their
+head is small. Count the distinct sizes on a finished page; if it is into
+double figures, that is drift, not design.
+
+**Display weights stay modest, and there is one loud moment.** Strong systems
+let photography and whitespace carry hierarchy and keep headings quieter than
+instinct says. Airbnb's homepage h1 is 28px; the single loud thing on the whole
+site is the 64px rating number, because a rating is the one number people are
+looking for. Pick the one thing on the page that deserves to shout, and let
+nothing else compete with it.
+
+**Flat by default. One shadow tier, not a ladder.** In a system worth copying,
+most surfaces carry no shadow at all and there is a single shadow definition
+for the few that lift. Depth comes from surface colour, spacing and rounded
+clipping. A drop shadow on every card is the single fastest way to make a page
+read as generated.
+
+**State the base unit and stay on it.** 4px with a 2px micro-step, or 8px. A
+scale on a 4px base and one on an 8px base look identical in a screenshot and
+produce different components, so write it down rather than leaving it to be
+inferred.
+
+**Section padding has a normal range.** Roughly 64px vertical for a dense,
+card-heavy page; 80-96px for marketing. Far outside that in either direction is
+a decision to make deliberately, not by accident.
+
+**When the brand font is not licensed for this build**, name the substitute in
+writing and say what was adjusted to match - usually the closest open-source
+face plus a small line-height correction. Leaving it unsaid means the next
+person picks a different one and the site drifts between pages.
+
+`study-reference` measures all of this off a real page and writes it out as a
+`DESIGN.md` that can be handed straight to an agent.
+
 ---
 
 ## 4. SEO is part of the build, not a later pass

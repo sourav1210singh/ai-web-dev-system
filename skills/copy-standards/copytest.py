@@ -81,14 +81,43 @@ ok("an ordinary capitalised word is not a placeholder",
    not has(C.check("We serve Leeds and Bradford."), "placeholder"))
 
 # ------------------------------------------------------------- judged
-ok("filler vocabulary is reported",
-   has(C.check("We unlock seamless synergy for every client."), "filler"))
-ok("the filler finding names the phrases",
-   "unlock" in next(x for x in C.check("We unlock synergy.")
-                    if x["id"] == "filler")["detail"])
+ok("tier one filler is reported",
+   has(C.check("We unlock the power of seamless synergy."), "filler"))
+ok("the finding names the phrases",
+   "synergy" in next(x for x in C.check("We deliver synergy.")
+                     if x["id"] == "filler")["detail"])
 ok("plain writing is not reported as filler",
    not has(C.check("We clear blocked drains in Leeds. A visit costs 85 pounds."),
            "filler"))
+
+# Flattening the tiers is what makes a checker get switched off. A word that is
+# often the right one has to be reported differently from a phrase that never is.
+ok("tier two is reported separately from tier one",
+   has(C.check("We leverage a multifaceted approach."), "filler-context")
+   and not has(C.check("We leverage a multifaceted approach."), "filler"))
+ok("and tier two says the word may be the right one here",
+   "may be the right one" in
+   next(x for x in C.check("We utilize it.") if x["id"] == "filler-context")["detail"])
+ok("a genuine engineering sentence is not punished",
+   not any(x["id"].startswith("filler")
+           for x in C.check("The retry logic is robust under packet loss, "
+                            "which is crucial for the uploader.")),
+   "bare 'robust' and 'crucial' are deliberately in neither tier")
+ok("both tiers carry real weight rather than one giant list",
+   len(C.FILLER_T1) > 30 and len(C.FILLER_T2) > 20,
+   "%d and %d" % (len(C.FILLER_T1), len(C.FILLER_T2)))
+
+ok("a run of very short sentences is reported",
+   has(C.check("It works. Every time. No excuses. Just results. "
+               "And that matters to the people who pay for it."), "staccato"))
+ok("one short sentence is a choice, not a cadence",
+   not has(C.check("It works. The engineer tests every joint before leaving "
+                   "the property, and writes down what was replaced."),
+           "staccato"))
+ok("the staccato finding says to join them into prose",
+   "Join them into prose" in
+   next(x for x in C.check("It works. Every time. No excuses. Just results. Yes.")
+        if x["id"] == "staccato")["detail"])
 
 ok("a sentence opening with a filler phrase is reported",
    has(C.check("It is important to note that the price is fixed."),

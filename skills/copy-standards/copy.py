@@ -41,16 +41,41 @@ import unicodedata
 # renderer wrote an entity, which is the whole difficulty.
 DASH = re.compile(r"[–—]|&#x?201[34];|&#821[12];|&[mn]dash;", re.I)
 
-# From this skill, plus the vocabulary the anti-slop work names. A word list is
-# the shallow half of the problem and is still worth running.
-FILLER = [
-    "unlock", "dive in", "deep dive", "game-changer", "game changer",
-    "supercharge", "elevate", "seamless", "seamlessly", "in today's fast-paced",
-    "it's not just", "it is not just", "leverage", "synergy", "robust solution",
+# Two tiers, because flattening them is what makes a checker get switched off.
+#
+# Tier 1 is a tell wherever it appears in client-facing copy. Tier 2 is a
+# perfectly good word that machine-written prose reaches for far more often
+# than a person does, so it is worth a look and is not automatically wrong:
+# "robust" is correct about an engineering property, "crucial" is correct when
+# something genuinely is, "comprehensive" is only a tell when the text is
+# describing itself.
+#
+# Selected for client-facing web copy from the vocabulary the anti-slop work
+# collects, which in turn cites the published studies rather than one author's
+# taste. Sources are in the skill.
+FILLER_T1 = [
+    "delve", "delving", "tapestry", "a testament to", "game-changer",
+    "game changer", "game-changing", "supercharge", "elevate your",
+    "unlock the power", "seamless", "seamlessly", "in today's fast-paced",
+    "in today's digital", "it's not just", "it is not just",
+    "this is where", "at its core", "in the realm of", "when it comes to",
+    "at the end of the day", "the bottom line is", "here's the thing",
+    "here's the deal", "without further ado", "in a nutshell", "buckle up",
+    "take it to the next level", "move the needle", "bridge the gap",
+    "streamline your", "embark on", "dive in", "deep dive", "let's dive",
+    "synergy", "synergies", "thought leader", "pain points", "value add",
     "cutting-edge", "state-of-the-art", "revolutionize", "revolutionise",
-    "unparalleled", "bespoke solution", "holistic approach", "tapestry",
-    "navigate the landscape", "in the realm of", "at the end of the day",
-    "when it comes to", "a testament to", "embark on", "delve",
+    "unparalleled", "holistic approach", "navigate the landscape",
+    "rest assured", "it goes without saying", "needless to say",
+    "empower your", "empowering businesses",
+]
+FILLER_T2 = [
+    "leverage", "utilize", "commence", "facilitate", "encompass", "paramount",
+    "groundbreaking", "transformative", "endeavour", "endeavor", "harnessing",
+    "spearheading", "showcasing", "underscore", "underscores", "interplay",
+    "multifaceted", "meticulous", "meticulously", "bolster", "bolstered",
+    "garner", "garnered", "pivotal", "vibrant", "intricate", "unprecedented",
+    "foster a", "fostering a", "robust solution", "comprehensive solution",
 ]
 PLACEHOLDER = re.compile(
     r"\[[A-Z][A-Z_ ]{2,30}\]|\bPLACEHOLDER\b|\bTODO\b|\bTBD\b|lorem ipsum"
@@ -168,10 +193,32 @@ def check(text, html=None, profile="general"):
 
     # ------------------------------------------------------------- judged
     low = text.lower()
-    found = sorted({w for w in FILLER if w in low})
-    if found:
-        add("JUDGED", "filler", "%d filler phrase(s)" % len(found),
-            ", ".join(found[:8]))
+    t1 = sorted({w for w in FILLER_T1 if w in low})
+    if t1:
+        add("JUDGED", "filler", "%d filler phrase(s)" % len(t1),
+            ", ".join(t1[:10]) + ". These are a tell wherever they appear.")
+    t2 = sorted({w for w in FILLER_T2 if w in low})
+    if t2:
+        add("JUDGED", "filler-context",
+            "%d word(s) machine prose over-reaches for" % len(t2),
+            ", ".join(t2[:10]) + ". Each one is a real word and may be the "
+            "right one here. Read them in place rather than replacing them on "
+            "sight.")
+
+    # Staccato: a run of very short sentences used for effect. One is a choice,
+    # four in a row is a cadence nobody writes by accident.
+    short_run, worst = 0, 0
+    for s in sentences(text):
+        if len(words(s)) <= 4:
+            short_run += 1
+            worst = max(worst, short_run)
+        else:
+            short_run = 0
+    if worst >= 4:
+        add("JUDGED", "staccato",
+            "%d very short sentences in a row" % worst,
+            "Punchy fragments stacked for effect. One lands; a run of them is "
+            "a rhythm that reads manufactured. Join them into prose.")
 
     hedges = [s for s in sentences(text) if HEDGE_OPENER.match(s)]
     if hedges:

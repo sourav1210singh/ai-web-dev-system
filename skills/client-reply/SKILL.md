@@ -140,6 +140,30 @@ That is lazy loading explained without the words "lazy loading". Do that.
 - British or American spelling, consistently, matching the client.
 - Say "I" and "you". Not "we have actioned your request".
 
+### The email phrases that mark a reply as unread-and-automated
+
+These are the ones clients see most often and recognise fastest, because every
+other automated mail they get opens the same way. They cost nothing to remove
+and the sentence is always better without them:
+
+| Never | Instead |
+|---|---|
+| "I hope this email finds you well" | Open with the thing. "The form is fixed." |
+| "Please don't hesitate to reach out" | "Reply here if anything looks wrong." |
+| "As per my last email" | "On Tuesday I mentioned..." It reads as a reprimand. |
+| "Just following up" / "touching base" / "circling back" | "Checking whether you got the staging link." |
+| "Thank you for your patience" | Only if they actually waited, and then say how long. |
+| "Rest assured" | Say the thing that provides the assurance. |
+| "Certainly," / "Absolutely," / "Great question!" | Delete. Start with the answer. |
+| "Apologies for the inconvenience" | Say what went wrong and what you did. |
+
+Two more that look polite and are not: **"Let me know if you have any
+questions"** at the end of a message that raised none, and **"I wanted to reach
+out"**, which spends a sentence announcing that a message is a message.
+
+`copy-standards` has the full picture and a checker. This table is the subset
+that shows up in client mail.
+
 ## Things that build trust, from replies that worked
 
 **Admit a miss directly.** "You were right, and I had missed it." Then say what

@@ -83,6 +83,45 @@ Then state three things, explicitly:
 - **Not changed:** the things named as off-limits, confirmed still intact
 - **Noticed but left alone:** anything broken that you found and did not touch
 
+### Reviewing the change, whoever wrote it
+
+Five axes, in this order, because the order is the point: **correctness,
+security, architecture, readability, performance.** A structural problem buried
+under ten naming nits is a review that failed.
+
+> **If you have one structural problem and ten nits, the structural problem
+> *is* the review.**
+
+Four rules that keep a review worth reading:
+
+- **Check a finding before reporting it.** Follow it to the callers, the guards
+  and the tests that actually reach the changed code, and drop it if they rule
+  it out. An unverified finding costs the author more time than it saves.
+- **Separate what this change broke from what was already broken.** These need
+  different decisions, and conflating them is how a small fix acquires a
+  backlog. The before snapshot above is what settles it.
+- **Zero findings is a valid result. Do not invent one.** The same rule as
+  "nothing has changed since the last run" in `fix-job watch`: a clean answer
+  is an answer.
+- **Say which findings are required and which are optional.** Without that,
+  everything reads as mandatory and the optional suggestions eat the time the
+  required ones needed.
+
+### Dead code: delete what you replaced, ask about what went quiet
+
+These two are not the same and the distinction matters.
+
+- **What you replaced, you delete, in the same change.** You know it is dead
+  because you killed it. Leaving it is how the next session reads the old path
+  and believes it.
+- **What merely became unreachable, you list and ask about.** "These look
+  unused now: X, Y, Z. Remove them?" You are inferring from the code in front
+  of you, and something outside it may still call it: another repo, a cron, a
+  CMS template, a redirect.
+
+The harness has its own `/code-review`. This section is what the house expects
+of a review whether that command ran or not.
+
 ## The pattern that keeps appearing
 
 > "First, what is already confirmed working — do not redo or improve it."

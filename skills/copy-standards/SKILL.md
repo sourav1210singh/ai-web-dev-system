@@ -70,6 +70,54 @@ built on trust" could. "A visit costs 85 pounds and we say the price before
 starting" could not. A paragraph of the first kind is what people mean when
 they say something reads like AI.
 
+### The horoscope test
+
+The shortest version of the same question, and the one to remember:
+
+> **Could anyone have written this, for anyone?**
+
+If yes, it is slop. A horoscope is technically true of everyone and means
+nothing to anyone, and that is exactly the register. Apply it to the whole page
+first, then to the paragraph that reads worst.
+
+The fix is never a thesaurus. It is a fact: a number, a date, a name, a
+constraint, something the client told you that a competitor could not have
+said.
+
+### Two tiers, because flattening them gets the check switched off
+
+- **Tier 1** is a tell wherever it appears in client copy: "delve", "tapestry",
+  "a testament to", "unlock the power of", "seamless", "in today's fast-paced",
+  "it's not just X, it's Y", "buckle up", "move the needle", "take it to the
+  next level", "at the end of the day", "in a nutshell".
+- **Tier 2** is a real word that machine prose reaches for far more often than
+  a person does: "leverage", "utilize", "facilitate", "pivotal", "meticulous",
+  "underscore", "showcase", "multifaceted", "unprecedented". **Read these in
+  place rather than replacing them on sight.** Sometimes it is the right word.
+
+Some words are deliberately in **neither** list, although the published
+collections include them: bare "robust", "crucial", "comprehensive", "key".
+They are correct often enough that flagging them trains people to ignore the
+whole report, which is a worse outcome than the occasional "crucial".
+
+### One structural tell worth naming
+
+**Staccato.** Short. Punchy. Fragments. Stacked for effect. One of those lands;
+four in a row is a rhythm nobody writes by accident, and it is one of the
+clearest tells there is. Join them into prose.
+
+### Where these came from
+
+Worth knowing, because a word list with no provenance is one person's taste:
+
+- `eugeniughelbur/clearmode` (MIT) - the four axes, the weights, and the
+  per-audience numbers. Also a deterministic checker worth running on its own.
+- `aplaceforallmystuff/the-antislop` (MIT) - the horoscope test, tiered
+  severity, and the structural tells including staccato and uniformity.
+- `jalaalrd/anti-ai-slop-writing` - the fullest vocabulary list, which cites
+  the published studies behind it rather than an opinion. **No licence file**,
+  so it is read and cross-checked against, not copied.
+
 Two practical consequences:
 
 - **Contractions read human. Keep them.** The technical-writing standards that

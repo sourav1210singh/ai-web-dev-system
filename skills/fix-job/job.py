@@ -30,6 +30,7 @@ RQA = os.path.join(SKILLS, "responsive-qa", "rqa.js")
 PERF = os.path.join(SKILLS, "responsive-qa", "perf.js")
 A11Y = os.path.join(SKILLS, "responsive-qa", "a11y.js")
 ANALYTICS = os.path.join(SKILLS, "forms-and-leads", "analytics.js")
+SECURITY = os.path.join(SKILLS, "security-pass", "security.js")
 PARITY = os.path.join(SKILLS, "migration-parity", "parity.py")
 
 # Each type runs its own checks and takes its own path. intake changes
@@ -44,13 +45,15 @@ JOB_TYPES = {
     },
     "intake": {
         "stages": ["recon", "diagnose", "report", "close"],
-        "checks": ["recon", "launch", "responsive"],
+        # security reads only, and a key left in a new client's bundle is the
+        # most valuable thing there is to find on day one.
+        "checks": ["recon", "launch", "responsive", "security"],
         "gate": False, "strict": False,
         "what": "a new client: find out what exists before touching anything",
     },
     "golive": {
         "stages": ["diagnose", "apply", "verify", "close"],
-        "checks": ["launch", "responsive", "parity"],
+        "checks": ["launch", "responsive", "parity", "security"],
         "gate": True, "strict": True,
         "what": "the launch gate: nothing ships with a blocker standing",
     },
@@ -59,7 +62,8 @@ JOB_TYPES = {
     # what has CHANGED rather than producing another audit nobody reads.
     "watch": {
         "stages": ["diagnose", "report"],
-        "checks": ["launch", "responsive", "perf", "a11y", "analytics"],
+        "checks": ["launch", "responsive", "perf", "a11y", "analytics",
+                   "security"],
         "gate": False, "strict": False,
         "what": "a site that is already live: has anything broken since last time",
     },
@@ -174,6 +178,44 @@ def run_analytics(url, out):
         return json.loads(io.open(f, encoding="utf-8").read())
     except Exception as e:
         return {"error": "analytics.json unreadable: %s" % e}
+
+
+def run_security(url, out):
+    if not os.path.isfile(SECURITY):
+        return {"error": "security.js not found"}
+    try:
+        subprocess.run(["node", SECURITY, url, "--out", out],
+                       capture_output=True, text=True, timeout=420)
+    except Exception as e:
+        return {"error": "security.js could not run: %s" % e}
+    f = os.path.join(out, "security.json")
+    if not os.path.isfile(f):
+        return {"error": "security.js produced no security.json"}
+    try:
+        return json.loads(io.open(f, encoding="utf-8").read())
+    except Exception as e:
+        return {"error": "security.json unreadable: %s" % e}
+
+
+def security_problems(data):
+    """BLOCKER and MAJOR only, then a counted line for the weekly diff.
+
+    The severity prefix is load-bearing: blockers() keys off it to decide what
+    stops a launch, so a counted line must never start with BLOCKER.
+    """
+    if not isinstance(data, dict) or data.get("error"):
+        return ["security: %s" % (data or {}).get("error", "did not run")]
+    out = []
+    for f in data.get("findings") or []:
+        if f.get("sev") in ("BLOCKER", "MAJOR"):
+            out.append("%s: %s" % (f.get("sev"), f.get("title")))
+    # Counted every time. A header that quietly disappears in a deploy, or a
+    # third-party script that appears, is exactly what a weekly run is for and
+    # no threshold catches it.
+    out.append("surface: %d third party script origin(s), %d cookie(s), %d script(s) read"
+               % (len(data.get("thirdParty") or []), data.get("cookies") or 0,
+                  data.get("scriptsScanned") or 0))
+    return out
 
 
 def analytics_problems(data):
@@ -361,6 +403,8 @@ def snapshot(job, label):
                   if "a11y" in wants else None)
         f_an = (ex.submit(run_analytics, url, os.path.join(out, "analytics"))
                 if "analytics" in wants else None)
+        f_sec = (ex.submit(run_security, url, os.path.join(out, "security"))
+                 if "security" in wants else None)
         f_par = None
         if "parity" in wants and job.get("old_url"):
             f_par = ex.submit(
@@ -373,6 +417,7 @@ def snapshot(job, label):
         perf_data = f_perf.result() if f_perf else None
         a11y_data = f_a11y.result() if f_a11y else None
         an_data = f_an.result() if f_an else None
+        sec_data = f_sec.result() if f_sec else None
         recon_txt = f_recon.result() if f_recon else ""
         par_txt = f_par.result() if f_par else ""
 
@@ -386,8 +431,10 @@ def snapshot(job, label):
         "perf": perf_problems(perf_data) if f_perf else [],
         "a11y": a11y_problems(a11y_data) if f_a11y else [],
         "analytics": analytics_problems(an_data) if f_an else [],
+        "security": security_problems(sec_data) if f_sec else [],
         "ran": [k for k in ("launch", "responsive", "parity", "recon",
-                            "perf", "a11y", "analytics") if k in wants],
+                            "perf", "a11y", "analytics", "security")
+                if k in wants],
         "qa_dir": out,
         "raw_launch": check_txt,
     }
@@ -396,8 +443,15 @@ def snapshot(job, label):
 
 
 def blockers(snap):
-    """Everything that should stop a launch."""
-    return (snap.get("launch") or []) + (snap.get("responsive") or [])
+    """Everything that should stop a launch.
+
+    Security contributes only its BLOCKER lines. A missing CSP is a real
+    finding and it is not a reason to refuse a launch: a gate that will not
+    open for the normal state of the web is a gate people learn to force. A
+    key in the bundle or a readable .env is a different matter.
+    """
+    sec = [l for l in (snap.get("security") or []) if l.startswith("BLOCKER")]
+    return (snap.get("launch") or []) + (snap.get("responsive") or []) + sec
 
 
 def digest(snap, title):
@@ -412,7 +466,8 @@ def digest(snap, title):
                       ("parity", "Content parity"),
                       ("perf", "Load"),
                       ("a11y", "Accessibility"),
-                      ("analytics", "Analytics")):
+                      ("analytics", "Analytics"),
+                      ("security", "Security")):
         if key not in ran:
             continue
         rows = snap.get(key) or []
@@ -574,7 +629,7 @@ def cmd_verify(a):
 
 WATCH_KEYS = (("launch", "Launch files"), ("responsive", "Responsive QA"),
               ("perf", "Load"), ("a11y", "Accessibility"),
-              ("analytics", "Analytics"))
+              ("analytics", "Analytics"), ("security", "Security"))
 
 
 def cmd_watch(a):

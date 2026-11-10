@@ -1,6 +1,6 @@
 ---
 name: fix-job
-description: Run client site work end to end as a job with state, in four types - fix (something live is wrong), intake (a new client, read everything, change nothing), golive (the launch gate, nothing ships with a blocker standing) and watch (a site that is already live: run it weekly and it reports only what changed, including a form that has quietly disappeared or a page that has doubled in weight). Every check runs at once, the job stops at the human gate, and verify diffs against the before state. Use when a client reports a problem, when a new client arrives, before any launch, or when picking up work left half done. Triggers on "fix karo", "ye issue hai", "client ne bola hai", "form kaam nahi kar raha", "naya client", "new client", "intake", "go live", "launch", "live karna hai", "job", "resume", "watch", "monitor karo", "sab theek chal raha hai", "leads aa rahe hain", "weekly check". It owns "go live": the launch gate runs site-recon, migration-parity, responsive-qa and launch-files as its checks, so those do not need calling separately.
+description: Run client site work end to end as a job with state, in four types - fix (something live is wrong), intake (a new client, read everything, change nothing), golive (the launch gate, nothing ships with a blocker standing) and watch (a site that is already live: run it weekly and it reports only what changed, including a form that has quietly disappeared or a page that has doubled in weight). Every check runs at once, the job stops at the human gate, and verify diffs against the before state. Use when a client reports a problem, when a new client arrives, before any launch, or when picking up work left half done. Triggers on "fix karo", "ye issue hai", "client ne bola hai", "form kaam nahi kar raha", "naya client", "new client", "intake", "go live", "launch", "live karna hai", "job", "resume", "watch", "monitor karo", "sab theek chal raha hai", "leads aa rahe hain", "weekly check". It owns "go live": the launch gate runs site-recon, migration-parity, responsive-qa, launch-files and security-pass as its checks, so those do not need calling separately.
 ---
 
 # Client work, run as a job
@@ -65,9 +65,15 @@ the client as plainly as a list of problems would be.
 
 ## golive - the launch gate
 
-Runs the same checks as `fix`, but **close refuses while a blocker is
-standing** and exits non-zero. A launch gate that waves things through is not
-a gate.
+Runs what `fix` runs, plus the security pass, and **close refuses while a
+blocker is standing** and exits non-zero. A launch gate that waves things
+through is not a gate.
+
+What holds a launch is deliberately narrow: no https, an invalid certificate,
+active mixed content, a form posting in the clear, a readable `.env`, a key
+shipped into the bundle. A missing Content-Security-Policy is reported and does
+not hold the launch - a gate that refuses to open for the normal state of the
+web is a gate people learn to force.
 
 If it ships anyway, that is a decision someone makes, not a check that is
 skipped. `--force` closes it and writes `CLOSED OVER STANDING BLOCKERS` into
@@ -128,10 +134,14 @@ this and will not accept a build log in place of an eye. See
 
 ## Why diagnose runs everything at once
 
-The three checks are independent and each takes a while. Run serially they
-cost several minutes of waiting and encourage skipping the slow one. Run
-together they cost the slowest. There is no reason to look at only part of a
-site when the whole measurement is this cheap.
+The checks are independent and each takes a while. Run serially they cost
+several minutes of waiting and encourage skipping the slow one. Run together
+they cost the slowest. There is no reason to look at only part of a site when
+the whole measurement is this cheap.
+
+Four at a time, not all of them: a `watch` has six checks and five of them
+launch a browser, so the cap is there to keep the machine usable rather than
+because the work is ordered.
 
 The before snapshot also settles the argument that costs the most time later:
 *was that already broken, or did we break it?* Without a before state, that is

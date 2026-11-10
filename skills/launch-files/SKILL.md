@@ -224,3 +224,8 @@ again and compare against the run from before the change.
 
 A site that returns the homepage for `/robots.txt` has a catch-all route eating
 it — the file is not being served at all. See the `seo-complete` skill.
+
+The same catch-all hides the opposite problem too: files that must **not** be
+served. Before a launch, run `security-pass` as well — it checks that `/.env`,
+`/.git` and config backups are not readable, and that no key has been shipped
+into the browser bundle.

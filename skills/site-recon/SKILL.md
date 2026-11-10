@@ -32,6 +32,7 @@ useful signal there is.
 | Cloudflare proxy (orange cloud) | Hides the real origin and breaks domain binding on Lovable and Vercel-style hosts. |
 | IP, reverse DNS | Names the real host, which the panel often does not. |
 | TLS issuer, SANs, days to expiry | A certificate on a different domain name tells you where the site really lives. |
+| Security headers, captured | Recorded as facts, not judged. `security-pass` is the skill that judges them, checks for a key shipped into the bundle, and says what is safe to launch. |
 | Platform / CMS, framework, analytics IDs | Decides what can and cannot be built, and which skills apply. |
 | Title, H1, meta, favicon, logo, OG image, phone, email | The brand facts to carry into a rebuild, and where a staging URL has leaked into production. |
 | robots.txt, sitemap.xml and its URL count | The page inventory for a migration. |

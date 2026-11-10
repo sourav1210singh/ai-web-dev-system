@@ -77,9 +77,14 @@ def main():
 
     # --- the state machine, with the network stubbed ----------------------
     state = {"launch": "  favicon    0 bytes\n  llms       MISSING (404)",
-             "rqa": [{"sev": "BLOCKER", "width": 390, "msg": "sideways scroll"}]}
+             "rqa": [{"sev": "BLOCKER", "width": 390, "msg": "sideways scroll"}],
+             # golive and intake both run the security pass now, so it is
+             # stubbed here or the suite goes out to the network.
+             "security": {"findings": [], "thirdParty": [], "cookies": 0,
+                          "scriptsScanned": 3}}
     job.run_check = lambda d: state["launch"]
     job.run_rqa = lambda u, o: state["rqa"]
+    job.run_security = lambda u, o: state["security"]
 
     rc, out = run(job.cmd_new, {"name": "Demo Fix", "domain": "example.test",
                                 "dir": tmp, "route": "lovable"})
@@ -236,6 +241,47 @@ def main():
     rc, out = run(job.cmd_close, {"id": jid5, "dir": tmp, "summary": "live"})
     ok("a clean golive closes without force", rc == 0, "rc=%d" % rc)
 
+    # --- golive and a key in the bundle ----------------------------------
+    # The whole reason the security pass is one of the launch gate's checks.
+    state["launch"] = "  favicon    5430 bytes"
+    state["rqa"] = []
+    state["security"] = {"thirdParty": ["cdn.example"], "cookies": 2,
+                         "scriptsScanned": 4, "findings": [
+        {"sev": "BLOCKER", "title": "Supabase service_role key - bypasses row level security"},
+        {"sev": "MAJOR", "title": "No Content-Security-Policy"}]}
+    rc, out = run(job.cmd_new, {"name": "Leaky launch", "domain": "example.test",
+                                "dir": tmp, "type": "golive"})
+    jid6 = [l.split()[1] for l in out.splitlines()
+            if l.startswith("job ") and " opened" in l][0]
+    rc, out = run(job.cmd_diagnose, {"id": jid6, "dir": tmp})
+    ok("security is one of the launch gate's checks",
+       "security" in job.JOB_TYPES["golive"]["checks"])
+    ok("the digest has a security section", "**Security**" in out)
+    rc, out = run(job.cmd_close, {"id": jid6, "dir": tmp, "summary": "ship it"})
+    ok("a key in the bundle stops the launch", rc == 1, "rc=%d" % rc)
+    ok("the refusal names the key", "service_role" in out)
+
+    # A missing CSP is a real finding and not a reason to refuse a launch.
+    state["security"] = {"thirdParty": [], "cookies": 0, "scriptsScanned": 1,
+                         "findings": [{"sev": "MAJOR", "title": "No Content-Security-Policy"},
+                                      {"sev": "MINOR", "title": "No Referrer-Policy"}]}
+    rc, out = run(job.cmd_new, {"name": "No CSP", "domain": "example.test",
+                                "dir": tmp, "type": "golive"})
+    jid7 = [l.split()[1] for l in out.splitlines()
+            if l.startswith("job ") and " opened" in l][0]
+    run(job.cmd_diagnose, {"id": jid7, "dir": tmp})
+    rc, out = run(job.cmd_close, {"id": jid7, "dir": tmp, "summary": "live"})
+    ok("a major security finding does not refuse the launch on its own",
+       rc == 0, "rc=%d - a gate that blocks the normal web gets forced" % rc)
+    j, _p = job.find(jid7, tmp)
+    ok("but it is still recorded against the job",
+       any("Content-Security-Policy" in l
+           for l in j["snapshots"]["before"]["security"]))
+    ok("the counted surface line never starts with BLOCKER",
+       not any(l.startswith("BLOCKER") and "surface:" in l
+               for l in j["snapshots"]["before"]["security"]),
+       "blockers() keys off that prefix")
+
     rc, out = run(job.cmd_new, {"name": "Nope", "domain": "example.test",
                                 "dir": tmp, "type": "nonsense"})
     ok("an unknown job type is refused", rc == 2)
@@ -261,6 +307,9 @@ def main():
     job.run_analytics = lambda u, o: {
         "findings": [],
         "hits": [{"kind": "hit", "tid": "G-ABC123", "event": "page_view"}]}
+    job.run_security = lambda u, o: state["security"]
+    state["security"] = {"findings": [], "thirdParty": ["cdn.example"],
+                         "cookies": 2, "scriptsScanned": 4}
 
     rc, out = run(job.cmd_new, {"name": "Watch It", "domain": "example.test",
                                 "dir": tmp, "type": "watch", "route": "lovable"})
@@ -331,6 +380,22 @@ def main():
 
     ok("analytics is one of the watch checks",
        "analytics" in job.JOB_TYPES["watch"]["checks"])
+
+    # A deploy that ships a key, or loses a header, looks like nothing from
+    # the outside: the page still loads and nothing is visibly broken.
+    state["security"] = {"findings": [
+        {"sev": "BLOCKER", "title": "/.env is publicly readable: environment file"}],
+        "thirdParty": ["cdn.example", "tracker.example"], "cookies": 2,
+        "scriptsScanned": 4}
+    rc, out = run(job.cmd_watch, {"id": wid, "dir": tmp})
+    ok("a newly readable .env is reported as new",
+       "/.env is publicly readable" in out,
+       [l for l in out.splitlines() if "NEW" in l][:2])
+    ok("a third-party script origin appearing shows up in the diff",
+       "2 third party script origin(s)" in out,
+       [l for l in out.splitlines() if "surface:" in l][:2])
+    ok("security is one of the watch checks",
+       "security" in job.JOB_TYPES["watch"]["checks"])
 
     ok("watch has no apply stage, because it changes nothing",
        "apply" not in job.JOB_TYPES["watch"]["stages"])

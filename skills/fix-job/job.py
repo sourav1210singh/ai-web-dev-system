@@ -32,6 +32,7 @@ A11Y = os.path.join(SKILLS, "responsive-qa", "a11y.js")
 ANALYTICS = os.path.join(SKILLS, "forms-and-leads", "analytics.js")
 SECURITY = os.path.join(SKILLS, "security-pass", "security.js")
 SEO = os.path.join(SKILLS, "seo-complete", "seo.js")
+MAIL = os.path.join(SKILLS, "forms-and-leads", "mail.py")
 ROLLBACK = os.path.join(HERE, "rollback.py")
 PARITY = os.path.join(SKILLS, "migration-parity", "parity.py")
 
@@ -58,7 +59,7 @@ JOB_TYPES = {
         # rollback is a precondition of the launch rather than a measurement
         # of the site, which is why it belongs to this type alone.
         "checks": ["launch", "responsive", "parity", "security", "rollback",
-                   "seo"],
+                   "seo", "mail"],
         "gate": True, "strict": True,
         "what": "the launch gate: nothing ships with a blocker standing",
     },
@@ -68,7 +69,7 @@ JOB_TYPES = {
     # skill says so rather than pretending otherwise.
     "drop": {
         "stages": ["recon", "diagnose", "report", "close"],
-        "checks": ["recon", "launch", "seo", "security"],
+        "checks": ["recon", "launch", "seo", "security", "mail"],
         "gate": False, "strict": False,
         "what": "rankings or traffic fell: find out why before changing anything",
     },
@@ -78,7 +79,7 @@ JOB_TYPES = {
     "watch": {
         "stages": ["diagnose", "report"],
         "checks": ["launch", "responsive", "perf", "a11y", "analytics",
-                   "security", "seo"],
+                   "security", "seo", "mail"],
         "gate": False, "strict": False,
         "what": "a site that is already live: has anything broken since last time",
     },
@@ -210,6 +211,36 @@ def run_security(url, out):
         return json.loads(io.open(f, encoding="utf-8").read())
     except Exception as e:
         return {"error": "security.json unreadable: %s" % e}
+
+
+def run_mail(domain):
+    """Will the client's mail authenticate. Takes a domain, not a URL."""
+    if not os.path.isfile(MAIL):
+        return {"error": "mail.py not found"}
+    host = re.sub(r"^https?://", "", domain or "").strip("/").split("/")[0]
+    try:
+        p = subprocess.run([sys.executable, "-X", "utf8", MAIL, host, "--json"],
+                           capture_output=True, text=True, timeout=300)
+    except Exception as e:
+        return {"error": "mail.py could not run: %s" % e}
+    try:
+        return json.loads(p.stdout)
+    except Exception as e:
+        return {"error": "mail.py gave no readable report: %s" % e}
+
+
+def mail_problems(data):
+    if not isinstance(data, dict) or data.get("error"):
+        return ["mail: %s" % (data or {}).get("error", "did not run")]
+    out = []
+    for f in data.get("findings") or []:
+        if f.get("sev") in ("BLOCKER", "MAJOR"):
+            out.append("%s: %s" % (f.get("sev"), f.get("title")))
+    # Counted every time. An SPF lookup count that creeps up to the limit is
+    # the thing a weekly run should catch before it crosses.
+    out.append("spf: %s of %s lookup(s)"
+               % ((data.get("lookups") or {}).get("count", "?"), 10))
+    return out
 
 
 def run_seo(url, out):
@@ -485,6 +516,8 @@ def snapshot(job, label):
                 if "rollback" in wants else None)
         f_seo = (ex.submit(run_seo, url, os.path.join(out, "seo"))
                  if "seo" in wants else None)
+        f_mail = (ex.submit(run_mail, domain)
+                  if "mail" in wants else None)
         f_par = None
         if "parity" in wants and job.get("old_url"):
             f_par = ex.submit(
@@ -500,6 +533,7 @@ def snapshot(job, label):
         sec_data = f_sec.result() if f_sec else None
         rb_data = f_rb.result() if f_rb else None
         seo_data = f_seo.result() if f_seo else None
+        mail_data = f_mail.result() if f_mail else None
         recon_txt = f_recon.result() if f_recon else ""
         par_txt = f_par.result() if f_par else ""
 
@@ -516,9 +550,11 @@ def snapshot(job, label):
         "security": security_problems(sec_data) if f_sec else [],
         "rollback": rollback_problems(rb_data) if f_rb else [],
         "seo": seo_problems(seo_data) if f_seo else [],
+        "mail": mail_problems(mail_data) if f_mail else [],
         "ran": [k for k in ("launch", "responsive", "parity", "recon",
                             "perf", "a11y", "analytics", "security",
-                            "rollback", "seo") if k in wants],
+                            "rollback", "seo", "mail")
+                if k in wants],
         "qa_dir": out,
         "raw_launch": check_txt,
     }
@@ -544,8 +580,13 @@ def blockers(snap):
     # hold a launch. A broken internal link, a noindexed page or two addresses
     # both serving the site does.
     seo = [l for l in (snap.get("seo") or []) if l.startswith("BLOCKER")]
+    # Mail the same way. A p=none DMARC is reported and does not hold a launch.
+    # No MX, two SPF records, SPF over the lookup limit or +all do: each of
+    # those means the client's mail is broken or unauthenticated the moment the
+    # site goes live, and the enquiry form is the thing being launched.
+    mail = [l for l in (snap.get("mail") or []) if l.startswith("BLOCKER")]
     return ((snap.get("launch") or []) + (snap.get("responsive") or [])
-            + sec + rb + seo)
+            + sec + rb + seo + mail)
 
 
 def digest(snap, title):
@@ -563,7 +604,8 @@ def digest(snap, title):
                       ("analytics", "Analytics"),
                       ("security", "Security"),
                       ("rollback", "Rollback plan"),
-                      ("seo", "SEO")):
+                      ("seo", "SEO"),
+                      ("mail", "Mail authentication")):
         if key not in ran:
             continue
         rows = snap.get(key) or []
@@ -726,7 +768,7 @@ def cmd_verify(a):
 WATCH_KEYS = (("launch", "Launch files"), ("responsive", "Responsive QA"),
               ("perf", "Load"), ("a11y", "Accessibility"),
               ("analytics", "Analytics"), ("security", "Security"),
-              ("seo", "SEO"))
+              ("seo", "SEO"), ("mail", "Mail authentication"))
 
 
 def cmd_watch(a):

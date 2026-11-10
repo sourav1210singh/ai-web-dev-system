@@ -1,6 +1,6 @@
 ---
 name: forms-and-leads
-description: Make a form actually deliver a lead, check that the analytics tags actually fire once and without the lead's data in them, and keep that data out of the places it must never go. Covers the silent-failure traps (dead nonces, expired reCAPTCHA tokens, synthetic clicks), what a real test submission proves, BCC and recipient rules, and the hard privacy line on pixels and AI services. Use whenever building, moving, fixing or testing any form, or when leads stop arriving. Triggers on "form", "lead", "enquiry", "contact form", "form kaam nahi kar raha", "leads nahi aa rahe", "submission", "analytics", "GA4", "GTM", "tag fire ho raha hai", "conversion track", "pixel", "reports khali hain".
+description: Make a form actually deliver a lead, check that the analytics tags actually fire once and without the lead's data in them, and check the mail can authenticate at all, and keep that data out of the places it must never go. Covers the silent-failure traps (dead nonces, expired reCAPTCHA tokens, synthetic clicks), what a real test submission proves, BCC and recipient rules, and the hard privacy line on pixels and AI services. Use whenever building, moving, fixing or testing any form, or when leads stop arriving. Triggers on "form", "lead", "enquiry", "contact form", "form kaam nahi kar raha", "leads nahi aa rahe", "submission", "analytics", "GA4", "GTM", "tag fire ho raha hai", "conversion track", "pixel", "reports khali hain", "mail spam me ja rahi hai", "email nahi pahunch rahi", "SPF", "DKIM", "DMARC", "deliverability".
 ---
 
 # Forms and leads
@@ -48,7 +48,64 @@ instead of saying the form works.
 | Synthetic JS clicks in the WP admin | WordPress settings | The setting looks saved and is not. Always save through the real UI and reload to confirm. |
 | A page rebuilt without its form | landing pages | The old page had a working lead form; the new one looks better and captures nothing. |
 | SFTP upload reporting success on a DNS failure | file deploys | `-w` prints "uploaded". Verify by checksum, never by the tool's own word. |
-| Email sent but undelivered | any | SPF, DKIM or a missing DMARC alignment. Check the destination, not the send log. |
+| Email sent but undelivered | any | SPF, DKIM or a missing DMARC alignment. Check the destination, not the send log. See below - most of this is now measurable. |
+
+## Will the mail authenticate at all
+
+```bash
+python "C:\Claude-Code\.ai-system\skills\forms-and-leads\mail.py" <domain> \
+  --out <project>\.claude-context\qa\mail
+```
+
+`site-recon` records MX, SPF, DMARC and the DKIM selectors. Recording them is
+not judging them, and the faults that matter all look fine in a DNS panel.
+
+**The one worth knowing about: SPF has a hard limit of ten DNS-querying terms.**
+RFC 7208 section 4.6.4 names them - `include`, `a`, `mx`, `ptr`, `exists` and
+the `redirect` modifier - and requires a receiver to return **permerror** past
+ten, which means SPF fails for every message the domain sends. `ip4`, `ip6` and
+`all` cost nothing.
+
+It is reached by adding one more sending service. A record reading
+
+```
+v=spf1 include:a include:b include:c mx a -all
+```
+
+shows five terms and can be fourteen once the includes are followed, because
+each include brings its own. **Nothing anywhere reports this.** The panel is
+tidy, the record is present, and authentication is simply off. `mail.py` counts
+it recursively and prints the chain so the cost of each include is visible.
+Large senders flatten their records into `ip4` blocks for exactly this reason.
+
+The rest of what it checks:
+
+| Finding | Why it is what it is |
+|---|---|
+| Two SPF records | A blocker. Not "the first one wins" - two records is a permerror and SPF fails entirely. Merge them. |
+| `+all` | A blocker, and worse than no SPF: it explicitly authorises every sender on the internet. |
+| `?all`, or no `all` at all | Asserts nothing. `~all` while a change beds in, `-all` once the sender list is known to be complete. |
+| No MX | A blocker if the client reads mail here. If mail lives elsewhere on purpose, record that so nobody "fixes" it. |
+| `p=none` in DMARC | Monitoring with no enforcement. The right first step and the wrong permanent state, and where most domains sit for years believing they are protected. Reported, does not hold a launch. |
+| No `rua` | Nobody receives the reports, so nobody can see which senders fail before enforcing. |
+| An empty `p=` on a DKIM selector | The key is revoked; anything signed with it fails. |
+| `ptr` | RFC 7208 marks it "do not use". |
+
+Two honest limits, which the report states:
+
+- **Coherent records are necessary, not sufficient.** They do not prove a
+  message arrived - reputation, content and the receiving server decide too.
+- **Only the common DKIM selector names are tried.** No selector found means
+  none of those names resolved, not that there is no DKIM. Confirm with the
+  sending service.
+
+So this does not replace the rule at the top of this skill. **Send a real test
+and confirm it in the destination inbox** - the inbox, not the send log, and
+look in the spam folder before calling it delivered.
+
+`fix-job` runs it on **golive**, **watch** and **drop**: a bad domain move kills
+search and mail together, and the SPF lookup count creeping towards ten is
+exactly what a weekly run should catch before it crosses.
 
 ## Privacy — the hard line
 

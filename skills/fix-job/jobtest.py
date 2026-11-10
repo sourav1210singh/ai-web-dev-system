@@ -87,12 +87,14 @@ def main():
              "rollback": {"findings": [], "plan": {"verified_on": "2026-11-10"}},
              "seo": {"findings": [], "counts": {"pages read": 4,
                                                 "internal links checked": 20,
-                                                "internal links broken": 0}}}
+                                                "internal links broken": 0}},
+             "mail": {"findings": [], "lookups": {"count": 3}}}
     job.run_check = lambda d: state["launch"]
     job.run_rqa = lambda u, o: state["rqa"]
     job.run_security = lambda u, o: state["security"]
     job.run_rollback = lambda p: state["rollback"]
     job.run_seo = lambda u, o: state["seo"]
+    job.run_mail = lambda d: state["mail"]
 
     rc, out = run(job.cmd_new, {"name": "Demo Fix", "domain": "example.test",
                                 "dir": tmp, "route": "lovable"})
@@ -432,6 +434,46 @@ def main():
     j, _p = job.find(jidd, tmp)
     ok("the findings are recorded against the job",
        any("do not resolve" in l for l in j["snapshots"]["before"]["seo"]))
+
+    # --- golive and the client's mail -------------------------------------
+    # The enquiry form is the thing being launched, so mail that cannot
+    # authenticate is not a detail.
+    state["seo"] = {"findings": [], "counts": {"pages read": 4,
+                                               "internal links checked": 20,
+                                               "internal links broken": 0}}
+    state["mail"] = {"lookups": {"count": 14}, "findings": [
+        {"sev": "BLOCKER", "title": "SPF needs 14 DNS lookups, over the limit of 10"},
+        {"sev": "MAJOR", "title": "DMARC is p=none: monitoring only, no enforcement"}]}
+    rc, out = run(job.cmd_new, {"name": "Mail broken", "domain": "example.test",
+                                "dir": tmp, "type": "golive"})
+    jidm = [l.split()[1] for l in out.splitlines()
+            if l.startswith("job ") and " opened" in l][0]
+    rc, out = run(job.cmd_diagnose, {"id": jidm, "dir": tmp})
+    ok("mail is one of the launch gate's checks",
+       "mail" in job.JOB_TYPES["golive"]["checks"])
+    ok("the digest has a mail section", "**Mail authentication**" in out)
+    rc, out = run(job.cmd_close, {"id": jidm, "dir": tmp, "summary": "ship"})
+    ok("SPF over the lookup limit stops the launch", rc == 1, "rc=%d" % rc)
+    ok("the refusal names it", "over the limit of 10" in out)
+
+    state["mail"] = {"lookups": {"count": 3}, "findings": [
+        {"sev": "MAJOR", "title": "DMARC is p=none: monitoring only, no enforcement"}]}
+    rc, out = run(job.cmd_new, {"name": "Mail ok", "domain": "example.test",
+                                "dir": tmp, "type": "golive"})
+    jidn = [l.split()[1] for l in out.splitlines()
+            if l.startswith("job ") and " opened" in l][0]
+    run(job.cmd_diagnose, {"id": jidn, "dir": tmp})
+    rc, out = run(job.cmd_close, {"id": jidn, "dir": tmp, "summary": "live"})
+    ok("p=none is reported and does not stop the launch", rc == 0, "rc=%d" % rc)
+    j, _p = job.find(jidn, tmp)
+    ok("the SPF lookup count is recorded for the weekly diff",
+       any("spf: 3 of 10" in l for l in j["snapshots"]["before"]["mail"]),
+       j["snapshots"]["before"]["mail"])
+    ok("mail is watched weekly and appears in the diff keys",
+       "mail" in job.JOB_TYPES["watch"]["checks"]
+       and "mail" in [k for k, _ in job.WATCH_KEYS])
+    ok("a drop job checks mail too, because a bad domain move kills both",
+       "mail" in job.JOB_TYPES["drop"]["checks"])
 
     rc, out = run(job.cmd_new, {"name": "Nope", "domain": "example.test",
                                 "dir": tmp, "type": "nonsense"})

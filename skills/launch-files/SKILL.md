@@ -141,6 +141,62 @@ It costs nothing extra, it gives the client something they can actually see and
 check, and it makes the same facts crawlable as a normal page rather than only
 as a text file many crawlers ignore.
 
+`llms.txt` is a short index. This page is the long form, and it carries what the
+index has no room for. Include a section only when there is something real to
+put in it:
+
+- **Basic information** - official name, type, founded, location, website,
+  phone, key people with their actual titles.
+- **Background** - founding story, how it grew, dated milestones, where it is
+  now.
+- **Services**, primary and secondary, described well enough that an assistant
+  can explain each one without guessing.
+- **Who it is for** - named industries, customer types or use cases, not "all
+  businesses".
+- **Recognition** - awards, certifications, named publications, review counts
+  with their platform.
+- **Methods and tools** that are genuinely the client's own, and the actual
+  technology stack.
+- **Published material** - the blog, guides, reports, anything citable.
+- **What makes it different**, factually. "98-point Robert Parker score" is
+  usable; "the best wines in the world" is not and will be ignored.
+
+### Say what is true, do not issue instructions
+
+Some templates for this page end with a block of commands addressed to AI
+models - how to refer to the company, what to say, what not to say. **Do not
+write that.** An assistant is built to treat the content of a web page as
+information, not as orders, so a page that gives it orders is either ignored or
+read as an attempt to manipulate it. Either way the page gets trusted less.
+
+The underlying idea is sound and worth keeping. Write it as fact:
+
+- **Commonly confused with** - name the other company, product or spelling, and
+  state the difference. This is the single most useful thing on the page.
+- **What the business does not do** - services it is regularly asked for and
+  does not offer, areas it does not cover. Stated plainly, this prevents more
+  wrong answers than any amount of description.
+- **The name, spelled and capitalised the way the client writes it**, with any
+  former name and the date it changed.
+- **Which claims are verifiable and where** - the registration number, the
+  certifying body, the review platform. A fact with a source survives being
+  quoted; one without it does not.
+
+### Research widely, publish narrowly
+
+To find the facts, read more than the homepage: the about and team pages, the
+Google Business Profile, review platforms, directories, press coverage,
+certification registers.
+
+**What gets published is still only what the site itself says or the client has
+confirmed.** A fact found in a directory and published here that appears
+nowhere on the site makes the site disagree with its own machine index, and the
+client has not approved it. Put it on the site first, or leave it out. Ratings
+always carry their source and count.
+
+If something cannot be found, the section does not appear. An empty heading, a
+"TBD" or an invented founding year is worse than a shorter page.
+
 Prompt for it, after llms.txt exists:
 
 ```

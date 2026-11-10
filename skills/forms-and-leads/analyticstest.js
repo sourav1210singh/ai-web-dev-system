@@ -12,6 +12,7 @@ const http = require("http");
 const os = require("os");
 const path = require("path");
 const { spawn } = require("child_process");
+const A = require("./analytics.js");
 
 const HERE = __dirname;
 const RESULTS = [];
@@ -198,6 +199,74 @@ function run(args) {
     server.close();
     fs.rmSync(tmp, { recursive: true, force: true });
   }
+
+  // ---------------------------------------------- the conversion surface
+  // Checking which tags fire answers half the question. The other half is
+  // what should fire, and a site can report cleanly while the phone number,
+  // the WhatsApp button and the booking link go unrecorded.
+  const surf = (over) => Object.assign({
+    tel: [], whatsapp: 0, mailto: 0, cta: 0, cart: 0, booking: 0,
+    downloads: 0, video: 0, social: 0, chat: [],
+    forms: { elementor: 0, cf7: 0, wpforms: 0, gravity: 0, ninja: 0,
+             hubspot: 0, other: 0 },
+    listeners: {},
+  }, over || {});
+  const tagged = { gtm: ["GTM-ABC12"], ga4: ["G-ABC1234"] };
+  const untagged = { gtm: [], ga4: [] };
+  const sf = (s, d) => A.surfaceFindings(s, d);
+  const names = (l) => l.map((x) => x.title).join(" | ");
+
+  ok("a page with nothing trackable produces no surface findings",
+     sf(surf(), tagged).length === 0);
+
+  let r = sf(surf({ tel: ["Call now"], whatsapp: 1 }), untagged);
+  ok("conversion actions with no analytics at all is a blocker",
+     r.some((x) => x.sev === "BLOCKER"), names(r));
+  ok("and the blocker names the actions that cannot be recorded",
+     /phone \(1\)/.test(r[0].detail) && /WhatsApp \(1\)/.test(r[0].detail),
+     r[0].detail);
+
+  r = sf(surf({ tel: ["Call now"], whatsapp: 1 }), tagged);
+  ok("on a tagged page the surface is a note, not a defect",
+     r.length === 1 && r[0].sev === "NOTE", names(r));
+  ok("and it says a page load cannot tell you which of them fire",
+     /fire on click/.test(r[0].detail),
+     "they are click actions, and one load is not a click");
+
+  for (const [key, name] of [["cf7", "Contact Form 7"], ["elementor", "Elementor"],
+                             ["wpforms", "WPForms"], ["gravity", "Gravity Forms"],
+                             ["ninja", "Ninja Forms"], ["hubspot", "HubSpot"]]) {
+    const o = {}; o[key] = 1;
+    const got = sf(surf({ forms: Object.assign(surf().forms, o) }), tagged);
+    ok("an AJAX " + name + " form with no listener is reported",
+       got.some((x) => x.sev === "MAJOR" && x.title.startsWith(name)), names(got));
+  }
+
+  const withListener = sf(surf({
+    forms: Object.assign(surf().forms, { cf7: 1 }),
+    listeners: { cf7: true } }), tagged);
+  ok("the same form with its success listener present is not reported",
+     !withListener.some((x) => x.sev === "MAJOR"), names(withListener));
+  ok("the finding names the event to listen for",
+     /wpcf7mailsent/.test(sf(surf({ forms: Object.assign(surf().forms, { cf7: 1 }) }),
+       tagged).find((x) => x.sev === "MAJOR").detail));
+  ok("and it says to check the container before concluding it is missing",
+     /check the GTM container/.test(
+       sf(surf({ forms: Object.assign(surf().forms, { cf7: 1 }) }), tagged)
+         .find((x) => x.sev === "MAJOR").detail),
+     "GTM injects listeners at runtime");
+
+  ok("a plain HTML form is not treated as an AJAX form",
+     !sf(surf({ forms: Object.assign(surf().forms, { other: 2 }) }), tagged)
+       .some((x) => x.sev === "MAJOR"),
+     "a native Form Submission trigger works for those");
+
+  ok("a chat widget counts as a conversion action",
+     /chat widget \(tidio\)/.test(sf(surf({ chat: ["tidio"] }), tagged)[0].detail));
+  ok("every AJAX form plugin that needs its own signal is covered",
+     A.AJAX_FORMS.length === 6, A.AJAX_FORMS.map((x) => x[0]).join(","));
+  ok("a missing surface is handled rather than throwing",
+     A.surfaceFindings(null, tagged).length === 0);
 
   const bad = RESULTS.filter((x) => !x).length;
   console.log(`\n${RESULTS.length - bad}/${RESULTS.length} checks passed`);

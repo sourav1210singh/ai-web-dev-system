@@ -138,6 +138,136 @@ const DECLARED = () => {
   };
 };
 
+/**
+ * Everything on this page a visitor could convert through.
+ *
+ * Checking which tags fire answers half the question. The other half is what
+ * *should* fire, and nothing was looking at it: a site can have a clean
+ * analytics report and leave the phone number, the WhatsApp button and the
+ * booking link untracked, so the client's "conversions" are the forms only and
+ * the number is wrong in a direction nobody questions.
+ */
+const SURFACE = () => {
+  const list = (sel) => Array.from(document.querySelectorAll(sel));
+  const txt = (e) => (e.innerText || e.textContent || "").replace(/\s+/g, " ")
+    .trim().slice(0, 50);
+  const scripts = Array.from(document.querySelectorAll("script"))
+    .map((s) => s.textContent || "").join("\n");
+
+  // Form plugins, because each one needs a different success signal.
+  const forms = {
+    elementor: list("form.elementor-form").length,
+    cf7: list("form.wpcf7-form").length,
+    wpforms: list("form.wpforms-form").length,
+    gravity: list('form[id^="gform_"]').length,
+    ninja: list(".nf-form-cont").length,
+    hubspot: list('.hs-form, form[data-form-id]').length,
+    other: list("form").filter((f) => !f.closest(
+      '[class*="elementor"],[class*="wpforms"],[class*="wpcf7"],[id^="gform"],'
+      + '.nf-form-cont,.hs-form')).length,
+  };
+
+  return {
+    tel: list('a[href^="tel:"]').map((e) => txt(e) || e.getAttribute("href")),
+    whatsapp: list('a[href*="wa.me"],a[href*="api.whatsapp"],a[href*="whatsapp://"]').length,
+    mailto: list('a[href^="mailto:"]').length,
+    forms,
+    cta: list('[id*="popup"],[class*="popup-trigger"],[data-toggle="modal"],'
+      + '[data-bs-toggle="modal"],[data-micromodal-trigger],[class*="popmake"],'
+      + '.pum-trigger,[data-open]').length,
+    cart: list('button[name="add"],.add_to_cart_button,[data-action="add-to-cart"],'
+      + '[class*="add-to-cart"],.product-form__submit').length,
+    booking: list('a[href*="calendly"],a[href*="acuityscheduling"],a[href*="setmore"],'
+      + 'a[href*="simplybook"],[class*="calendly"]').length,
+    downloads: list('a[href$=".pdf"],a[href$=".doc"],a[href$=".docx"],a[href$=".zip"]').length,
+    video: list('iframe[src*="youtube"],iframe[src*="youtu.be"],iframe[src*="vimeo"],video').length,
+    social: list('a[href*="facebook.com"],a[href*="instagram.com"],a[href*="linkedin.com"],'
+      + 'a[href*="tiktok.com"],a[href*="youtube.com"]').length,
+    chat: Object.entries({
+      tidio: !!document.querySelector('[id*="tidio"]'),
+      intercom: !!(window.Intercom || document.querySelector("#intercom-container")),
+      drift: !!(window.drift || document.querySelector("#drift-widget")),
+      tawk: !!(window.Tawk_API || document.querySelector("#tawk-widget")),
+      zendesk: !!(window.zE || document.querySelector('[id*="zendesk"]')),
+      crisp: !!(window.$crisp || document.querySelector(".crisp-client")),
+      freshchat: !!(window.fcWidget || document.querySelector("#fc_frame")),
+    }).filter(([, on]) => on).map(([k]) => k),
+    // Which AJAX success signals anything on the page is actually listening
+    // for. GTM injects its custom HTML into the page, so a listener installed
+    // through a tag shows up here too.
+    listeners: {
+      elementor: /elementor-message-success/.test(scripts),
+      cf7: /wpcf7mailsent/.test(scripts),
+      wpforms: /wpformsAjaxSubmitSuccess/.test(scripts),
+      gravity: /gform_confirmation_loaded/.test(scripts),
+      ninja: /nfFormSubmitResponse/.test(scripts),
+      hubspot: /hsFormCallback/.test(scripts),
+      calendly: /calendly\.event_scheduled/.test(scripts),
+    },
+  };
+};
+
+// Each AJAX form plugin shows success without a page load, so a native GTM
+// Form Submission trigger either never fires or fires on a failed submit.
+const AJAX_FORMS = [
+  ["elementor", "Elementor", "a MutationObserver on .elementor-message-success"],
+  ["cf7", "Contact Form 7", "the wpcf7mailsent event"],
+  ["wpforms", "WPForms", "the wpformsAjaxSubmitSuccess event"],
+  ["gravity", "Gravity Forms", "the gform_confirmation_loaded event"],
+  ["ninja", "Ninja Forms", "the native nfFormSubmitResponse dataLayer event"],
+  ["hubspot", "HubSpot", "the hsFormCallback message event"],
+];
+
+/** What could convert here, against what is set up to notice it. */
+function surfaceFindings(s, declared) {
+  const f = [];
+  if (!s) return f;
+  const add = (sev, title, detail) => f.push({ sev, title, detail });
+
+  const actions = [];
+  if ((s.tel || []).length) actions.push("phone (" + s.tel.length + ")");
+  if (s.whatsapp) actions.push("WhatsApp (" + s.whatsapp + ")");
+  if (s.mailto) actions.push("mailto (" + s.mailto + ")");
+  const formCount = Object.values(s.forms || {}).reduce((a, b) => a + b, 0);
+  if (formCount) actions.push("forms (" + formCount + ")");
+  if (s.cart) actions.push("add to cart (" + s.cart + ")");
+  if (s.booking) actions.push("booking link (" + s.booking + ")");
+  if (s.cta) actions.push("popup or CTA trigger (" + s.cta + ")");
+  if (s.downloads) actions.push("file download (" + s.downloads + ")");
+  if ((s.chat || []).length) actions.push("chat widget (" + s.chat.join(", ") + ")");
+  if (s.video) actions.push("video (" + s.video + ")");
+
+  const tagged = (declared && ((declared.gtm || []).length
+    || (declared.ga4 || []).length)) || false;
+  if (actions.length && !tagged) {
+    add("BLOCKER", actions.length + " conversion action(s) on the page and no "
+        + "analytics at all", actions.join("; ")
+        + " - none of it can be recorded.");
+  } else if (actions.length) {
+    add("NOTE", actions.length + " conversion action(s) found on this page",
+        actions.join("; ") + ". A page load cannot tell you which of these "
+        + "fire, because they fire on click. Exercise each one with --click, "
+        + "or read GA4 Realtime.");
+  }
+
+  for (const [key, name, how] of AJAX_FORMS) {
+    if (!(s.forms || {})[key]) continue;
+    if ((s.listeners || {})[key]) continue;
+    add("MAJOR", name + " form with no success listener on the page",
+        "It submits without a page load, so a native Form Submission trigger "
+        + "either never fires or fires on a failed submit. It needs " + how
+        + " pushing to the dataLayer. Nothing on this page listens for it - "
+        + "check the GTM container before concluding it is missing.");
+  }
+  if (s.booking && !(s.listeners || {}).calendly
+      && /calendly/i.test(JSON.stringify(s))) {
+    add("MINOR", "A booking link with no booking listener",
+        "Calendly confirms inside its own iframe, so the click is trackable "
+        + "and the booking is not, unless calendly.event_scheduled is handled.");
+  }
+  return f;
+}
+
 function findings(d) {
   const f = [];
   const add = (sev, title, detail) => f.push({ sev, title, detail });
@@ -263,6 +393,8 @@ async function measure(url, opts) {
   // had fired yet".
   await page.waitForTimeout(5000);
   const declared = await page.evaluate(DECLARED);
+  let surface = null;
+  try { surface = await page.evaluate(SURFACE); } catch (e) { /* page gone */ }
 
   if (opts.consent) {
     const accept = page.locator(
@@ -288,7 +420,7 @@ async function measure(url, opts) {
   }
 
   await browser.close();
-  return { url, status, width, declared, hits, clicked,
+  return { url, status, width, declared, surface, hits, clicked,
            consentAccepted: !!opts.consent };
 }
 
@@ -324,8 +456,8 @@ function report(d) {
   }
   L.push("");
 
-  const f = findings(d);
-  for (const sev of ["BLOCKER", "MAJOR", "CHECK"]) {
+  const f = findings(d).concat(surfaceFindings(d.surface, d.declared));
+  for (const sev of ["BLOCKER", "MAJOR", "CHECK", "MINOR", "NOTE"]) {
     const list = f.filter((x) => x.sev === sev);
     if (!list.length) continue;
     L.push(`## ${sev} (${list.length})`, "");
@@ -370,4 +502,5 @@ async function main() {
 
 if (require.main === module) main();
 module.exports = { findings, report, vendorOf, personalData, measurementId,
+                   surfaceFindings, AJAX_FORMS,
                   eventName, VENDORS };

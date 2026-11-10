@@ -95,6 +95,80 @@ what was intended and the network says what happened. What it finds:
   customer's email. Hashed is not plaintext and it is still their data going to
   an ads platform.
 
+It also inventories **what could convert on the page against what is set up to
+notice it**. Checking which tags fire answers half the question; the other half
+is what should fire. A site can have a clean analytics report while the phone
+number, the WhatsApp button, the booking link and the chat widget go
+unrecorded, so "conversions" means the forms only and the number is wrong in a
+direction nobody questions.
+
+What counts as a conversion action: `tel:`, `wa.me`, `mailto:`, forms, add to
+cart, a booking link, a popup or CTA trigger, a file download, a chat widget, a
+video. A page load cannot tell you which of them fire, because they fire on
+click - so the report lists them and says so rather than implying they are
+tracked.
+
+## AJAX forms need their own success signal
+
+This is the tracking equivalent of the dead-nonce trap above, and it is the
+most common reason a form "has tracking" and reports nothing.
+
+**A form that submits without a page load cannot use a native Form Submission
+trigger.** The trigger either never fires, or fires on a submit that failed
+validation - which is worse, because the number looks healthy.
+
+| Plugin | What to listen for |
+|---|---|
+| Elementor | a MutationObserver on `.elementor-message-success` |
+| Contact Form 7 | the `wpcf7mailsent` event |
+| WPForms | the `wpformsAjaxSubmitSuccess` event |
+| Gravity Forms | the `gform_confirmation_loaded` event |
+| Ninja Forms | its native `nfFormSubmitResponse` dataLayer event |
+| HubSpot | the `message` event with `type: "hsFormCallback"` |
+| Calendly | the `calendly.event_scheduled` message event |
+
+Each one pushes a `dataLayer` event, and the tag fires on that custom event
+rather than on a form submission. `analytics.js` reports a plugin it finds with
+no matching listener anywhere on the page - **check the container before
+concluding it is missing**, because a listener installed through a GTM custom
+HTML tag is injected at runtime.
+
+A plain HTML form that reloads or redirects to a thank-you page is fine with a
+native trigger, or with a pageview trigger on the thank-you URL.
+
+## Event names, so two sites can be compared
+
+Use GA4's own recommended names where one exists, because the standard ones get
+reporting Google builds for them. `generate_lead` for a lead form, not
+`form_submit_contact_v2`.
+
+| Action | Event |
+|---|---|
+| Form submit (lead) | `generate_lead` |
+| Phone click | `phone_call` |
+| WhatsApp click | `whatsapp_click` |
+| Email click | `email_click` |
+| CTA click / popup | `cta_click`, `popup_open` |
+| Add to cart, checkout, purchase | `add_to_cart`, `begin_checkout`, `purchase` |
+| Chat opened | `chat_initiated` |
+| Video | `video_start`, `video_progress`, `video_complete` |
+| File download | `file_download` |
+| Appointment booked | `appointment_booked` |
+
+## Audit before you add
+
+Read the container's existing tags and triggers first, and inspect the site
+before deciding what needs tracking. Do not assume the list. Duplicate tracking
+is not a smaller problem than no tracking - it inflates every number, which is
+the one failure that survives review because the graph still looks right.
+
+Two platform traps worth knowing before promising a client anything:
+
+- **Shopify blocks GTM on `/checkout`.** Purchase tracking there goes through
+  Shopify's own Customer Events or Web Pixels, not a GTM tag.
+- **Wix needs a paid plan to inject head code**; Squarespace allows code
+  injection. Check which before scoping the work.
+
 `--click "<selector>"` fires one interaction and reports what was sent, which
 is how you check a conversion actually registers. **Only on a page you have
 been told you may exercise** - never fire a real submission on a live client

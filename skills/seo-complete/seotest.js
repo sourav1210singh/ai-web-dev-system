@@ -50,6 +50,20 @@ ok("a title aligned with the H1 raises no drift note",
         "title-h1-drift"));
 ok("a title that opens differently from the H1 is noted",
    has(S.judgeTitle("Contact Us Today", "Dance Photography Houston"), "title-h1-drift"));
+// Found by the scaffold: a two-word H1 can never match the first three words
+// of a longer title, however exactly the title opens with it.
+ok("a short H1 the title opens with is not drift",
+   !has(S.judgeTitle("Contact us - Bright Works", "Contact us"), "title-h1-drift"),
+   "compared over the shorter of the two, not a fixed three words");
+ok("a one-word H1 the title opens with is not drift",
+   !has(S.judgeTitle("Pricing - Bright Works", "Pricing"), "title-h1-drift"));
+ok("a short H1 that genuinely differs is still drift",
+   has(S.judgeTitle("Our services - Bright Works", "Contact us"), "title-h1-drift"));
+ok("opensAlike compares over the shorter side",
+   S.opensAlike("Contact us - Brand", "Contact us")
+   && !S.opensAlike("Pricing - Brand", "Contact us"));
+ok("an empty H1 is not reported as drift by this check",
+   S.opensAlike("Anything at all", ""), "judgeH1 reports the absence");
 
 ok("a description over 160 is reported",
    has(S.judgeDescription("x".repeat(170)), "desc-long"));

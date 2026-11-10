@@ -1,6 +1,6 @@
 ---
 name: web-build-standards
-description: The house defaults for every website built or changed here — smooth scroll with Lenis, motion instead of a flat page, the small-phone overflow fixes, hero that fits the screen, no AI-tell punctuation or styling, SEO basics at build time, and forms that actually submit. Apply these without being asked on any new site, page, section or redesign, in Lovable, WordPress, Webflow, Next or plain HTML. Triggers on "website banao", "page banao", "landing page", "redesign", "section add karo", "flat lag raha hai", "animation nahi hai", "build a site", or any request that produces front-end output.
+description: The house defaults for every website built or changed here — smooth scroll with Lenis, motion instead of a flat page, the small-phone overflow fixes, hero that fits the screen, no AI-tell punctuation or styling, SEO basics at build time, and forms that actually submit. Ships a scaffold that already meets all of it and is tested against the SEO, accessibility and security passes. Apply these without being asked on any new site, page, section or redesign, in Lovable, WordPress, Webflow, Next or plain HTML. Triggers on "website banao", "page banao", "landing page", "redesign", "section add karo", "flat lag raha hai", "animation nahi hai", "build a site", "scaffold", "naya site shuru karo", "starter", or any request that produces front-end output.
 ---
 
 # House build standards
@@ -28,6 +28,51 @@ per build environment. Delete it before committing.
 Every one of these exists because it was asked for on a real project, usually
 more than once. Apply them by default. If one does not fit, say which and why
 rather than skipping it silently.
+
+## Start from the scaffold rather than from nothing
+
+```bash
+python "C:\Claude-Code\.ai-system\skills\web-build-standards\scaffold.py" \
+  <out-dir> --name "Business Name" --domain example.com [--design <DESIGN.md>]
+```
+
+Everything else in this system measures. This builds, and it exists because the
+gap was countable: thirteen tools that check a page against these standards and
+nothing that produced a page meeting them, so every default below had to be
+reapplied by hand on every build and the expensive ones were the ones quietly
+skipped.
+
+It writes plain HTML, which is the one output every route can start from and
+the only one the gates can run against without a build step. Port it to React
+or into a child theme from there.
+
+**What makes it more than a template is the test beside it.** `scaffoldtest.py`
+generates a site, serves it, and runs the real passes - `seo.js`, `a11y.js`,
+`security.js` - against the output, which must report **no blockers**. If a
+standard changes and the scaffold stops meeting it, that test fails. It has
+already earned its keep twice: it caught a `nap-no-address` finding against the
+scaffold's own structured data, and it found a false positive in `seo.js` where
+a two-word H1 could never match the first three words of a longer title that
+opened with exactly those words.
+
+With `--design`, tokens come from a `DESIGN.md` written by `study-reference`,
+which closes the loop: measure a real page, write the tokens, build with them,
+then measure the result.
+
+**Two findings it ships with on purpose**, both minor and both honest:
+
+- **Thin content.** A scaffold has no copy. `client-content-audit` is the skill
+  for getting that from the client, and publishing a skeleton is the thing it
+  exists to prevent.
+- **A placeholder figure.** Every number on the page reads `PLACEHOLDER`,
+  because an invented figure is the fastest way to lose a project. The README
+  it writes lists replacing them as step one.
+
+The phone number it ships is `0113 496 0000`, inside Ofcom's range reserved for
+documentation, so it can never reach a real person. `telephone` and `address`
+are deliberately **absent** from the JSON-LD: a phone with no postal address is
+reported by `seo.js`, and a placeholder address is read by a validator as the
+real thing, so both go in together once the client has confirmed them.
 
 ---
 

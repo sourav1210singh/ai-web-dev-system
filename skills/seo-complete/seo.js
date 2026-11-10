@@ -92,9 +92,7 @@ function judgeTitle(title, h1) {
                title: "Title uses a superlative, which Google rewrites",
                detail: "Then the title you wrote is not the title anyone sees." });
   }
-  if (h1 && t && firstWords(t, 3) && firstWords(t, 3) === firstWords(h1, 3)) {
-    // aligned - nothing to say
-  } else if (h1) {
+  if (h1 && !opensAlike(t, h1)) {
     out.push({ sev: "NOTE", id: "title-h1-drift",
                title: "Title and H1 do not open with the same words",
                detail: "The closer they are, the less Google rewrites the title." });
@@ -102,9 +100,29 @@ function judgeTitle(title, h1) {
   return out;
 }
 
-function firstWords(s, n) {
+function wordsOf(s) {
   return String(s || "").toLowerCase().replace(/[^a-z0-9\s]/g, " ")
-    .split(/\s+/).filter(Boolean).slice(0, n).join(" ");
+    .split(/\s+/).filter(Boolean);
+}
+
+function firstWords(s, n) {
+  return wordsOf(s).slice(0, n).join(" ");
+}
+
+/**
+ * Do a title and an H1 start the same way?
+ *
+ * Compared over the shorter of the two, not over a fixed three words. A
+ * two-word H1 like "Contact us" can never match the first three words of
+ * "Contact us - Brand", however exactly the title opens with it - which it
+ * did, and the scaffold built to this system's own standards was reported as
+ * drifting from them.
+ */
+function opensAlike(title, h1) {
+  const t = wordsOf(title), h = wordsOf(h1);
+  const n = Math.min(3, t.length, h.length);
+  if (!n) return true;                 // nothing to compare is not a drift
+  return t.slice(0, n).join(" ") === h.slice(0, n).join(" ");
 }
 
 function judgeDescription(desc) {
@@ -1366,7 +1384,7 @@ if (require.main === module) {
 module.exports = { judgeTitle, judgeDescription, judgeH1, judgeVariants, isDevHost,
                    parseLd, ldNodes, judgeSchema, judgeSchemaCoverage, judgeContent,
                    pageKind, siloOf, buildGraph, judgeInternalLinking,
-                   judgeNap, phoneKey,
+                   judgeNap, phoneKey, opensAlike, wordsOf,
                    judgeCanonical, judgeRobots, judge404, judgeLinks,
                    judgeSitemap, judgePage, classifyLink, entityLeak, similar,
                    firstWords, sortFindings, report, LIMITS, AI_AGENTS, MISSING };

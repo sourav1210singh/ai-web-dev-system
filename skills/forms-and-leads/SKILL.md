@@ -1,6 +1,6 @@
 ---
 name: forms-and-leads
-description: Make a form actually deliver a lead, and keep the lead's personal data out of the places it must never go. Covers the silent-failure traps (dead nonces, expired reCAPTCHA tokens, synthetic clicks), what a real test submission proves, BCC and recipient rules, and the hard privacy line on pixels and AI services. Use whenever building, moving, fixing or testing any form, or when leads stop arriving. Triggers on "form", "lead", "enquiry", "contact form", "form kaam nahi kar raha", "leads nahi aa rahe", "submission".
+description: Make a form actually deliver a lead, check that the analytics tags actually fire once and without the lead's data in them, and keep that data out of the places it must never go. Covers the silent-failure traps (dead nonces, expired reCAPTCHA tokens, synthetic clicks), what a real test submission proves, BCC and recipient rules, and the hard privacy line on pixels and AI services. Use whenever building, moving, fixing or testing any form, or when leads stop arriving. Triggers on "form", "lead", "enquiry", "contact form", "form kaam nahi kar raha", "leads nahi aa rahe", "submission", "analytics", "GA4", "GTM", "tag fire ho raha hai", "conversion track", "pixel", "reports khali hain".
 ---
 
 # Forms and leads
@@ -65,6 +65,53 @@ else.
 - On a form that crosses borders, the privacy text needs a **named recipient**
   and a cross-border transfer line.
 - Never log full field values where logs are broadly readable.
+
+## Check the tags, because that is the number the client reads
+
+Delivery is half of it. The other half is whether the client's reports show
+what happened, and a tag in the source is not a tag that fired.
+
+```bash
+node "C:\Claude-Code\.ai-system\skills\forms-and-leads\analytics.js" <url> \
+  --out <project>\.claude-context\qa\analytics --consent
+```
+
+It watches the network rather than reading the markup, because the markup says
+what was intended and the network says what happened. What it finds:
+
+- **A tag declared and silent.** A GA4 id sitting in the page with no hit ever
+  reaching the collector. The page looks correctly tagged and the reports are
+  empty.
+- **A page view counted more than once.** Two `page_view` hits to the same
+  measurement id for one load, which is almost always the tag hardcoded in the
+  page *and* the same tag again inside Tag Manager. Worse than no tag: every
+  number the client reads is inflated and every decision off it is wrong.
+- **Consent that defaults to denied and is never granted.** `analytics_storage`
+  starts denied, nothing calls consent update, and the client sees almost no
+  users while the banner looks like it works.
+- **The lead's own data leaving.** This is the privacy rule above, made
+  checkable: an email or a phone number in a pixel request, parameters named
+  `em`, `ph`, `fn`, and a sha256 hash, which is how advanced matching sends a
+  customer's email. Hashed is not plaintext and it is still their data going to
+  an ads platform.
+
+`--click "<selector>"` fires one interaction and reports what was sent, which
+is how you check a conversion actually registers. **Only on a page you have
+been told you may exercise** - never fire a real submission on a live client
+form to test a tag.
+
+`--consent` clicks the cookie banner's accept button, because most tags
+deliberately send nothing until it is answered and "no hits" is otherwise the
+wrong conclusion. **It is an opt-in flag for a site you have been asked to
+audit, in a throwaway browser, and nowhere else.** Accepting a consent banner
+is a decision on somebody's behalf: do not pass it while signed in as anyone,
+on a page that also accepts terms, or on a site that is not the client's. The
+default is to observe and report that consent was never answered.
+
+Two honest limits, which the report states: it is one load on one machine with
+no ad blocker, so a real visitor's blocker stops some of this and the client's
+own numbers will always be lower; and it checks that a hit was *sent*, not that
+the property received it. For that, open the property.
 
 ## Recipients and routing
 

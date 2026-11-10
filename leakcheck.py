@@ -42,6 +42,12 @@ PLATFORMS = {
     "wordpress", "webflow", "squarespace", "shopify", "framer", "elementor",
     "figma", "typekit", "gravatar", "linkedin", "playwright", "tailwind",
     "hubspot", "mailchimp", "notion", "airtable", "screamingfrog", "semrush",
+    # Analytics and ads vendors. A recon report records a client's measurement
+    # IDs, which puts these domains in that project's memory, and then every
+    # skill that has to name the collector to check it reads as a leak.
+    "googletagmanager", "googleadservices", "doubleclick", "facebook",
+    "hotjar", "clarity", "tiktok", "pinterest", "segment", "plausible",
+    "usefathom", "licdn", "pinimg", "redditmedia", "analytics",
 }
 
 SECRETS = [

@@ -256,6 +256,11 @@ def main():
         "violations": [{"id": "color-contrast", "impact": "serious", "nodes": 3}],
         "sr": {"notes": [], "forms": 1, "submits": 1, "mailto": 0, "tel": 1},
         "focus": {"invisible": []}}]}
+    # Stubbed, or the suite goes out to the network. The counting is what is
+    # being tested, not the browser.
+    job.run_analytics = lambda u, o: {
+        "findings": [],
+        "hits": [{"kind": "hit", "tid": "G-ABC123", "event": "page_view"}]}
 
     rc, out = run(job.cmd_new, {"name": "Watch It", "domain": "example.test",
                                 "dir": tmp, "type": "watch", "route": "lovable"})
@@ -309,6 +314,23 @@ def main():
     ok("a fault that is fixed is reported as gone",
        "GONE   MAJOR: LCP is over the target in the lab" in out,
        [l for l in out.splitlines() if "LCP" in l][:1])
+
+
+    # A tag that quietly stops firing is exactly what a weekly run is for: the
+    # page still loads, nothing looks wrong, and the client's reports go flat.
+    job.run_analytics = lambda u, o: {
+        "findings": [{"sev": "BLOCKER", "title": "GA4 is on the page and sent nothing"}],
+        "hits": []}
+    rc, out = run(job.cmd_watch, {"id": wid, "dir": tmp})
+    ok("a tag that stopped firing is reported as new",
+       rc == 1 and "sent nothing" in out,
+       [l for l in out.splitlines() if "NEW" in l][:2])
+    ok("the hit count that went is shown as well",
+       "GONE   tags: 1 hit(s) to G-ABC123" in out,
+       [l for l in out.splitlines() if "tags:" in l][:2])
+
+    ok("analytics is one of the watch checks",
+       "analytics" in job.JOB_TYPES["watch"]["checks"])
 
     ok("watch has no apply stage, because it changes nothing",
        "apply" not in job.JOB_TYPES["watch"]["stages"])

@@ -29,6 +29,7 @@ CHECK = os.path.join(SKILLS, "launch-files", "check.py")
 RQA = os.path.join(SKILLS, "responsive-qa", "rqa.js")
 PERF = os.path.join(SKILLS, "responsive-qa", "perf.js")
 A11Y = os.path.join(SKILLS, "responsive-qa", "a11y.js")
+ANALYTICS = os.path.join(SKILLS, "forms-and-leads", "analytics.js")
 PARITY = os.path.join(SKILLS, "migration-parity", "parity.py")
 
 # Each type runs its own checks and takes its own path. intake changes
@@ -58,7 +59,7 @@ JOB_TYPES = {
     # what has CHANGED rather than producing another audit nobody reads.
     "watch": {
         "stages": ["diagnose", "report"],
-        "checks": ["launch", "responsive", "perf", "a11y"],
+        "checks": ["launch", "responsive", "perf", "a11y", "analytics"],
         "gate": False, "strict": False,
         "what": "a site that is already live: has anything broken since last time",
     },
@@ -156,6 +157,39 @@ def run_a11y(url, out):
         return json.loads(io.open(f, encoding="utf-8").read())
     except Exception as e:
         return {"error": "a11y.json unreadable: %s" % e}
+
+
+def run_analytics(url, out):
+    if not os.path.isfile(ANALYTICS):
+        return {"error": "analytics.js not found"}
+    try:
+        subprocess.run(["node", ANALYTICS, url, "--out", out],
+                       capture_output=True, text=True, timeout=420)
+    except Exception as e:
+        return {"error": "analytics.js could not run: %s" % e}
+    f = os.path.join(out, "analytics.json")
+    if not os.path.isfile(f):
+        return {"error": "analytics.js produced no analytics.json"}
+    try:
+        return json.loads(io.open(f, encoding="utf-8").read())
+    except Exception as e:
+        return {"error": "analytics.json unreadable: %s" % e}
+
+
+def analytics_problems(data):
+    if not isinstance(data, dict) or data.get("error"):
+        return ["analytics: %s" % (data or {}).get("error", "did not run")]
+    out = []
+    for f in data.get("findings") or []:
+        if f.get("sev") in ("BLOCKER", "MAJOR"):
+            out.append("%s: %s" % (f.get("sev"), f.get("title")))
+    # Counted every time, because a tag that quietly stops firing is the
+    # thing a watch exists to see.
+    hits = [h for h in data.get("hits") or [] if h.get("kind") == "hit"]
+    ids = sorted({h.get("tid") for h in hits if h.get("tid")})
+    out.append("tags: %d hit(s)%s" % (len(hits),
+               (" to " + ", ".join(ids)) if ids else ""))
+    return out
 
 
 def perf_problems(data):
@@ -325,6 +359,8 @@ def snapshot(job, label):
                   if "perf" in wants else None)
         f_a11y = (ex.submit(run_a11y, url, os.path.join(out, "a11y"))
                   if "a11y" in wants else None)
+        f_an = (ex.submit(run_analytics, url, os.path.join(out, "analytics"))
+                if "analytics" in wants else None)
         f_par = None
         if "parity" in wants and job.get("old_url"):
             f_par = ex.submit(
@@ -336,6 +372,7 @@ def snapshot(job, label):
         rqa_data = f_rqa.result() if f_rqa else None
         perf_data = f_perf.result() if f_perf else None
         a11y_data = f_a11y.result() if f_a11y else None
+        an_data = f_an.result() if f_an else None
         recon_txt = f_recon.result() if f_recon else ""
         par_txt = f_par.result() if f_par else ""
 
@@ -348,8 +385,9 @@ def snapshot(job, label):
         "recon": recon_facts(recon_txt) if f_recon else [],
         "perf": perf_problems(perf_data) if f_perf else [],
         "a11y": a11y_problems(a11y_data) if f_a11y else [],
+        "analytics": analytics_problems(an_data) if f_an else [],
         "ran": [k for k in ("launch", "responsive", "parity", "recon",
-                            "perf", "a11y") if k in wants],
+                            "perf", "a11y", "analytics") if k in wants],
         "qa_dir": out,
         "raw_launch": check_txt,
     }
@@ -373,7 +411,8 @@ def digest(snap, title):
                       ("responsive", "Responsive QA"),
                       ("parity", "Content parity"),
                       ("perf", "Load"),
-                      ("a11y", "Accessibility")):
+                      ("a11y", "Accessibility"),
+                      ("analytics", "Analytics")):
         if key not in ran:
             continue
         rows = snap.get(key) or []
@@ -534,7 +573,8 @@ def cmd_verify(a):
 
 
 WATCH_KEYS = (("launch", "Launch files"), ("responsive", "Responsive QA"),
-              ("perf", "Load"), ("a11y", "Accessibility"))
+              ("perf", "Load"), ("a11y", "Accessibility"),
+              ("analytics", "Analytics"))
 
 
 def cmd_watch(a):

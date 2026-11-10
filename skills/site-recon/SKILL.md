@@ -33,6 +33,7 @@ useful signal there is.
 | IP, reverse DNS | Names the real host, which the panel often does not. |
 | TLS issuer, SANs, days to expiry | A certificate on a different domain name tells you where the site really lives. |
 | Security headers, captured | Recorded as facts, not judged. `security-pass` is the skill that judges them, checks for a key shipped into the bundle, and says what is safe to launch. |
+| TTL on the A, NS and MX records | How long a revert would take, which is the first thing asked when a launch goes wrong. A resolver reports the time left on its cached copy, so treat it as a lower bound and read the zone's own value in the DNS panel. `fix-job`'s `rollback.py` builds its plan from these. |
 | Platform / CMS, framework, analytics IDs | Decides what can and cannot be built, and which skills apply. |
 | Title, H1, meta, favicon, logo, OG image, phone, email | The brand facts to carry into a rebuild, and where a staging URL has leaked into production. |
 | robots.txt, sitemap.xml and its URL count | The page inventory for a migration. |
@@ -46,7 +47,9 @@ The tool reports; the judgement is yours.
 2. **If registry NS and the panel's zone differ**, say which one is live and
    which one is decorative. Never edit the decorative one and report success.
 3. **Write down the MX and SPF before any change**, and check them again after.
-   This is the one that loses a client.
+   This is the one that loses a client. Before a go-live, put them into the
+   rollback plan rather than only into the report:
+   `python "C:\Claude-Code\.ai-system\skills\fix-job\rollback.py" <project> --build`
 4. **A 403 or a block is not "the site is down."** Cloudflare has blocked this
    office IP while serving Googlebot normally. Check from another vantage point
    before telling anyone the site is offline.

@@ -111,6 +111,33 @@ def dns_query(name, rtype, resolver):
     return sorted(set(ans)), None
 
 
+def dns_ttl(name, rtype):
+    """The shortest TTL on an answer, which bounds how long a revert takes.
+
+    The resolvers already return it and this threw it away. It is the number
+    that decides whether a bad launch can be undone in five minutes or in a
+    day, so a rollback plan is guesswork without it.
+
+    **It is a lower bound, not the zone's value.** A public resolver answers
+    with the time left on its own cached copy, counting down - measured on a
+    well known domain, its MX came back as 124 seconds, which is no zone's
+    configured TTL. So the real revert window is *at least* this long and
+    possibly much longer, and the zone value has to be read in the DNS panel.
+    Reporting the cached number as the zone's would err in the one direction
+    that matters, making a revert sound faster than it is.
+    """
+    label, url, headers = RESOLVERS[0]
+    try:
+        r = requests.get(url, params={"name": name, "type": rtype},
+                         headers=dict(headers, **{"User-Agent": UA}),
+                         timeout=TIMEOUT)
+        answers = (r.json().get("Answer") or [])
+    except Exception:
+        return None
+    ttls = [a.get("TTL") for a in answers if isinstance(a.get("TTL"), int)]
+    return min(ttls) if ttls else None
+
+
 def dns_both(name, rtype):
     """Ask both resolvers. Returns (answers, note)."""
     res, errs = {}, []
@@ -280,6 +307,14 @@ def main():
         v, _ = dns_both("%s._domainkey.%s" % (sel, domain), "TXT")
         if v:
             dkim[sel] = (v[0][:80] + "...") if len(v[0]) > 80 else v[0]
+    # Only for the records a launch actually changes. A TTL per record type
+    # would be noise; these three are what gets repointed and what has to be
+    # put back.
+    R["ttl"] = {k: v for k, v in
+                (("A " + domain, dns_ttl(domain, "A")),
+                 ("NS " + domain, dns_ttl(domain, "NS")),
+                 ("MX " + domain, dns_ttl(domain, "MX")))
+                if v is not None}
     R["dns"] = dns
     R["dkim_selectors_found"] = dkim
 

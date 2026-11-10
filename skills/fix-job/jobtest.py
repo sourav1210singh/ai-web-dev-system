@@ -81,10 +81,14 @@ def main():
              # golive and intake both run the security pass now, so it is
              # stubbed here or the suite goes out to the network.
              "security": {"findings": [], "thirdParty": [], "cookies": 0,
-                          "scriptsScanned": 3}}
+                          "scriptsScanned": 3},
+             # golive runs the rollback check too, stubbed here so the suite
+             # does not go near the network or a real plan.
+             "rollback": {"findings": [], "plan": {"verified_on": "2026-11-10"}}}
     job.run_check = lambda d: state["launch"]
     job.run_rqa = lambda u, o: state["rqa"]
     job.run_security = lambda u, o: state["security"]
+    job.run_rollback = lambda p: state["rollback"]
 
     rc, out = run(job.cmd_new, {"name": "Demo Fix", "domain": "example.test",
                                 "dir": tmp, "route": "lovable"})
@@ -281,6 +285,50 @@ def main():
        not any(l.startswith("BLOCKER") and "surface:" in l
                for l in j["snapshots"]["before"]["security"]),
        "blockers() keys off that prefix")
+
+    # --- golive and the way back ------------------------------------------
+    # A launch with no way back is the one that cannot be undone at 7pm on a
+    # Friday, which is the whole reason this is a gate and not a reminder.
+    state["launch"] = "  favicon    5430 bytes"
+    state["rqa"] = []
+    state["security"] = {"findings": [], "thirdParty": [], "cookies": 0,
+                         "scriptsScanned": 1}
+    state["rollback"] = {"findings": [
+        {"sev": "BLOCKER", "title": "The named backup is not there"},
+        {"sev": "MAJOR", "title": "No TTL is recorded"}], "plan": {}}
+    rc, out = run(job.cmd_new, {"name": "No way back", "domain": "example.test",
+                                "dir": tmp, "type": "golive"})
+    jidr = [l.split()[1] for l in out.splitlines()
+            if l.startswith("job ") and " opened" in l][0]
+    rc, out = run(job.cmd_diagnose, {"id": jidr, "dir": tmp})
+    ok("rollback is one of the launch gate's checks",
+       "rollback" in job.JOB_TYPES["golive"]["checks"])
+    ok("the digest has a rollback section", "**Rollback plan**" in out)
+    rc, out = run(job.cmd_close, {"id": jidr, "dir": tmp, "summary": "ship it"})
+    ok("a backup that is not there stops the launch", rc == 1, "rc=%d" % rc)
+    ok("the refusal names what is missing", "backup is not there" in out)
+
+    state["rollback"] = {"findings": [{"sev": "MAJOR", "title": "No TTL is recorded"}],
+                         "plan": {"verified_on": "2026-11-10"}}
+    rc, out = run(job.cmd_new, {"name": "Slow revert", "domain": "example.test",
+                                "dir": tmp, "type": "golive"})
+    jids = [l.split()[1] for l in out.splitlines()
+            if l.startswith("job ") and " opened" in l][0]
+    run(job.cmd_diagnose, {"id": jids, "dir": tmp})
+    rc, out = run(job.cmd_close, {"id": jids, "dir": tmp, "summary": "live"})
+    ok("a slow revert is worth saying and does not refuse the launch", rc == 0,
+       "rc=%d" % rc)
+
+    state["rollback"] = {"findings": [], "plan": {"verified_on": "2026-11-10"}}
+    rc, out = run(job.cmd_new, {"name": "Has a way back",
+                                "domain": "example.test",
+                                "dir": tmp, "type": "golive"})
+    jidw = [l.split()[1] for l in out.splitlines()
+            if l.startswith("job ") and " opened" in l][0]
+    rc, out = run(job.cmd_diagnose, {"id": jidw, "dir": tmp})
+    ok("a verified plan is reported as executable", "executable as written" in out)
+    rc, out = run(job.cmd_close, {"id": jidw, "dir": tmp, "summary": "live"})
+    ok("a launch with a verified way back closes", rc == 0, "rc=%d" % rc)
 
     # Closing is the only moment anyone is prompted to compare the quote with
     # what it took, so a project that has an estimate on file gets told.

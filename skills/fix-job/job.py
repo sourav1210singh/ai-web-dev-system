@@ -31,6 +31,7 @@ PERF = os.path.join(SKILLS, "responsive-qa", "perf.js")
 A11Y = os.path.join(SKILLS, "responsive-qa", "a11y.js")
 ANALYTICS = os.path.join(SKILLS, "forms-and-leads", "analytics.js")
 SECURITY = os.path.join(SKILLS, "security-pass", "security.js")
+ROLLBACK = os.path.join(HERE, "rollback.py")
 PARITY = os.path.join(SKILLS, "migration-parity", "parity.py")
 
 # Each type runs its own checks and takes its own path. intake changes
@@ -53,7 +54,9 @@ JOB_TYPES = {
     },
     "golive": {
         "stages": ["diagnose", "apply", "verify", "close"],
-        "checks": ["launch", "responsive", "parity", "security"],
+        # rollback is a precondition of the launch rather than a measurement
+        # of the site, which is why it belongs to this type alone.
+        "checks": ["launch", "responsive", "parity", "security", "rollback"],
         "gate": True, "strict": True,
         "what": "the launch gate: nothing ships with a blocker standing",
     },
@@ -195,6 +198,35 @@ def run_security(url, out):
         return json.loads(io.open(f, encoding="utf-8").read())
     except Exception as e:
         return {"error": "security.json unreadable: %s" % e}
+
+
+def run_rollback(project):
+    """Is there a way back from this launch. Takes a folder, not a URL."""
+    if not os.path.isfile(ROLLBACK):
+        return {"error": "rollback.py not found"}
+    try:
+        p = subprocess.run([sys.executable, "-X", "utf8", "-I", ROLLBACK,
+                            project, "--json"],
+                           capture_output=True, text=True, timeout=120)
+    except Exception as e:
+        return {"error": "rollback.py could not run: %s" % e}
+    try:
+        return json.loads(p.stdout)
+    except Exception as e:
+        return {"error": "rollback.py gave no readable report: %s" % e}
+
+
+def rollback_problems(data):
+    if not isinstance(data, dict) or data.get("error"):
+        return ["rollback: %s" % (data or {}).get("error", "did not run")]
+    out = []
+    for f in data.get("findings") or []:
+        if f.get("sev") in ("BLOCKER", "MAJOR"):
+            out.append("%s: %s" % (f.get("sev"), f.get("title")))
+    if not out:
+        out.append("plan: executable as written, verified %s"
+                   % ((data.get("plan") or {}).get("verified_on") or "?"))
+    return out
 
 
 def security_problems(data):
@@ -405,6 +437,8 @@ def snapshot(job, label):
                 if "analytics" in wants else None)
         f_sec = (ex.submit(run_security, url, os.path.join(out, "security"))
                  if "security" in wants else None)
+        f_rb = (ex.submit(run_rollback, job["project"])
+                if "rollback" in wants else None)
         f_par = None
         if "parity" in wants and job.get("old_url"):
             f_par = ex.submit(
@@ -418,6 +452,7 @@ def snapshot(job, label):
         a11y_data = f_a11y.result() if f_a11y else None
         an_data = f_an.result() if f_an else None
         sec_data = f_sec.result() if f_sec else None
+        rb_data = f_rb.result() if f_rb else None
         recon_txt = f_recon.result() if f_recon else ""
         par_txt = f_par.result() if f_par else ""
 
@@ -432,9 +467,10 @@ def snapshot(job, label):
         "a11y": a11y_problems(a11y_data) if f_a11y else [],
         "analytics": analytics_problems(an_data) if f_an else [],
         "security": security_problems(sec_data) if f_sec else [],
+        "rollback": rollback_problems(rb_data) if f_rb else [],
         "ran": [k for k in ("launch", "responsive", "parity", "recon",
-                            "perf", "a11y", "analytics", "security")
-                if k in wants],
+                            "perf", "a11y", "analytics", "security",
+                            "rollback") if k in wants],
         "qa_dir": out,
         "raw_launch": check_txt,
     }
@@ -451,7 +487,13 @@ def blockers(snap):
     key in the bundle or a readable .env is a different matter.
     """
     sec = [l for l in (snap.get("security") or []) if l.startswith("BLOCKER")]
-    return (snap.get("launch") or []) + (snap.get("responsive") or []) + sec
+    # Same rule for the rollback plan: a missing TTL or an unnamed trigger is
+    # worth saying and is not worth refusing a launch over. A plan nobody has
+    # verified, a backup that is not there, or an old origin that has already
+    # gone is a different matter - there is no way back at all.
+    rb = [l for l in (snap.get("rollback") or []) if l.startswith("BLOCKER")]
+    return ((snap.get("launch") or []) + (snap.get("responsive") or [])
+            + sec + rb)
 
 
 def digest(snap, title):
@@ -467,7 +509,8 @@ def digest(snap, title):
                       ("perf", "Load"),
                       ("a11y", "Accessibility"),
                       ("analytics", "Analytics"),
-                      ("security", "Security")):
+                      ("security", "Security"),
+                      ("rollback", "Rollback plan")):
         if key not in ran:
             continue
         rows = snap.get(key) or []

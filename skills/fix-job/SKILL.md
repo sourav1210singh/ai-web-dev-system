@@ -71,9 +71,50 @@ through is not a gate.
 
 What holds a launch is deliberately narrow: no https, an invalid certificate,
 active mixed content, a form posting in the clear, a readable `.env`, a key
-shipped into the bundle. A missing Content-Security-Policy is reported and does
-not hold the launch - a gate that refuses to open for the normal state of the
-web is a gate people learn to force.
+shipped into the bundle, and no way back. A missing Content-Security-Policy is
+reported and does not hold the launch - a gate that refuses to open for the
+normal state of the web is a gate people learn to force.
+
+### The way back
+
+```bash
+python "C:\Claude-Code\.ai-system\skills\fix-job\rollback.py" <project> --build
+python "C:\Claude-Code\.ai-system\skills\fix-job\rollback.py" <project>
+```
+
+`--build` writes `<project>\.claude-context\rollback.json`, filling in what the
+recon output already knows - the records about to change, the mail records that
+must survive, the nameservers, the host, the TTL - and leaving the fields only
+a person can answer **empty and named**, because an empty field is a question
+and a guessed one is a false answer.
+
+Running it without `--build` checks the plan, and the checking is the point.
+Every launch has a rollback plan in the sense that somebody will say "we can
+just point it back". That sentence is not a plan:
+
+| What it refuses | Why |
+|---|---|
+| No backup named | "Restore from backup" with no path is the commonest fake plan there is, and it is discovered at the worst possible moment. |
+| A backup that is not at the path given | Worse than no plan, because it is believed. |
+| Mail records not recorded | Putting the site records back does not bring mail back if the MX records were replaced too. `site-recon` is blunt about this one: it is the one that loses a client. |
+| The old origin already gone | Old hosting gets cancelled on launch day by someone being tidy, and then there is nothing to go back to. |
+| Never verified | A plan nobody has tested is a sentence. `verified_on` means somebody opened the backup and confirmed the old host answers. |
+
+Reported but **not** blocking: a long TTL, no named trigger, nobody named to
+execute it, a plan last verified more than two weeks ago.
+
+Two details worth keeping:
+
+- **A domain with no mail is not blocked for having no MX records.** The recon
+  pass records whether it found any mail at all, and a preview host or a domain
+  whose mail lives elsewhere gets a note asking you to confirm, not a blocker.
+  A gate that blocks every such launch forever is a gate forced open by habit.
+- **Lower the TTL before the launch, not just before the revert.** Resolvers
+  already holding the old value keep it for its full term, so dropping the TTL
+  an hour before a change buys nothing. It has to be done at least one old-TTL
+  period in advance. The TTL figures a resolver reports are the time left on
+  its cached copy, so they are lower bounds - read the zone's own value in the
+  DNS panel before promising anyone a revert window.
 
 If it ships anyway, that is a decision someone makes, not a check that is
 skipped. `--force` closes it and writes `CLOSED OVER STANDING BLOCKERS` into

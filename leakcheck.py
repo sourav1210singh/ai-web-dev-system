@@ -57,8 +57,15 @@ SECRETS = [
     ("private key", re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----")),
     ("bearer token", re.compile(r"(?i)\bbearer\s+[A-Za-z0-9_\-\.]{20,}")),
     ("supabase ref", re.compile(r"\b[a-z]{20}\.supabase\.co")),
+    # Private ranges are skipped, and so are the ranges reserved for
+    # documentation: 192.0.2.0/24, 198.51.100.0/24 and 203.0.113.0/24 are
+    # TEST-NET-1 to 3 under RFC 5737, and 169.254.0.0/16 is link-local. None
+    # of them can belong to a client, the same reason .test and .example are
+    # exempt from the email pattern below, and a fixture that needs an address
+    # should be using one of these rather than inventing a real one.
     ("public IPv4", re.compile(
-        r"\b(?!10\.|127\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|0\.)"
+        r"\b(?!10\.|127\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|0\."
+        r"|192\.0\.2\.|198\.51\.100\.|203\.0\.113\.|169\.254\.)"
         r"(\d{1,3}\.){3}\d{1,3}\b")),
     ("home path", re.compile(r"(?i)C:\\Users\\(?!<)[A-Za-z0-9._-]+\\")),
     ("personal email", re.compile(

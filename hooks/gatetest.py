@@ -276,6 +276,34 @@ def main():
     _rc, blocked, _r, _e = run(t)
     ok("an echo is still not evidence", blocked)
 
+
+    # Hinglish puts the subject first: "page theek ho gaya" claims something
+    # about the page. Reversed it describes instead - "dugna ho gaya page" is
+    # "the page that doubled", which is how a sentence explaining what a tool
+    # measures reads, and it was blocking replies that claimed nothing.
+    reset(); transcript(t, "Threshold bhaari page pakadta hai; dugna ho gaya "
+                           "page sirf comparison pakadti hai.",
+                        [WRITE, ("Bash", {"command": "npm test"})])
+    _rc, blocked, _r, _e = run(t)
+    ok("a claim word followed by the noun is a relative clause -> allowed",
+       not blocked)
+
+    reset(); transcript(t, "Page live ho gaya.",
+                        [WRITE, ("Bash", {"command": "npm test"})])
+    _rc, blocked, _r, _e = run(t)
+    ok("subject first is still a claim -> BLOCKS", blocked)
+
+    reset(); transcript(t, "Hero section ban gaya hai.",
+                        [WRITE, ("Bash", {"command": "npm test"})])
+    _rc, blocked, _r, _e = run(t)
+    ok("a hero that was built -> still BLOCKS", blocked)
+
+    reset(); transcript(t, "Fixed, the hero is cut off on mobile.",
+                        [WRITE, ("Bash", {"command": "npm test"})])
+    _rc, blocked, _r, _e = run(t)
+    ok("an English claim with the visual word after a comma -> BLOCKS",
+       blocked)
+
     # a claim word inside quoted speech is not the reply's own claim
     reset(); transcript(t, 'When you say "ho gaya", I will re-check the page.',
                         [CSS])

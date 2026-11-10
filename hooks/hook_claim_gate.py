@@ -198,10 +198,32 @@ def claim_is_visual(prose):
     visual claim and catching the word "button".
     """
     for s in SENTENCE.findall(prose):
-        if CLAIM.search(s) and (VISUAL_CLAIM.search(s) or
-                                VISUAL_SECTION.search(s)):
+        if not (VISUAL_CLAIM.search(s) or VISUAL_SECTION.search(s)):
+            continue
+        if any(not relative_clause(s, m) for m in CLAIM.finditer(s)):
             return True
     return False
+
+
+def relative_clause(sentence, claim):
+    """Is this claim word part of a phrase describing the thing, not a claim?
+
+    Hinglish puts the subject first: "page theek ho gaya" is a claim about the
+    page. Reversed, it describes instead - "dugna ho gaya page" is "the page
+    that doubled", which is how a sentence explaining what a tool measures
+    reads, and it was blocking replies that claimed nothing about any page.
+
+    The test is strict adjacency: the visual word is the very next word, with
+    only spaces between. "Done, the button looks right" keeps its comma and
+    its article and still counts as a claim.
+    """
+    after = sentence[claim.end():]
+    m = re.match(r"\s+(\w+)", after)
+    if not m:
+        return False
+    nxt = m.group(1)
+    return bool(VISUAL_CLAIM.fullmatch(nxt) or
+                re.fullmatch(r"(?i)sections?", nxt))
 
 
 # A .js is usually a page, and sometimes it is a command-line tool. This

@@ -164,6 +164,17 @@ and in one line why. Never hand over an open question with no view.
 **Give a time estimate when you can.** "Once I have either of those, this is
 about fifteen minutes of work."
 
+**If the estimate is one the client will hold us to, record it before sending.**
+A figure agreed in a reply or on a call is the one nobody can reconstruct
+later:
+
+```bash
+python "C:\Claude-Code\.context-system\worklog\estimate.py" record "<project>" \
+    --hours 40 --for "migration" --dated YYYY-MM-DD --source "agreed on the 2 Nov call"
+```
+
+Not for "about fifteen minutes". For anything that becomes a commitment.
+
 **Never put a password, key or token in the reply.** Ask them to send it, or
 point at where it lives.
 

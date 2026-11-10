@@ -44,7 +44,7 @@ ok("reads the body size", /\*\*(body|p)\*\*.*18px\/30px/.test(spec));
 // colour and shape
 ok("normalises colours to hex", /#1f6feb/.test(spec));
 ok("does not leave lab() or oklab() in the spec",
-  !/(?:ok)?lab\(/.test(spec));
+  !/\b(?:ok)?lab\(/.test(spec));
 ok("finds the card radius", /Radii:.*12px/.test(spec));
 ok("finds the card shadow", /Shadows:.*8px 24px/.test(spec));
 

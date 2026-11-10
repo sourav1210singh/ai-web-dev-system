@@ -71,6 +71,23 @@ def main():
            not os.path.isfile(os.path.join(ctx, "runs.log")) and
            not os.path.isfile(os.path.join(ctx, "audit.json")))
 
+        # The worklog sat in the installed copy only - untracked, unpublished,
+        # one machine move from gone. An installer that silently drops a
+        # subdirectory is the same failure wearing a different hat.
+        wl = os.path.join(ctx, "worklog")
+        ok("a subdirectory of the context system is installed too",
+           os.path.isfile(os.path.join(wl, "timespent.py")) and
+           os.path.isfile(os.path.join(wl, "estimate.py")), wl)
+        io.open(os.path.join(wl, "keep.log"), "w", encoding="utf-8").write("history")
+        io.open(os.path.join(sysdir, "context-system", "worklog", "keep.log"),
+                "w", encoding="utf-8").write("stray")
+        run([sys.executable, "-X", "utf8",
+             os.path.join(sysdir, "install.py"), "--apply"], env)
+        ok("recorded data inside a subdirectory is not overwritten either",
+           io.open(os.path.join(wl, "keep.log"), encoding="utf-8").read()
+           == "history")
+        os.remove(os.path.join(sysdir, "context-system", "worklog", "keep.log"))
+
         # Running one of these tools from inside the repo leaves its log
         # beside it. Copying that over the installed one would replace a real
         # history with a stub: the install meant to keep the history would be

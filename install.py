@@ -90,17 +90,29 @@ def install_context(bad):
     if not os.path.isdir(CTX_SRC):
         return 0
     n = 0
-    for f in sorted(os.listdir(CTX_SRC)):
-        src = os.path.join(CTX_SRC, f)
-        if not os.path.isfile(src):
+    # The top level, then one level of subdirectory. worklog/ lived only in the
+    # installed copy for weeks: untracked, unpublished, and one machine move
+    # from being gone, which is precisely what this installer exists to stop.
+    for rel in sorted(os.listdir(CTX_SRC)):
+        at = os.path.join(CTX_SRC, rel)
+        if os.path.isdir(at):
+            for f in sorted(os.listdir(at)):
+                sub = os.path.join(at, f)
+                if not os.path.isfile(sub) or not f.lower().endswith(CTX_CODE):
+                    continue
+                if copy_verified(sub, os.path.join(CTX_DST, rel, f),
+                                 rel + "/" + f, bad):
+                    n += 1
+            continue
+        if not os.path.isfile(at):
             continue
         # Code only, never data. Running one of these tools from inside the
         # repo leaves its log beside it, and copying that over the installed
         # one would replace a real history with a stub - the same install
         # that is meant to keep the history would be what destroyed it.
-        if not f.lower().endswith(CTX_CODE):
+        if not rel.lower().endswith(CTX_CODE):
             continue
-        if copy_verified(src, os.path.join(CTX_DST, f), f, bad):
+        if copy_verified(at, os.path.join(CTX_DST, rel), rel, bad):
             n += 1
     return n
 

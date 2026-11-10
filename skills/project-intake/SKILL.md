@@ -124,6 +124,40 @@ nobody has been paid for; pages in the crawl and not in the sitemap are
 usually orphans; pages in the sitemap and not in the crawl are usually broken.
 Each case changes the estimate, so each one goes in the brief.
 
+## If the scope document carries hours, record them now
+
+This is the only moment the estimate can be captured. Nobody reconstructs six
+months later what was quoted, so an estimate that is not written down when it
+arrives is gone, and the next quote is a guess with the same confidence as the
+last one.
+
+```bash
+python "C:\Claude-Code\.context-system\worklog\estimate.py" read "<scope.docx>"
+python "C:\Claude-Code\.context-system\worklog\estimate.py" record "<project>" \
+    --from "<scope.docx>" --table N --dated YYYY-MM-DD --cost "$750"
+```
+
+`read` prints every table that has an hours column, with its own total, and
+says which table accounts for which line of the summary. **It does not pick
+one.** On the first real estimate it was pointed at, a summary billed 35 hours
+for a workstream whose own line items added up to 25 - a ten hour gap in a
+document already sent to a client. Pick the table deliberately.
+
+Then record what the client actually **approved**, which is usually not
+everything:
+
+```bash
+python "C:\Claude-Code\.context-system\worklog\estimate.py" approve "<project>" --all
+#  ... or --item "<text>" for one, --drop "<text>" to exclude one
+```
+
+That same document quoted three workstreams and ended by asking which to
+proceed with. Measured against all three the project came in **under**; against
+the priority workstream alone it came in at **1.53x**. Without the approved
+list the comparison means nothing, so items start undecided and `compare`
+refuses while any still are. If you do not know what was approved, leave it
+undecided and say so - do not guess it into the file.
+
 ## Stage 5 - the brief, and this is where it stops
 
 Write `<project>/project-brief-<date>.md`, in English. It answers:

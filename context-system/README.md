@@ -102,7 +102,7 @@ your own notes in a different file inside `.claude-context\`.
 | `hook_session_start.py` | the at-startup context injector |
 | `install_hooks.py` | adds/removes the hooks in settings.json (keeps a backup) |
 | `verify.py` | checks word caps, numbering, structure, leaked secrets |
-| `selftest.py` | 24 end-to-end tests against a throwaway folder |
+| `selftest.py` | 27 end-to-end tests against a throwaway folder |
 | `ctx.py` / `ctx.cmd` | the control panel above |
 | `session_routes.json` | chats started before a project moved, and where they now belong |
 | `move_memory_into_projects.py` | points each project's auto-memory at its own folder |
@@ -111,9 +111,34 @@ your own notes in a different file inside `.claude-context\`.
 | `make_prompts.py` | writes START-PROMPT.md for each project |
 | `fix_memory.py` | carries a moved project's memory to its new folder |
 | `home_scan.py` | what project material sits in Downloads/Desktop/Documents |
-| `collect_from_home.py` | copies that material into `<project>rom-downloads\` |
+| `collect_from_home.py` | copies that material into the project's `from-downloads` folder |
 | `runs.log` | one line per hook run - check here to confirm it is recording |
 | `hook.log` | only written when a hook hits an error |
+| `worklog/timespent.py` | hours per project in a date range, from the transcripts |
+| `worklog/range.py` | what was worked on between two dates |
+| `worklog/estimate.py` | what was quoted, against what it took |
+| `worklog/esttest.py` | 41 tests for the above, mostly for what it refuses to do |
+
+### worklog
+
+`timespent.py` de-duplicates before it counts: forking a session copies its
+whole history, and over one real week that was 28,418 events against 9,001
+distinct, a 3.16x inflation. Counting files naively triples the hours.
+
+**A clone starts without `worklog/local_projects.py`**, which is where the
+folder-to-client names live and is never committed. Without it every project
+is named after its own transcript folder - right for a folder holding one
+project, and unable to split a folder holding several. `local_projects.py` says
+how to rebuild it. This directory was blanket-ignored until those names were
+moved out, which is why these tools went unversioned for weeks.
+
+`estimate.py` compares a quote against those hours. It imports `timespent`
+rather than repeating its burst logic, so there is one definition of a working
+hour here and not two that drift. What it refuses to do matters more than what
+it does - pick which table in a scope document is the estimate, compare against
+work the client never approved, treat a label that matches no measured work as
+"came in under", or turn a handful of projects into a multiplier. Each refusal
+is a wrong number it would otherwise have stated confidently.
 
 ---
 

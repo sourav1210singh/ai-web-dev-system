@@ -732,6 +732,17 @@ def cmd_close(a):
     save(job, path)
     print("job %s closed" % job["id"])
     print("Record it in CLIENT-LOG.md and reply to the client.")
+    # Only a file check, not the comparison: measuring actual hours reads every
+    # transcript and takes a minute or two, which is too much to put on every
+    # close. Closing is the moment the habit has to be prompted, though, since
+    # nobody goes looking for this later.
+    est = os.path.join(job["project"], ".claude-context", "estimate.json")
+    if os.path.isfile(est):
+        print("\nThis project has a recorded estimate. Worth comparing now:")
+        print('  python "%s" compare "%s"'
+              % (os.path.join(os.path.dirname(os.path.dirname(SKILLS)),
+                              ".context-system", "worklog", "estimate.py"),
+                 os.path.basename(job["project"].rstrip("/\\"))))
     return 0
 
 

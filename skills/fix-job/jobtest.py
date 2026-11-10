@@ -282,6 +282,31 @@ def main():
                for l in j["snapshots"]["before"]["security"]),
        "blockers() keys off that prefix")
 
+    # Closing is the only moment anyone is prompted to compare the quote with
+    # what it took, so a project that has an estimate on file gets told.
+    state["security"] = {"findings": [], "thirdParty": [], "cookies": 0,
+                         "scriptsScanned": 1}
+    io.open(os.path.join(tmp, ".claude-context", "estimate.json"), "w",
+            encoding="utf-8").write('{"project": "x", "items": []}')
+    rc, out = run(job.cmd_new, {"name": "Priced", "domain": "example.test",
+                                "dir": tmp, "type": "golive"})
+    jid8 = [l.split()[1] for l in out.splitlines()
+            if l.startswith("job ") and " opened" in l][0]
+    run(job.cmd_diagnose, {"id": jid8, "dir": tmp})
+    rc, out = run(job.cmd_close, {"id": jid8, "dir": tmp, "summary": "live"})
+    ok("closing a project that has a recorded estimate points at the comparison",
+       rc == 0 and "estimate.py" in out and "compare" in out,
+       [l for l in out.splitlines() if "estimate" in l][:1])
+    os.remove(os.path.join(tmp, ".claude-context", "estimate.json"))
+    rc, out = run(job.cmd_new, {"name": "Unpriced", "domain": "example.test",
+                                "dir": tmp, "type": "golive"})
+    jid9 = [l.split()[1] for l in out.splitlines()
+            if l.startswith("job ") and " opened" in l][0]
+    run(job.cmd_diagnose, {"id": jid9, "dir": tmp})
+    rc, out = run(job.cmd_close, {"id": jid9, "dir": tmp, "summary": "live"})
+    ok("a project with no estimate on file is not nagged about one",
+       "estimate.py" not in out)
+
     rc, out = run(job.cmd_new, {"name": "Nope", "domain": "example.test",
                                 "dir": tmp, "type": "nonsense"})
     ok("an unknown job type is refused", rc == 2)

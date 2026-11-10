@@ -59,14 +59,14 @@ PLATFORM = [
 # the markup. This is how a site with no give-away in its HTML still gets
 # identified.
 HOST_PLATFORM = [
-    ("Lovable", r"lovable\.app|lovable-app|l5e\.io"),
-    ("Vercel", r"vercel\.app|vercel-dns|vercel"),
+    ("Lovable", r"lovable\.app|lovable-app|\bl5e\.io"),
+    ("Vercel", r"vercel\.app|vercel-dns|\bvercel\b"),
     ("Netlify", r"netlify\.app|netlify\.com"),
     ("WP Engine", r"wpengine|wpenginepowered"),
     ("Shopify", r"shopify|myshopify"),
     ("Webflow", r"webflow"),
     ("GitHub Pages", r"github\.io|githubusercontent"),
-    ("Cloudflare Pages", r"pages\.dev"),
+    ("Cloudflare Pages", r"\bpages\.dev\b"),
     ("Supabase", r"supabase\.co"),
 ]
 

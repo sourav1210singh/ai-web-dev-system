@@ -14,7 +14,7 @@ recon-*/
 session_routes.json
 audit.err
 local_history.py
-worklog/
+local_projects.py
 vendor/
 a11y/
 perf/

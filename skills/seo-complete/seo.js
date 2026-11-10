@@ -587,6 +587,100 @@ function judgeSchemaCoverage(allTypes, inners) {
   return out;
 }
 
+// ---------------------------------------------------------- content
+
+const STOPWORDS = new Set(("the a an and or but of to in for on at by with from "
+  + "is are was were be been being this that these those it its as we you your "
+  + "our their his her they he she i us them not no yes do does did have has "
+  + "had will would can could should may might must if then than so such about "
+  + "all any more most other some out up down over under new get").split(" "));
+
+// The verticals an injection almost always sells. On their own they prove
+// nothing - a real pharmacy says "pharmacy" - so they are reported as a
+// secondary signal and only alongside the structural evidence below.
+const SPAM_VERTICAL = /\b(casino|slots?|betting|poker|viagra|cialis|tramadol|payday loan|escort|porn|replica watch|counterfeit|crypto giveaway|forex signals)\b/i;
+
+/**
+ * Thin pages, stuffed pages, and the fingerprint of an injection.
+ *
+ * The vertical word list is deliberately the weakest of the three signals.
+ * What actually identifies a hacked page is structural: substantial text
+ * hidden from a visitor but served to a crawler, or a sudden pile of links to
+ * unrelated domains. Those happen for no legitimate reason, and they do not
+ * depend on guessing which words are suspicious.
+ */
+function judgeContent(p) {
+  const out = [];
+  if (!p || !p.ok) return out;
+  const text = String(p.bodyText || "");
+  const words = text.toLowerCase().match(/[a-z][a-z'-]{1,}/g) || [];
+
+  const utility = /\/(contact|thank|thanks|privacy|terms|cookie|404|search)/i
+    .test(p.url);
+  if (words.length && words.length < 300 && !utility && p.kind !== "hub") {
+    out.push({ sev: "MINOR", id: "thin-content",
+               title: "Thin page: " + words.length + " words",
+               detail: "Under 300 words on a page that is meant to rank. The "
+                     + "quality-focused updates act on exactly this." });
+  }
+
+  if (words.length >= 200) {
+    const freq = {};
+    for (const w of words) if (!STOPWORDS.has(w) && w.length > 3) freq[w] = (freq[w] || 0) + 1;
+    const top = Object.entries(freq).sort((a, b) => b[1] - a[1])[0];
+    if (top) {
+      const share = top[1] / words.length;
+      if (share > 0.06) {
+        out.push({ sev: "MAJOR", id: "keyword-stuffing",
+                   title: '"' + top[0] + '" is ' + (share * 100).toFixed(1)
+                        + "% of the words on this page",
+                   detail: top[1] + " of " + words.length + " words. Over about "
+                         + "6% reads as stuffing rather than as writing." });
+      } else if (share > 0.04) {
+        out.push({ sev: "NOTE", id: "keyword-density",
+                   title: '"' + top[0] + '" is ' + (share * 100).toFixed(1)
+                        + "% of the words on this page",
+                   detail: "Worth a look; not yet stuffing." });
+      }
+    }
+  }
+
+  // The structural fingerprint of an injection: hidden text that is not part
+  // of any interface component and whose links leave the site. A collapsed
+  // menu is hidden too, and links inward, which is why that is not enough on
+  // its own.
+  const h = p.hiddenText;
+  if (h && h.words > 40 && (h.external >= 5 || SPAM_VERTICAL.test(h.sample))) {
+    const vertical = SPAM_VERTICAL.test(h.sample);
+    out.push({ sev: h.external >= 5 && vertical ? "BLOCKER" : "MAJOR",
+               id: "hidden-text",
+               title: h.words + " words hidden from visitors, linking off-site",
+               detail: h.nodes + " hidden element(s) outside any menu or dialog, "
+                     + "carrying " + h.external + " external link(s) and "
+                     + h.internal + " internal."
+                     + (vertical ? " The hidden text matches a known spam "
+                                 + "vertical." : ""),
+               fix: "Treat the site as compromised until proven otherwise: look "
+                  + "for modified files and unknown admin users before deleting "
+                  + "anything, and check whether the pages are indexed." });
+  }
+  if (p.offsiteLinks && p.offsiteLinks.count >= 20) {
+    out.push({ sev: "MAJOR", id: "offsite-link-pile",
+               title: p.offsiteLinks.count + " links to "
+                    + p.offsiteLinks.hosts + " outside domains on one page",
+               detail: "Sample: " + (p.offsiteLinks.sample || []).slice(0, 5).join(", ")
+                     + ". Normal for a directory or a link roundup, and the "
+                     + "usual shape of an injected link farm otherwise." });
+  }
+  if (SPAM_VERTICAL.test(text) && !SPAM_VERTICAL.test(String(p.title || ""))) {
+    out.push({ sev: "NOTE", id: "spam-vertical-words",
+               title: "Spam-vertical wording appears in the body but not the title",
+               detail: "On its own this proves nothing - plenty of real sites use "
+                     + "these words. Read the page before repeating it." });
+  }
+  return out;
+}
+
 // ------------------------------------------------------ internal linking
 
 const EDITORIAL_HEADS = new Set(["blog", "news", "article", "articles", "learn",
@@ -841,6 +935,65 @@ async function readPage(ctx, page, url, opts) {
       })),
       bodyText: ((document.body && document.body.innerText) || "")
         .replace(/\s+/g, " ").slice(0, 20000),
+      // Text served to a crawler and hidden from a visitor - but only the kind
+      // that has no innocent explanation.
+      //
+      // Hidden text on its own is everywhere: collapsed menus, dropdowns,
+      // accordions, tab panels, modals and skip links are all display:none
+      // until used. Measured on a documentation site, a first version of this
+      // reported 191 hidden words across 6 elements carrying 43 links as a
+      // blocker, and every one of them was a collapsed navigation panel.
+      //
+      // So anything that belongs to a recognisable interface component is
+      // skipped, and what is left is reported only when its links point off
+      // this site - which is what an injected block is for and what a menu
+      // never does.
+      hiddenText: (() => {
+        const here = location.hostname.replace(/^www\./, "");
+        const UI = "nav,header,footer,details,dialog,[hidden],[aria-expanded],"
+          + "[aria-hidden],[role=menu],[role=menubar],[role=menuitem],"
+          + "[role=tablist],[role=tabpanel],[role=dialog],[role=navigation],"
+          + "[role=tooltip],[popover]";
+        const UI_CLASS = /menu|nav|dropdown|accordion|collapse|modal|dialog|tab|drawer|offcanvas|popover|tooltip|carousel|slider|skip|sr-only|visually-hidden|screen-reader/i;
+        let words = 0, nodes = 0, ext = 0, int = 0, sample = "";
+        for (const el of Array.from(document.querySelectorAll("div,span,p,section,ul,li"))) {
+          const cs = getComputedStyle(el);
+          const off = parseInt(cs.textIndent || "0", 10) <= -1000
+            || parseInt(cs.left || "0", 10) <= -1000;
+          if (!(cs.display === "none" || cs.visibility === "hidden" || off)) continue;
+          if (el.closest(UI)) continue;
+          if (UI_CLASS.test(el.className || "") ) continue;
+          if (el.parentElement && el.parentElement.closest("[data-hidden-counted]")) continue;
+          el.setAttribute("data-hidden-counted", "1");
+          const t = (el.textContent || "").replace(/\s+/g, " ").trim();
+          const n = (t.match(/\S+/g) || []).length;
+          if (n < 5) continue;
+          let e = 0, i = 0;
+          for (const a of Array.from(el.querySelectorAll("a[href]"))) {
+            let h;
+            try { h = new URL(a.href).hostname.replace(/^www\./, ""); } catch { continue; }
+            if (h && h !== here) e += 1; else i += 1;
+          }
+          words += n; nodes += 1; ext += e; int += i;
+          if (sample.length < 300) sample += " " + t.slice(0, 200);
+        }
+        return { words, nodes, links: ext + int, external: ext, internal: int,
+                 sample: sample.trim() };
+      })(),
+      offsiteLinks: (() => {
+        const here = location.hostname.replace(/^www\./, "");
+        const hosts = {};
+        let count = 0;
+        for (const a of Array.from(document.querySelectorAll("a[href]"))) {
+          let h;
+          try { h = new URL(a.href).hostname.replace(/^www\./, ""); } catch { continue; }
+          if (!h || h === here) continue;
+          count += 1;
+          hosts[h] = (hosts[h] || 0) + 1;
+        }
+        return { count, hosts: Object.keys(hosts).length,
+                 sample: Object.keys(hosts).slice(0, 8) };
+      })(),
     };
   });
   Object.assign(res, dom);
@@ -969,10 +1122,13 @@ async function run(url, opts) {
   for (const p of pages) findings.push(...judgePage(p));
   findings.push(...judgeCanonical(pages));
 
-  // Structured data, per page and then across the set.
+  // Structured data and content quality, per page.
   for (const p of pages) {
     if (!p.ok) continue;
     for (const f of judgeSchema(p.ldBlocks || [], p.bodyText, p.kind)) {
+      findings.push(Object.assign({ where: p.url }, f));
+    }
+    for (const f of judgeContent(p)) {
       findings.push(Object.assign({ where: p.url }, f));
     }
   }
@@ -1126,7 +1282,7 @@ if (require.main === module) {
 }
 
 module.exports = { judgeTitle, judgeDescription, judgeH1, judgeVariants, isDevHost,
-                   parseLd, ldNodes, judgeSchema, judgeSchemaCoverage,
+                   parseLd, ldNodes, judgeSchema, judgeSchemaCoverage, judgeContent,
                    pageKind, siloOf, buildGraph, judgeInternalLinking,
                    judgeCanonical, judgeRobots, judge404, judgeLinks,
                    judgeSitemap, judgePage, classifyLink, entityLeak, similar,

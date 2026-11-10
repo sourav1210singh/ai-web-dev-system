@@ -399,6 +399,40 @@ def main():
        "seo" in job.JOB_TYPES["watch"]["checks"]
        and "seo" in [k for k, _ in job.WATCH_KEYS])
 
+    # --- drop: a diagnosis, not a fix -------------------------------------
+    state["launch"] = "  favicon    5430 bytes"
+    state["rqa"] = []
+    state["security"] = {"findings": [], "thirdParty": [], "cookies": 0,
+                         "scriptsScanned": 1}
+    state["seo"] = {"counts": {"pages read": 12, "internal links checked": 40,
+                               "internal links broken": 7},
+                    "findings": [
+        {"sev": "MAJOR", "title": "An invalid URL returns 200, not 404"},
+        {"sev": "BLOCKER", "title": "7 internal link(s) do not resolve"}]}
+    rc, out = run(job.cmd_new, {"name": "Traffic down", "domain": "example.test",
+                                "dir": tmp, "type": "drop"})
+    jidd = [l.split()[1] for l in out.splitlines()
+            if l.startswith("job ") and " opened" in l][0]
+    rc, out = run(job.cmd_diagnose, {"id": jidd, "dir": tmp})
+    ok("drop runs the seo and security passes",
+       "seo" in job.JOB_TYPES["drop"]["checks"]
+       and "security" in job.JOB_TYPES["drop"]["checks"])
+    ok("drop also runs recon, because hosting and DNS moves cause drops",
+       "recon" in job.JOB_TYPES["drop"]["checks"])
+    ok("drop does not run the heavy page measurements",
+       "perf" not in job.JOB_TYPES["drop"]["checks"]
+       and "a11y" not in job.JOB_TYPES["drop"]["checks"],
+       "vitals are not a usual cause of a ranking collapse")
+    ok("the soft 404 shows in the drop digest", "returns 200, not 404" in out)
+    rc, out = run(job.cmd_close, {"id": jidd, "dir": tmp, "summary": "diagnosed"})
+    ok("a drop job closes without a gate, because it changes nothing",
+       rc == 0, "rc=%d" % rc)
+    ok("drop has no apply stage",
+       "apply" not in job.JOB_TYPES["drop"]["stages"])
+    j, _p = job.find(jidd, tmp)
+    ok("the findings are recorded against the job",
+       any("do not resolve" in l for l in j["snapshots"]["before"]["seo"]))
+
     rc, out = run(job.cmd_new, {"name": "Nope", "domain": "example.test",
                                 "dir": tmp, "type": "nonsense"})
     ok("an unknown job type is refused", rc == 2)

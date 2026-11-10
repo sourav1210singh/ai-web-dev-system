@@ -308,6 +308,94 @@ ok("no BreadcrumbList with inner pages present is reported",
 ok("a site with no inner pages is not asked for breadcrumbs",
    !has(S.judgeSchemaCoverage(["Organization", "WebSite"], 0), "ld-no-breadcrumb"));
 
+// ------------------------------------------------------------ content
+
+const page = (over) => Object.assign({
+  url: "https://x.test/services/plumbing", ok: true, title: "Plumbing in Leeds",
+  kind: "other", bodyText: "", }, over || {});
+const prose = (n) => ("we repair taps showers boilers and blocked drains across "
+  + "the city with a qualified engineer on call every day of the week ").repeat(n);
+
+ok("a page under 300 words is reported as thin",
+   has(S.judgeContent(page({ bodyText: prose(2) })), "thin-content"));
+ok("a page of normal length is not",
+   !has(S.judgeContent(page({ bodyText: prose(30) })), "thin-content"));
+ok("a contact page is not judged for thinness",
+   !has(S.judgeContent(page({ url: "https://x.test/contact", bodyText: prose(2) })),
+        "thin-content"),
+   "it is not meant to rank on word count");
+ok("a blog index is not judged for thinness",
+   !has(S.judgeContent(page({ kind: "hub", bodyText: prose(2) })), "thin-content"));
+
+ok("ordinary prose is not reported as stuffed",
+   !has(S.judgeContent(page({ bodyText: prose(40) })), "keyword-stuffing"),
+   "the check has to survive real writing");
+ok("one term at over six percent is reported as stuffing",
+   has(S.judgeContent(page({ bodyText: prose(20) + "plumber ".repeat(90) })),
+       "keyword-stuffing"));
+ok("the stuffing finding names the term and the share",
+   /"plumber" is \d+\.\d% of the words/.test(
+     S.judgeContent(page({ bodyText: prose(20) + "plumber ".repeat(90) }))
+       .find((f) => f.id === "keyword-stuffing").title));
+ok("density is not judged on a short page at all",
+   !S.judgeContent(page({ bodyText: "plumber plumber plumber" }))
+     .some((f) => f.id === "keyword-stuffing" || f.id === "keyword-density"),
+   "three words cannot have a density");
+
+// A collapsed menu is hidden and links inward. An injection is hidden, sits
+// outside any interface component, and links out. Measured on a real docs
+// site: the first version called 191 words in 6 collapsed nav panels a blocker.
+const menu = page({ bodyText: prose(30),
+  hiddenText: { words: 191, nodes: 6, links: 43, external: 0, internal: 43,
+                sample: "Home Docs Blog About Learn Patterns" } });
+ok("a collapsed menu full of internal links is not reported",
+   !has(S.judgeContent(menu), "hidden-text"),
+   "every dropdown on the web looks like this");
+
+const injected = page({ bodyText: prose(30),
+  hiddenText: { words: 160, nodes: 2, links: 30, external: 30, internal: 0,
+                sample: "cheap viagra online casino bonus replica watch" } });
+ok("hidden text linking off-site to a spam vertical is a blocker",
+   sevOf(S.judgeContent(injected), "hidden-text") === "BLOCKER");
+ok("and it says to treat the site as compromised",
+   /compromised until proven otherwise/.test(
+     S.judgeContent(injected).find((f) => f.id === "hidden-text").fix));
+
+const offsiteOnly = page({ bodyText: prose(30),
+  hiddenText: { words: 160, nodes: 2, links: 12, external: 12, internal: 0,
+                sample: "some ordinary looking words here and there" } });
+ok("hidden off-site links without spam wording are major, not a blocker",
+   sevOf(S.judgeContent(offsiteOnly), "hidden-text") === "MAJOR",
+   "suspicious, not proven");
+ok("a small amount of hidden text is ignored",
+   !has(S.judgeContent(page({ bodyText: prose(30),
+     hiddenText: { words: 12, nodes: 1, links: 1, external: 1, internal: 0,
+                   sample: "skip to content" } })), "hidden-text"));
+
+ok("a pile of links to many outside domains is reported",
+   has(S.judgeContent(page({ bodyText: prose(30),
+     offsiteLinks: { count: 45, hosts: 31, sample: ["a.test", "b.test"] } })),
+     "offsite-link-pile"));
+ok("and it says a directory legitimately looks like that",
+   /directory or a link roundup/.test(
+     S.judgeContent(page({ bodyText: prose(30),
+       offsiteLinks: { count: 45, hosts: 31, sample: ["a.test"] } }))
+       .find((f) => f.id === "offsite-link-pile").detail));
+ok("a handful of outbound links is normal",
+   !has(S.judgeContent(page({ bodyText: prose(30),
+     offsiteLinks: { count: 6, hosts: 4, sample: [] } })), "offsite-link-pile"));
+
+ok("spam wording in the body but not the title is only a note",
+   sevOf(S.judgeContent(page({ bodyText: prose(20) + " casino bonus " })),
+         "spam-vertical-words") === "NOTE",
+   "plenty of real sites use these words");
+ok("and it says so rather than accusing",
+   /proves nothing/.test(S.judgeContent(page({ bodyText: prose(20) + " casino " }))
+     .find((f) => f.id === "spam-vertical-words").detail));
+ok("a real casino site is not flagged for its own subject",
+   !has(S.judgeContent(page({ title: "Casino reviews",
+     bodyText: prose(20) + " casino " })), "spam-vertical-words"));
+
 // -------------------------------------------------- internal linking
 
 ok("a blog post is an editorial page", S.pageKind("https://x.test/blog/a-post/") === "editorial");

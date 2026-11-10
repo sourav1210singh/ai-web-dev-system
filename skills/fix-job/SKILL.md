@@ -1,6 +1,6 @@
 ---
 name: fix-job
-description: Run client site work end to end as a job with state, in four types - fix (something live is wrong), intake (a new client, read everything, change nothing), golive (the launch gate, nothing ships with a blocker standing) and watch (a site that is already live: run it weekly and it reports only what changed, including a form that has quietly disappeared or a page that has doubled in weight). Every check runs at once, the job stops at the human gate, and verify diffs against the before state. Use when a client reports a problem, when a new client arrives, before any launch, or when picking up work left half done. Triggers on "fix karo", "ye issue hai", "client ne bola hai", "form kaam nahi kar raha", "naya client", "new client", "intake", "go live", "launch", "live karna hai", "job", "resume", "watch", "monitor karo", "sab theek chal raha hai", "leads aa rahe hain", "weekly check". It owns "go live": the launch gate runs site-recon, migration-parity, responsive-qa, launch-files and security-pass as its checks, so those do not need calling separately.
+description: Run client site work end to end as a job with state, in five types - fix (something live is wrong), intake (a new client, read everything, change nothing), golive (the launch gate, nothing ships with a blocker standing), drop (rankings or traffic fell: diagnose before changing anything, and check for a manual penalty before concluding it was an algorithm) and watch (a site that is already live: run it weekly and it reports only what changed, including a form that has quietly disappeared or a page that has doubled in weight). Every check runs at once, the job stops at the human gate, and verify diffs against the before state. Use when a client reports a problem, when a new client arrives, before any launch, or when picking up work left half done. Triggers on "fix karo", "ye issue hai", "client ne bola hai", "form kaam nahi kar raha", "naya client", "new client", "intake", "go live", "launch", "live karna hai", "job", "resume", "watch", "traffic down", "traffic gir gaya", "ranking gir gayi", "penalty", "algorithm update", "organic drop", "leads kam ho gaye", "monitor karo", "sab theek chal raha hai", "leads aa rahe hain", "weekly check". It owns "go live": the launch gate runs site-recon, migration-parity, responsive-qa, launch-files and security-pass as its checks, so those do not need calling separately.
 ---
 
 # Client work, run as a job
@@ -119,6 +119,82 @@ Two details worth keeping:
 If it ships anyway, that is a decision someone makes, not a check that is
 skipped. `--force` closes it and writes `CLOSED OVER STANDING BLOCKERS` into
 the job history, so the record says it was chosen rather than missed.
+
+## drop - why has traffic fallen
+
+A diagnosis, not a fix. It changes nothing and ends with a prioritised plan.
+
+```bash
+python job.py new "Drop analysis" --domain <domain> --type drop
+```
+
+### Check for a manual action before concluding anything
+
+This is the order, and getting it wrong costs weeks. **A manual penalty and an
+algorithmic drop have completely different remedies.** One is a reconsideration
+request after fixing a named violation; the other is quality work with no
+switch to flip. Open Search Console and read Manual Actions and Security Issues
+first, and write down what it said - including "no issues detected", because
+that is the finding that makes the rest of the analysis mean something.
+
+### Quantify it, then date it
+
+- Peak clicks and the month they happened, current clicks over the last 28
+  days, and the decline worked out explicitly: `(peak - current) / peak * 100`.
+- **Which month the fall started**, not "a few months ago".
+- The five pages and five keywords that lost most, with before and after
+  positions.
+- Then cross-reference that month against Google's update history. **Fetch the
+  current list** from `developers.google.com/search/updates/core-updates` - do
+  not work from a remembered table of update dates, which goes stale and takes
+  the conclusion with it.
+
+**Flag the double hit.** If a migration and an algorithm update land in the
+same month, say so plainly instead of picking one. Attribution is genuinely
+ambiguous then, and the recovery timeline is longer. Pretending to know which
+it was is the most expensive thing you can write in that report.
+
+**The archive shows when Google saw a change, not when it shipped.** Confirm
+the deploy date with the client before building a timeline on it.
+
+### What the Search Console indexing report is telling you
+
+Each bucket means something different, and the counts are the evidence:
+
+| Bucket | What it points at |
+|---|---|
+| Soft 404 | A migration whose old URLs were never redirected. A URL that answers 200 and says "not found" is the single clearest fingerprint of this, and `seo.js` detects it directly. |
+| Crawled, currently not indexed | Content quality. Google fetched it and decided against it. |
+| Discovered, currently not indexed | Crawl budget, usually too many low-value URLs. |
+| Duplicate without canonical | The four address variants, or a parameter explosion. |
+| Excluded by noindex | A staging flag that survived a launch, until proven otherwise. |
+
+### What this job measures, and what it cannot
+
+It runs recon, the launch files, the SEO pass and the security pass, so it
+reaches: soft 404s, robots and sitemap faults, noindex, broken internal links,
+thin and keyword-stuffed pages, hidden text linking off-site, a compromised
+site, and whether the hosting or DNS moved.
+
+**It cannot see Search Console.** The traffic numbers, the manual action, the
+indexing buckets and the keyword losses are all read by a person or a
+connector, and they are the half that says *when* and *how much*. The pass
+tells you what is wrong with the site; it does not tell you that traffic fell.
+Do not write a drop report from the crawl alone.
+
+Core Web Vitals are not a usual cause of a ranking collapse. Check them, after
+the rest, and do not lead with them.
+
+### Order the plan by impact, not by effort
+
+| When | What belongs there |
+|---|---|
+| 24 to 48 hours | Hacked pages still indexed, a manual penalty, robots.txt blocking Googlebot, mass soft 404s from missing redirects |
+| Week 1 to 2 | Individual soft 404s, crawled-not-indexed at scale, the missing old-to-new redirect map, a sitemap full of 404s and redirects, noindex on pages that should rank |
+| Week 3 to 5 | Missing schema, weak expertise signals, thin or stale content, orphan pages, meta quality |
+| Ongoing | Content depth, link recovery, Core Web Vitals, the business profile |
+
+A ten-minute fix that stops a spam signal still goes in the first week.
 
 ## fix - one fix, end to end
 

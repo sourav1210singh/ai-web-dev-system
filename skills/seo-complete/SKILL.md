@@ -193,6 +193,35 @@ and check the `rel=canonical` on each one points at the same single address.
 - Never depend on a third-party placeholder image service in production — one
   failed and broke 87 pages.
 
+## Content quality, as far as it can be measured
+
+The quality-focused updates act on this, and three parts of it are countable
+rather than a matter of taste.
+
+- **Thin pages.** Under 300 words on a page that is meant to rank. Contact,
+  thank-you, privacy and archive pages are exempt - they are not competing on
+  depth.
+- **Keyword stuffing.** One term taking more than about 6% of a page's words
+  reads as stuffing rather than as writing. Natural prose almost never puts a
+  single non-stopword above 2%. Report the term and the share, not an opinion.
+- **Hidden text that links off-site.** Substantial text a visitor cannot see,
+  outside any menu or dialog, whose links leave the site. **This one is a
+  compromise until proven otherwise** - look for modified files and unknown
+  admin users, and check whether the pages are indexed, before deleting
+  anything.
+
+Two false positives to stay clear of, both found by running this against real
+sites rather than fixtures:
+
+- **A collapsed menu is hidden text.** So is a dropdown, an accordion, a tab
+  panel, a modal and a skip link. A documentation site reported 191 hidden
+  words across 6 elements carrying 43 links, and every one was navigation.
+  What separates an injection is that it sits outside any interface component
+  **and** its links point away from the site.
+- **A real site uses its own vocabulary.** A pharmacy says "pharmacy" and a
+  casino review site says "casino". Spam-vertical wording is a weak secondary
+  signal, never a conclusion on its own.
+
 ## Multilingual
 
 - Tag-count parity between languages across `<h2> <h3> <h4> <ul> <ol> <li> <a>`

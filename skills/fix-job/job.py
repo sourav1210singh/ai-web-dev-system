@@ -62,6 +62,16 @@ JOB_TYPES = {
         "gate": True, "strict": True,
         "what": "the launch gate: nothing ships with a blocker standing",
     },
+    # Why has traffic fallen. A diagnosis, not a fix: it changes nothing and
+    # ends with a prioritised plan. The checks are the ones that can actually
+    # be measured from here - the Search Console half is human work and the
+    # skill says so rather than pretending otherwise.
+    "drop": {
+        "stages": ["recon", "diagnose", "report", "close"],
+        "checks": ["recon", "launch", "seo", "security"],
+        "gate": False, "strict": False,
+        "what": "rankings or traffic fell: find out why before changing anything",
+    },
     # A job that ends at handover is a job that finds out from the client.
     # This one is meant to be run again on the same id, weekly, and it reports
     # what has CHANGED rather than producing another audit nobody reads.

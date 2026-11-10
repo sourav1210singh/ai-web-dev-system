@@ -1,6 +1,6 @@
 ---
 name: responsive-qa
-description: Check a page at real device widths - phone through to a 2560px desktop, never stopping at 1440 - and find the layout, tap-target, image and heading problems a developer would catch by looking — measured, not eyeballed. Also measures what the page costs to load on a throttled mobile connection: LCP and the element that is the LCP, layout shift and what moved, page weight split into yours and third parties, render-blocking scripts, fonts with no font-display, oversized and lazy-loaded hero images. Use after building or changing any page, before telling the user it works, and whenever they report that something "looks broken" on a phone or tablet. Also use to audit a client's existing site. Triggers on "check responsive", "mobile pe dekho", "test on devices", "koi bug to nahi", "is it working on mobile", "page check karo", "site slow hai", "speed check karo", "page weight", "core web vitals", "LCP", "CLS", "kitna heavy hai", or any claim about a page being done.
+description: Check a page at real device widths - phone through to a 2560px desktop, never stopping at 1440 - and find the layout, tap-target, image and heading problems a developer would catch by looking — measured, not eyeballed. Also measures what the page costs to load on a throttled mobile connection: LCP and the element that is the LCP, layout shift and what moved, page weight split into yours and third parties, render-blocking scripts, fonts with no font-display, oversized and lazy-loaded hero images. And whether everyone can use it: axe-core for WCAG 2 A and AA, skip links, landmarks, heading outline, accessible names, and focus that has no visible style. Use after building or changing any page, before telling the user it works, and whenever they report that something "looks broken" on a phone or tablet. Also use to audit a client's existing site. Triggers on "check responsive", "mobile pe dekho", "test on devices", "koi bug to nahi", "is it working on mobile", "page check karo", "site slow hai", "speed check karo", "page weight", "core web vitals", "LCP", "CLS", "kitna heavy hai", "accessibility", "a11y", "WCAG", "screen reader", "keyboard se chalta hai", "axe", or any claim about a page being done.
 ---
 
 # Responsive QA
@@ -104,6 +104,41 @@ in Search Console is right to ask why.
 Two numbers in it are not Google's, and the tool says so where it uses them:
 the page-weight budget (`--budget-kb`, 2048 by default) and the throttling
 profile are the house's own, to be raised or lowered deliberately.
+
+## Whether everyone can use it
+
+```bash
+node "C:\Claude-Code\.ai-system\skills\responsive-qa\a11y.js" <url> \
+  --routes /,/about --out <project>\.claude-context\qa\a11y
+```
+
+axe-core for the WCAG 2 A and AA rules, plus the checks a rule engine cannot
+make: a skip link that points at nothing, a missing or duplicated landmark,
+unnamed navigation landmarks that all read as "navigation", a heading outline
+that jumps a level, something focusable still reachable inside `aria-hidden`,
+a control with no accessible name, and **focus with no visible style**.
+
+That last one is the most common accessibility defect there is and no rule
+engine reports it: a stylesheet sets `outline: none`, puts nothing back, and
+somebody using a keyboard cannot see where they are. It is found by focusing
+each control and comparing the computed style before and after.
+
+**It runs at 390 and 1440, not just desktop.** Tap-target size, reflow and the
+order focus moves in all change on a phone. A pass taken only at 1440 never
+opens the width where those fail - which is how this project's own earlier
+script ran for weeks.
+
+axe-core is found in `--axe`, the skill's `vendor/`, or npm global, and
+fetched once into `vendor/` if it is nowhere. It is not committed: it is
+MPL-licensed and half a megabyte, and the version actually used is recorded in
+the report.
+
+**Say what it does not cover.** axe finds roughly a third to a half of WCAG. A
+clean run means the machine-checkable half is clean. Reading order against
+visual order, link text that makes sense out of context, whether a custom
+widget behaves like the thing it imitates, and whether the page makes sense
+read aloud all still need a person. Reporting "accessible" off a green axe run
+is a claim the run does not support.
 
 ## What it measures
 

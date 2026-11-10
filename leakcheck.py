@@ -157,6 +157,17 @@ def main():
         print("%d terms checked:\n  %s" % (len(terms), ", ".join(terms)))
         return 0
 
+    # Compile each term once, not once per line per file. Built inside the
+    # loop this rebuilt and re-looked-up the pattern for every line of every
+    # file against every term - 74 files by 60 terms - and the check went from
+    # seconds to minutes as the client list grew, which is how a pre-push
+    # check stops being run.
+    # A stored space matches any run of whitespace, so a client name wrapped
+    # across two lines is still caught.
+    compiled = [(t, re.compile(r"\b%s\b" % re.escape(t)
+                               .replace(r"\ ", r"\s+").replace(" ", r"\s+")))
+                for t in terms]
+
     hits = []
     for p in files():
         rel = os.path.relpath(p, HERE)
@@ -166,11 +177,8 @@ def main():
             continue
         for i, line in enumerate(text.splitlines(), 1):
             low = line.lower()
-            for t in terms:
-                # a stored space matches any run of whitespace, so a client
-                # name wrapped across two lines is still caught
-                pat = re.escape(t).replace(r"\ ", r"\s+").replace(" ", r"\s+")
-                if re.search(r"\b%s\b" % pat, low):
+            for t, rx in compiled:
+                if rx.search(low):
                     hits.append(("client name '%s'" % t, rel, i, line.strip()[:90]))
             for label, rx in SECRETS:
                 m = rx.search(line)

@@ -15,3 +15,7 @@ session_routes.json
 audit.err
 local_history.py
 worklog/
+vendor/
+a11y/
+perf/
+crossbrowser/

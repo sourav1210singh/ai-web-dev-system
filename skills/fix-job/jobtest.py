@@ -84,11 +84,15 @@ def main():
                           "scriptsScanned": 3},
              # golive runs the rollback check too, stubbed here so the suite
              # does not go near the network or a real plan.
-             "rollback": {"findings": [], "plan": {"verified_on": "2026-11-10"}}}
+             "rollback": {"findings": [], "plan": {"verified_on": "2026-11-10"}},
+             "seo": {"findings": [], "counts": {"pages read": 4,
+                                                "internal links checked": 20,
+                                                "internal links broken": 0}}}
     job.run_check = lambda d: state["launch"]
     job.run_rqa = lambda u, o: state["rqa"]
     job.run_security = lambda u, o: state["security"]
     job.run_rollback = lambda p: state["rollback"]
+    job.run_seo = lambda u, o: state["seo"]
 
     rc, out = run(job.cmd_new, {"name": "Demo Fix", "domain": "example.test",
                                 "dir": tmp, "route": "lovable"})
@@ -354,6 +358,46 @@ def main():
     rc, out = run(job.cmd_close, {"id": jid9, "dir": tmp, "summary": "live"})
     ok("a project with no estimate on file is not nagged about one",
        "estimate.py" not in out)
+
+    # --- golive and SEO ---------------------------------------------------
+    # The skill demanded these counts for months and shipped no way to produce
+    # them, so they were eyeballed. Now they gate.
+    state["rollback"] = {"findings": [], "plan": {"verified_on": "2026-11-10"}}
+    state["seo"] = {"counts": {"pages read": 4, "internal links checked": 20,
+                               "internal links broken": 3},
+                    "findings": [
+        {"sev": "BLOCKER", "title": "3 internal link(s) do not resolve"},
+        {"sev": "MAJOR", "title": "Meta description is Missing"}]}
+    rc, out = run(job.cmd_new, {"name": "Dead links", "domain": "example.test",
+                                "dir": tmp, "type": "golive"})
+    jidq = [l.split()[1] for l in out.splitlines()
+            if l.startswith("job ") and " opened" in l][0]
+    rc, out = run(job.cmd_diagnose, {"id": jidq, "dir": tmp})
+    ok("seo is one of the launch gate's checks",
+       "seo" in job.JOB_TYPES["golive"]["checks"])
+    ok("the digest has an SEO section", "**SEO**" in out)
+    rc, out = run(job.cmd_close, {"id": jidq, "dir": tmp, "summary": "ship it"})
+    ok("a broken internal link stops the launch", rc == 1, "rc=%d" % rc)
+    ok("the refusal names it", "do not resolve" in out)
+
+    state["seo"] = {"counts": {"pages read": 4, "internal links checked": 20,
+                               "internal links broken": 0},
+                    "findings": [{"sev": "MAJOR", "title": "Meta description is Missing"}]}
+    rc, out = run(job.cmd_new, {"name": "Thin meta", "domain": "example.test",
+                                "dir": tmp, "type": "golive"})
+    jidt = [l.split()[1] for l in out.splitlines()
+            if l.startswith("job ") and " opened" in l][0]
+    run(job.cmd_diagnose, {"id": jidt, "dir": tmp})
+    rc, out = run(job.cmd_close, {"id": jidt, "dir": tmp, "summary": "live"})
+    ok("a missing meta description is reported and does not stop the launch",
+       rc == 0, "rc=%d" % rc)
+    j, _p = job.find(jidt, tmp)
+    ok("the counts are recorded against the job",
+       any("20 link(s) checked" in l for l in j["snapshots"]["before"]["seo"]),
+       j["snapshots"]["before"]["seo"])
+    ok("seo is one of the watch checks",
+       "seo" in job.JOB_TYPES["watch"]["checks"]
+       and "seo" in [k for k, _ in job.WATCH_KEYS])
 
     rc, out = run(job.cmd_new, {"name": "Nope", "domain": "example.test",
                                 "dir": tmp, "type": "nonsense"})

@@ -31,6 +31,7 @@ PERF = os.path.join(SKILLS, "responsive-qa", "perf.js")
 A11Y = os.path.join(SKILLS, "responsive-qa", "a11y.js")
 ANALYTICS = os.path.join(SKILLS, "forms-and-leads", "analytics.js")
 SECURITY = os.path.join(SKILLS, "security-pass", "security.js")
+SEO = os.path.join(SKILLS, "seo-complete", "seo.js")
 ROLLBACK = os.path.join(HERE, "rollback.py")
 PARITY = os.path.join(SKILLS, "migration-parity", "parity.py")
 
@@ -56,7 +57,8 @@ JOB_TYPES = {
         "stages": ["diagnose", "apply", "verify", "close"],
         # rollback is a precondition of the launch rather than a measurement
         # of the site, which is why it belongs to this type alone.
-        "checks": ["launch", "responsive", "parity", "security", "rollback"],
+        "checks": ["launch", "responsive", "parity", "security", "rollback",
+                   "seo"],
         "gate": True, "strict": True,
         "what": "the launch gate: nothing ships with a blocker standing",
     },
@@ -66,7 +68,7 @@ JOB_TYPES = {
     "watch": {
         "stages": ["diagnose", "report"],
         "checks": ["launch", "responsive", "perf", "a11y", "analytics",
-                   "security"],
+                   "security", "seo"],
         "gate": False, "strict": False,
         "what": "a site that is already live: has anything broken since last time",
     },
@@ -198,6 +200,38 @@ def run_security(url, out):
         return json.loads(io.open(f, encoding="utf-8").read())
     except Exception as e:
         return {"error": "security.json unreadable: %s" % e}
+
+
+def run_seo(url, out):
+    if not os.path.isfile(SEO):
+        return {"error": "seo.js not found"}
+    try:
+        subprocess.run(["node", SEO, url, "--out", out],
+                       capture_output=True, text=True, timeout=900)
+    except Exception as e:
+        return {"error": "seo.js could not run: %s" % e}
+    f = os.path.join(out, "seo.json")
+    if not os.path.isfile(f):
+        return {"error": "seo.js produced no seo.json"}
+    try:
+        return json.loads(io.open(f, encoding="utf-8").read())
+    except Exception as e:
+        return {"error": "seo.json unreadable: %s" % e}
+
+
+def seo_problems(data):
+    """BLOCKER and MAJOR, then the counts seo-complete asks for by name."""
+    if not isinstance(data, dict) or data.get("error"):
+        return ["seo: %s" % (data or {}).get("error", "did not run")]
+    out = []
+    for f in data.get("findings") or []:
+        if f.get("sev") in ("BLOCKER", "MAJOR"):
+            out.append("%s: %s" % (f.get("sev"), f.get("title")))
+    c = data.get("counts") or {}
+    out.append("pages: %s read, %s link(s) checked, %s broken"
+               % (c.get("pages read", 0), c.get("internal links checked", 0),
+                  c.get("internal links broken", 0)))
+    return out
 
 
 def run_rollback(project):
@@ -439,6 +473,8 @@ def snapshot(job, label):
                  if "security" in wants else None)
         f_rb = (ex.submit(run_rollback, job["project"])
                 if "rollback" in wants else None)
+        f_seo = (ex.submit(run_seo, url, os.path.join(out, "seo"))
+                 if "seo" in wants else None)
         f_par = None
         if "parity" in wants and job.get("old_url"):
             f_par = ex.submit(
@@ -453,6 +489,7 @@ def snapshot(job, label):
         an_data = f_an.result() if f_an else None
         sec_data = f_sec.result() if f_sec else None
         rb_data = f_rb.result() if f_rb else None
+        seo_data = f_seo.result() if f_seo else None
         recon_txt = f_recon.result() if f_recon else ""
         par_txt = f_par.result() if f_par else ""
 
@@ -468,9 +505,10 @@ def snapshot(job, label):
         "analytics": analytics_problems(an_data) if f_an else [],
         "security": security_problems(sec_data) if f_sec else [],
         "rollback": rollback_problems(rb_data) if f_rb else [],
+        "seo": seo_problems(seo_data) if f_seo else [],
         "ran": [k for k in ("launch", "responsive", "parity", "recon",
                             "perf", "a11y", "analytics", "security",
-                            "rollback") if k in wants],
+                            "rollback", "seo") if k in wants],
         "qa_dir": out,
         "raw_launch": check_txt,
     }
@@ -492,8 +530,12 @@ def blockers(snap):
     # verified, a backup that is not there, or an old origin that has already
     # gone is a different matter - there is no way back at all.
     rb = [l for l in (snap.get("rollback") or []) if l.startswith("BLOCKER")]
+    # SEO the same way: a missing meta description is reported and does not
+    # hold a launch. A broken internal link, a noindexed page or two addresses
+    # both serving the site does.
+    seo = [l for l in (snap.get("seo") or []) if l.startswith("BLOCKER")]
     return ((snap.get("launch") or []) + (snap.get("responsive") or [])
-            + sec + rb)
+            + sec + rb + seo)
 
 
 def digest(snap, title):
@@ -510,7 +552,8 @@ def digest(snap, title):
                       ("a11y", "Accessibility"),
                       ("analytics", "Analytics"),
                       ("security", "Security"),
-                      ("rollback", "Rollback plan")):
+                      ("rollback", "Rollback plan"),
+                      ("seo", "SEO")):
         if key not in ran:
             continue
         rows = snap.get(key) or []
@@ -672,7 +715,8 @@ def cmd_verify(a):
 
 WATCH_KEYS = (("launch", "Launch files"), ("responsive", "Responsive QA"),
               ("perf", "Load"), ("a11y", "Accessibility"),
-              ("analytics", "Analytics"), ("security", "Security"))
+              ("analytics", "Analytics"), ("security", "Security"),
+              ("seo", "SEO"))
 
 
 def cmd_watch(a):

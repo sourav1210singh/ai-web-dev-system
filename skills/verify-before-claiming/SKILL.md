@@ -209,3 +209,24 @@ it. Never fill the gap with something that sounds right. Never promise an
 outcome; commit to the diagnosis and the method until the data is in hand.
 
 That answer is allowed, and the gate will not block it.
+
+## The words for an absent value, in anything a client reads
+
+These three get confused constantly and they mean different things. Using the
+wrong one sends somebody to fix a thing that is not broken, or hides a thing
+that is.
+
+| Say | When |
+|---|---|
+| **Missing** | The thing genuinely is not there. The page has no meta description. |
+| **Blocked** | We were refused. A 403, a 429, a login wall, a WAF. Name the identity that was refused. |
+| **Not checked** | We did not look, or the tool was capped or unavailable. |
+
+Never write **"Not Detected", "Not Found", "N/A", "TBD"** or a placeholder into
+a client-facing report. "Not Found" reads as a finding about the site when it is
+usually a statement about our own access, and a placeholder that ships is a
+placeholder the client reads.
+
+A refusal is never folded into a broken count. One live client site answers 403
+to a browser user agent and 200 to Googlebot - the page was always fine, and an
+hour went into "fixing" it.

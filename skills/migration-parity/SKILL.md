@@ -100,6 +100,30 @@ header, footer and aside removed). Judge on that one.
   purpose, so a rewrite passes as long as the substance is there.
 - Whether it *looks* right. That is a different check and it is not optional:
   run `responsive-qa` and read the screenshots. See `verify-before-claiming`.
+- Whether the **old addresses still work**. It compares a page against a page,
+  which is a different question from whether the old URL still reaches it. See
+  below.
+
+## The addresses, not just the pages
+
+Content parity passing says the new site holds everything. It says nothing about
+whether anyone can still get there by the link they have, and those links are in
+Google, in other people's articles and in the client's own email signatures.
+
+Two checks, neither of which the content comparison performs:
+
+1. **Every old URL maps somewhere.** List the old site's URLs (its sitemap, a
+   crawl, or Search Console) against the new ones, and for each one that
+   changed, confirm a 301 to the page that replaced it. A URL that changed with
+   no redirect is a page that was live and is now a 404.
+2. **The old domain itself redirects**, when the brand or domain changed. Test
+   actual old-domain URLs, not just the apex: a redirect that sends every path
+   to the new home page loses the mapping and reads to a search engine as a
+   wholesale deletion.
+
+Then run `seo-complete`'s pass on the new site, which checks the four address
+variants, that an invalid URL returns a real 404, and that no sitemap URL is
+itself a redirect. A redirect whose destination 404s is worse than no redirect.
 
 ## Order of work on a migration
 

@@ -65,6 +65,23 @@ and leave content alone.
   Two Organization blocks on one page is a defect.
 - Cover the page type: Organization or LocalBusiness, Service, Article or
   BlogPosting, FAQPage, and BreadcrumbList on every page below the root.
+- **Link the nodes with `@id` instead of repeating them.** Declare the
+  organisation once as `<site>/#organization`, then have `WebSite.publisher`,
+  `LocalBusiness.parentOrganization` and `Service.provider` reference that id.
+  A reference whose id nothing declares is a reference into nothing: the block
+  reads as complete and resolves to no publisher at all.
+- **`serviceType` belongs on `Service` only.** Not on `LocalBusiness`, not on
+  `FinancialService`. It is ignored there, so the property looks present and
+  does nothing.
+- **Never ship a placeholder.** `[Business Name]`, `example.com`, `YOUR_`,
+  `TODO`. Opening hours come from what the client actually gave, never a
+  default of nine to five, and the logo URL is read off the live page rather
+  than guessed. A placeholder in a live Organization block is read by the
+  validator as the real value.
+- **`FAQPage` questions must appear in the visible text.** Markup that answers
+  questions the page does not ask is the one Google acts on.
+- Only include `sameAs` social URLs that have actual values. An empty string in
+  the array is worse than a shorter array.
 
 ## Sitemap
 
@@ -88,6 +105,42 @@ and leave content alone.
   repeat the same exact-match keyword anchor across dozens of posts.
 - Add a guard on the publish path that warns when a link target does not
   resolve. Warn, do not block — a redirecting link is avoidable, not an error.
+- **Anchor text says where the link goes.** "Click here", "read more", "learn
+  more" tell a reader and a crawler nothing.
+- **No page should have zero internal links pointing at it.** A page reachable
+  only from the sitemap is a page the site itself does not vouch for. Count
+  inbound links from content, not from the navigation: the nav links every page
+  and so distinguishes none of them.
+
+### Where a new internal link may be placed
+
+This is the rule that gets broken most often, and it is about the **source**
+page, not the destination.
+
+> **Links are placed on editorial content only** — blog posts, articles, learn
+> and resources pages, news, guides. **Never on** the home page, a service
+> page, about, contact, team, pricing, legal, a landing page, or a category and
+> archive hub such as `/blog/` itself.
+
+Destinations are unrestricted: an article may link to anything. The common and
+most valuable direction is article to service page, then article to related
+article, then article to contact.
+
+Two rules that follow from it:
+
+- **The anchor text must already exist, word for word, in the article body.**
+  Find the phrase in the live page and link it. Never write a plausible
+  sentence to hang a link on, and never link from a heading or a button. If no
+  suitable phrase exists on the page, there is no suggestion — say so rather
+  than inventing one.
+- **Check what is already linked before proposing anything.** A link that is
+  already on the page, including in a "related posts" block, is recorded as
+  existing, not re-proposed.
+
+Group the site by the first path segment to see its silos, and prioritise by
+what actually gets traffic: the articles with clicks in Search Console are the
+ones worth linking from and to. That ordering needs GSC and is not something
+the tool can read on its own.
 
 ## One canonical address, proved on all four variants
 
@@ -188,6 +241,17 @@ to prevent:
 - the four address variants, with exactly one answering 200
 - an invalid URL returning a real 404 rather than the app's shell
 - the AI crawlers not blocked in robots.txt
+- which schema types exist across the site, blocks that are not valid JSON,
+  duplicate Organization or WebSite nodes, `@id` references that resolve to
+  nothing, placeholders, and FAQ questions absent from the visible text
+- pages nothing links to, articles carrying fewer than three in-content links,
+  anchor text repeated across five or more pages, and non-descriptive anchors
+
+**It will not call a page an orphan from a partial crawl.** A page linked only
+from pages that were not read would look orphaned, so below full sitemap
+coverage - or with no readable sitemap at all - the count is withheld and the
+report says which it was. A number that looks authoritative and is not is worse
+than no number.
 
 It reads the **raw** HTML for the things that must be server-rendered, and the
 rendered DOM for the things a visitor sees, because those are different

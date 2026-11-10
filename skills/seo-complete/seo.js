@@ -425,6 +425,314 @@ function judgePage(p) {
   return out;
 }
 
+// ------------------------------------------------------------- schema
+
+/** Every JSON-LD block in the raw HTML, parsed. Invalid JSON is a finding. */
+function parseLd(raw) {
+  const out = [];
+  const rx = /<script[^>]+type\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+  let m;
+  while ((m = rx.exec(String(raw || ""))) !== null) {
+    const body = m[1].trim();
+    if (!body) continue;
+    try { out.push({ ok: true, json: JSON.parse(body) }); }
+    catch (e) { out.push({ ok: false, error: String(e.message).slice(0, 80), body: body.slice(0, 80) }); }
+  }
+  return out;
+}
+
+/** One flat list of nodes, since a block may be an array or an @graph. */
+function ldNodes(blocks) {
+  const nodes = [];
+  const walk = (v) => {
+    if (Array.isArray(v)) { v.forEach(walk); return; }
+    if (!v || typeof v !== "object") return;
+    if (Array.isArray(v["@graph"])) { v["@graph"].forEach(walk); }
+    if (v["@type"] || v["@id"]) nodes.push(v);
+  };
+  for (const b of blocks) if (b.ok) walk(b.json);
+  return nodes;
+}
+
+const TYPES_OF = (n) => [].concat(n["@type"] || []).map(String);
+
+// A value that was never filled in. A shipped placeholder is read by the
+// client, and "[Business Name]" in a live Organization block has happened.
+const PLACEHOLDER = /\[[a-z_ ]{3,30}\]|\byour[-_ ](?:business|company|brand|domain)\b|example\.com|YOUR_|lorem ipsum|\bTODO\b|xxxx/i;
+
+/**
+ * Structured data, judged for what a search engine would actually make of it.
+ *
+ * The `@id` check is the one worth having: a block that says
+ * `publisher: {"@id": ".../#organization"}` when nothing declares that id is a
+ * reference into nothing. It looks complete and resolves to no publisher.
+ */
+function judgeSchema(blocks, pageText, kind) {
+  const out = [];
+  for (const b of blocks) {
+    if (!b.ok) {
+      out.push({ sev: "MAJOR", id: "ld-invalid",
+                 title: "A JSON-LD block is not valid JSON",
+                 detail: b.error + " - near: " + b.body });
+    }
+  }
+  const nodes = ldNodes(blocks);
+  if (!nodes.length) return out;
+
+  const counts = {};
+  for (const n of nodes) for (const t of TYPES_OF(n)) counts[t] = (counts[t] || 0) + 1;
+  for (const t of ["Organization", "WebSite", "LocalBusiness"]) {
+    if ((counts[t] || 0) > 1) {
+      out.push({ sev: "MAJOR", id: "ld-duplicate",
+                 title: counts[t] + " " + t + " blocks on one page",
+                 detail: "One source of truth. Two of these on a page is a "
+                       + "defect, usually a template block plus an inline one." });
+    }
+  }
+
+  const declared = new Set(nodes.map((n) => n["@id"]).filter(Boolean).map(String));
+  const referenced = new Set();
+  const collectRefs = (v) => {
+    if (Array.isArray(v)) { v.forEach(collectRefs); return; }
+    if (!v || typeof v !== "object") return;
+    const keys = Object.keys(v);
+    if (keys.length === 1 && keys[0] === "@id") { referenced.add(String(v["@id"])); return; }
+    for (const k of keys) if (k !== "@id") collectRefs(v[k]);
+  };
+  collectRefs(nodes);
+  const dangling = Array.from(referenced).filter((r) => !declared.has(r));
+  if (dangling.length) {
+    out.push({ sev: "MINOR", id: "ld-dangling-id",
+               title: dangling.length + " @id reference(s) point at nothing on this page",
+               detail: dangling.slice(0, 3).join(", ")
+                     + " - it resolves only if another page declares it, and "
+                     + "the block reads as complete either way." });
+  }
+
+  const flat = JSON.stringify(nodes);
+  if (PLACEHOLDER.test(flat)) {
+    const hit = flat.match(PLACEHOLDER);
+    out.push({ sev: "MAJOR", id: "ld-placeholder",
+               title: "Structured data contains an unfilled placeholder",
+               detail: "Found " + JSON.stringify(hit[0]) + ". It is live and a "
+                     + "validator will read it as the real value." });
+  }
+
+  for (const n of nodes) {
+    if (n.serviceType && !TYPES_OF(n).includes("Service")) {
+      out.push({ sev: "MINOR", id: "ld-servicetype",
+                 title: "serviceType is set on " + (TYPES_OF(n)[0] || "a node")
+                      + ", where it is not valid",
+                 detail: "serviceType belongs on Service only, not on "
+                       + "LocalBusiness or FinancialService." });
+      break;
+    }
+  }
+  for (const n of nodes) {
+    if (!n["@type"]) {
+      out.push({ sev: "MINOR", id: "ld-no-type",
+                 title: "A JSON-LD node has no @type" });
+      break;
+    }
+  }
+
+  // A FAQPage whose questions are not on the page is the one Google penalises.
+  const text = String(pageText || "").toLowerCase().replace(/\s+/g, " ");
+  if (text) {
+    const qs = [];
+    for (const n of nodes) {
+      if (!TYPES_OF(n).includes("FAQPage")) continue;
+      for (const q of [].concat(n.mainEntity || [])) {
+        if (q && q.name) qs.push(String(q.name));
+      }
+    }
+    const absent = qs.filter((q) => {
+      const probe = q.toLowerCase().replace(/\s+/g, " ").slice(0, 40);
+      return probe.length > 12 && !text.includes(probe);
+    });
+    if (absent.length) {
+      out.push({ sev: "MAJOR", id: "ld-faq-invisible",
+                 title: absent.length + " FAQ question(s) are in the schema but "
+                      + "not in the visible text",
+                 detail: JSON.stringify(absent[0]).slice(0, 90)
+                       + " - the markup has to match what a visitor reads." });
+    }
+  }
+
+  if (kind === "editorial" && !nodes.some((n) =>
+      TYPES_OF(n).some((t) => t === "BlogPosting" || t === "Article" || t === "NewsArticle"))) {
+    out.push({ sev: "MINOR", id: "ld-no-article",
+               title: "An article page with no Article or BlogPosting block" });
+  }
+  return out;
+}
+
+/** The types a site is expected to carry somewhere, checked across the set. */
+function judgeSchemaCoverage(allTypes, inners) {
+  const out = [];
+  const have = new Set(allTypes);
+  if (!have.has("Organization") && !have.has("LocalBusiness")) {
+    out.push({ sev: "MAJOR", id: "ld-no-org",
+               title: "No Organization or LocalBusiness anywhere on the site" });
+  }
+  if (!have.has("WebSite")) {
+    out.push({ sev: "MINOR", id: "ld-no-website",
+               title: "No WebSite block, so no sitelinks search box is possible" });
+  }
+  if (inners > 0 && !have.has("BreadcrumbList")) {
+    out.push({ sev: "MINOR", id: "ld-no-breadcrumb",
+               title: "No BreadcrumbList on any page below the root",
+               detail: inners + " inner page(s) checked." });
+  }
+  return out;
+}
+
+// ------------------------------------------------------ internal linking
+
+const EDITORIAL_HEADS = new Set(["blog", "news", "article", "articles", "learn",
+  "resource", "resources", "insight", "insights", "guide", "guides", "post",
+  "posts", "kb", "help", "docs", "press", "updates", "stories"]);
+const STATIC_HEADS = new Set(["service", "services", "about", "about-us",
+  "contact", "contact-us", "team", "staff", "doctors", "pricing", "insurance",
+  "billing", "privacy", "privacy-policy", "terms", "terms-and-conditions",
+  "legal", "category", "tag", "author"]);
+
+/**
+ * What kind of page this is, from its address.
+ *
+ * It decides where a new internal link may be *placed*: editorial content only.
+ * A hub like `/blog/` is an archive, not an article, so it is not a source
+ * either - which is why the editorial heads need a segment after them.
+ */
+function pageKind(u) {
+  let p;
+  try { p = new URL(u).pathname.replace(/\/+$/, ""); } catch { return "other"; }
+  if (!p || p === "") return "static";
+  const segs = p.split("/").filter(Boolean);
+  const head = (segs[0] || "").toLowerCase();
+  if (/^\d{4}$/.test(head) && segs.length >= 2) return "editorial";
+  if (EDITORIAL_HEADS.has(head)) return segs.length > 1 ? "editorial" : "hub";
+  if (STATIC_HEADS.has(head)) return "static";
+  return "other";
+}
+
+function siloOf(u) {
+  try {
+    const segs = new URL(u).pathname.split("/").filter(Boolean);
+    return segs.length ? segs[0].toLowerCase() : "(root)";
+  } catch { return "(root)"; }
+}
+
+const VAGUE_ANCHOR = /^(click here|read more|learn more|more|here|this|link|continue reading|see more|find out more|details)$/i;
+
+/** Who links to whom, from the pages that were actually read. */
+function buildGraph(pages) {
+  const norm = (u) => { try { const x = new URL(u); return x.origin + x.pathname.replace(/\/+$/, "") || x.origin; } catch { return null; } };
+  const nodes = new Map();
+  const touch = (u) => {
+    const k = norm(u);
+    if (!k) return null;
+    if (!nodes.has(k)) nodes.set(k, { url: k, inbound: 0, inContent: 0, outContent: 0, anchors: [] });
+    return nodes.get(k);
+  };
+  for (const p of pages) if (p.ok) touch(p.url);
+  for (const p of pages) {
+    if (!p.ok) continue;
+    const from = norm(p.url);
+    for (const a of (p.anchors || [])) {
+      const to = norm(a.href);
+      if (!to || to === from) continue;
+      const n = touch(to);
+      if (!n) continue;
+      n.inbound += 1;
+      if (!a.nav) {
+        n.inContent += 1;
+        n.anchors.push({ text: (a.text || "").trim(), from });
+        const f = touch(p.url);
+        if (f) f.outContent += 1;
+      }
+    }
+  }
+  return nodes;
+}
+
+/**
+ * The link structure, judged only as far as the crawl can support.
+ *
+ * An orphan claim is a claim about the whole site, so it cannot be made from a
+ * partial crawl: a page linked only from the 180 pages that were not read
+ * would be reported as orphaned. Below full coverage the count is withheld and
+ * the report says why, which is the honest version of a number that would
+ * otherwise look authoritative.
+ */
+function judgeInternalLinking(nodes, pages, coverage) {
+  const out = [];
+  const list = Array.from(nodes.values()).filter((n) =>
+    pages.some((p) => p.ok && n.url === String(p.url).replace(/\/+$/, "")));
+
+  const orphans = list.filter((n) => n.inbound === 0);
+  if (coverage !== null && coverage >= 0.9) {
+    if (orphans.length) {
+      out.push({ sev: "MAJOR", id: "orphans",
+                 title: orphans.length + " page(s) have no internal link pointing at them",
+                 detail: orphans.slice(0, 6).map((n) => n.url).join(", ")
+                       + " - reachable only from the sitemap." });
+    }
+  } else if (orphans.length) {
+    out.push({ sev: "NOTE", id: "orphans-unknown",
+               title: "Orphan pages were not counted",
+               detail: coverage === null
+                 ? "There is no readable sitemap to compare against, so the "
+                 + "full page list is unknown and nothing can be called an "
+                 + "orphan. Fix the sitemap first."
+                 : "Only " + Math.round(coverage * 100) + "% of the sitemap "
+                 + "was read, and a page linked from an unread page would "
+                 + "look orphaned. Raise --pages to count them." });
+  }
+
+  const thin = list.filter((n) => pageKind(n.url) === "editorial" && n.outContent < 3);
+  if (thin.length) {
+    out.push({ sev: "MINOR", id: "thin-internal-links",
+               title: thin.length + " article(s) carry fewer than 3 in-content internal links",
+               detail: thin.slice(0, 5).map((n) => n.url + " (" + n.outContent + ")")
+                 .join(", ") });
+  }
+
+  // Anchor quality is a property of the page the link sits ON, and every
+  // anchor here was collected from a page that was read. Restricting these to
+  // destinations that were also read dropped every link pointing at a page
+  // outside the crawl - which is most of them.
+  const all = Array.from(nodes.values());
+  const byText = {};
+  for (const n of all) {
+    for (const a of n.anchors) {
+      if (!a.text) continue;
+      const k = a.text.toLowerCase();
+      (byText[k] = byText[k] || new Set()).add(a.from);
+    }
+  }
+  const repeated = Object.entries(byText).filter(([, srcs]) => srcs.size >= 5);
+  if (repeated.length) {
+    out.push({ sev: "MINOR", id: "anchor-repetition",
+               title: repeated.length + " anchor text(s) repeat across 5 or more pages",
+               detail: repeated.slice(0, 3)
+                 .map(([t, s]) => JSON.stringify(t.slice(0, 32)) + " x" + s.size).join(", ")
+                     + " - vary it; the same exact-match anchor sitewide reads as a pattern." });
+  }
+
+  const vague = [];
+  for (const n of all) {
+    for (const a of n.anchors) if (VAGUE_ANCHOR.test(a.text || "")) vague.push(a.text);
+  }
+  if (vague.length) {
+    out.push({ sev: "MINOR", id: "anchor-vague",
+               title: vague.length + " internal link(s) use non-descriptive anchor text",
+               detail: Array.from(new Set(vague)).slice(0, 5).join(", ")
+                     + " - the anchor should say where it goes." });
+  }
+  return out;
+}
+
 function sortFindings(list) {
   return list.slice().sort((a, b) =>
     (SEV_RANK[a.sev] ?? 9) - (SEV_RANK[b.sev] ?? 9) ||
@@ -488,6 +796,10 @@ async function readPage(ctx, page, url, opts) {
   res.ok = true;
   // Raw HTML: the only place to answer "would a crawler see this".
   res.rawJsonLd = /<script[^>]+type\s*=\s*["']application\/ld\+json["'][^>]*>/i.test(raw);
+  res.ldBlocks = parseLd(raw);
+  res.ldTypes = ldNodes(res.ldBlocks).flatMap(TYPES_OF);
+  res.kind = pageKind(url);
+  res.silo = siloOf(url);
   const xr = /<meta[^>]+name=["']robots["'][^>]*>/i.exec(raw);
   res.rawRobotsMeta = xr ? xr[0] : "";
 
@@ -520,6 +832,15 @@ async function readPage(ctx, page, url, opts) {
       alts: imgs.map((i) => i.getAttribute("alt") || ""),
       links: Array.from(document.querySelectorAll("a[href]"))
         .map((a) => ({ href: a.href, nav: !!a.closest("nav,header,footer") })),
+      // Anchor text as well, for the linking checks, and the visible text so
+      // a FAQ block can be compared against what a visitor actually reads.
+      anchors: Array.from(document.querySelectorAll("a[href]")).map((a) => ({
+        href: a.href,
+        text: (a.textContent || "").replace(/\s+/g, " ").trim().slice(0, 80),
+        nav: !!a.closest("nav,header,footer,aside"),
+      })),
+      bodyText: ((document.body && document.body.innerText) || "")
+        .replace(/\s+/g, " ").slice(0, 20000),
     };
   });
   Object.assign(res, dom);
@@ -648,6 +969,27 @@ async function run(url, opts) {
   for (const p of pages) findings.push(...judgePage(p));
   findings.push(...judgeCanonical(pages));
 
+  // Structured data, per page and then across the set.
+  for (const p of pages) {
+    if (!p.ok) continue;
+    for (const f of judgeSchema(p.ldBlocks || [], p.bodyText, p.kind)) {
+      findings.push(Object.assign({ where: p.url }, f));
+    }
+  }
+  const allTypes = pages.filter((p) => p.ok).flatMap((p) => p.ldTypes || []);
+  const inners = pages.filter((p) => p.ok && pageKind(p.url) !== "static"
+    && new URL(p.url).pathname.replace(/\/+$/, "") !== "").length;
+  findings.push(...judgeSchemaCoverage(allTypes, inners));
+
+  // The link structure, as far as the crawl can support a claim about it.
+  const graph = buildGraph(pages);
+  // null, not 1. With no sitemap there is nothing to measure coverage against,
+  // and defaulting to "complete" let the orphan count be claimed on a site
+  // whose sitemap had not been read at all - measured on a live site, which
+  // reported both "the sitemap lists no URLs" and "coverage 100%".
+  const coverage = sm.count ? pages.filter((p) => p.ok).length / sm.count : null;
+  findings.push(...judgeInternalLinking(graph, pages, coverage));
+
   // Duplicate titles and descriptions across the set.
   const dupe = (field) => {
     const seen = {};
@@ -718,6 +1060,20 @@ async function run(url, opts) {
     "sitemap URLs that redirect": (sm.redirecting || []).length,
     "internal links checked": linksChecked,
     "internal links broken": linkRows.filter((l) => l.verdict === "broken").length,
+    "schema types found": Array.from(new Set(allTypes)).sort().join(", ") || MISSING,
+    "pages with invalid JSON-LD":
+      ok.filter((p) => (p.ldBlocks || []).some((b) => !b.ok)).length,
+    // Only pages that were actually read. Counting graph nodes counted
+    // every page merely discovered through a link, which has zero
+    // outgoing links because it was never opened - 26 of them on a site
+    // where 6 pages had been read.
+    "articles with fewer than 3 in-content links":
+      Array.from(graph.values()).filter((n) =>
+        pageKind(n.url) === "editorial" && n.outContent < 3
+        && ok.some((p) => String(p.url).replace(/\/+$/, "") === n.url)).length,
+    "sitemap coverage read":
+      coverage === null ? "no sitemap to compare against"
+                        : Math.round(coverage * 100) + "%",
   };
 
   return {
@@ -770,6 +1126,8 @@ if (require.main === module) {
 }
 
 module.exports = { judgeTitle, judgeDescription, judgeH1, judgeVariants, isDevHost,
+                   parseLd, ldNodes, judgeSchema, judgeSchemaCoverage,
+                   pageKind, siloOf, buildGraph, judgeInternalLinking,
                    judgeCanonical, judgeRobots, judge404, judgeLinks,
                    judgeSitemap, judgePage, classifyLink, entityLeak, similar,
                    firstWords, sortFindings, report, LIMITS, AI_AGENTS, MISSING };

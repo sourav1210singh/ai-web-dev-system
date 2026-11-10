@@ -220,6 +220,163 @@ const softTxt = S.report({ url: "https://a.example", findings: [], softs: true,
 ok("a soft-404 site is warned about at the top of the report",
    /unreliable until that is fixed/.test(softTxt));
 
+// ------------------------------------------------------------- schema
+
+const LD = (obj) => '<script type="application/ld+json">' + JSON.stringify(obj) + "</script>";
+
+ok("a JSON-LD block is parsed out of raw HTML",
+   S.parseLd("<head>" + LD({ "@type": "Organization", name: "X" }) + "</head>")[0].ok);
+ok("invalid JSON in a block is caught",
+   S.parseLd('<script type="application/ld+json">{nope}</script>')[0].ok === false);
+ok("invalid JSON is reported as a finding",
+   has(S.judgeSchema(S.parseLd('<script type="application/ld+json">{nope}</script>'), "", "static"),
+       "ld-invalid"));
+ok("an @graph is flattened into its nodes",
+   S.ldNodes(S.parseLd(LD({ "@context": "x", "@graph": [
+     { "@type": "Organization" }, { "@type": "WebSite" }] }))).length === 2);
+ok("an array block is flattened too",
+   S.ldNodes(S.parseLd(LD([{ "@type": "Organization" }, { "@type": "WebSite" }]))).length === 2);
+
+ok("two Organization blocks on one page is a defect",
+   has(S.judgeSchema(S.parseLd(LD({ "@type": "Organization", name: "A" })
+     + LD({ "@type": "Organization", name: "B" })), "", "static"), "ld-duplicate"),
+   "one source of truth");
+ok("one Organization block is fine",
+   !has(S.judgeSchema(S.parseLd(LD({ "@type": "Organization", name: "A" })), "", "static"),
+        "ld-duplicate"));
+
+const dangling = S.judgeSchema(S.parseLd(LD({
+  "@type": "WebSite", "@id": "https://x.test/#website",
+  publisher: { "@id": "https://x.test/#organization" } })), "", "static");
+ok("an @id reference with nothing declaring it is reported",
+   has(dangling, "ld-dangling-id"),
+   "it reads as complete and resolves to no publisher");
+ok("and it says the block reads as complete either way",
+   /reads as complete/.test(dangling.find((f) => f.id === "ld-dangling-id").detail));
+ok("an @id that is declared on the same page is not reported",
+   !has(S.judgeSchema(S.parseLd(LD({ "@graph": [
+     { "@type": "Organization", "@id": "https://x.test/#organization" },
+     { "@type": "WebSite", publisher: { "@id": "https://x.test/#organization" } }] })),
+     "", "static"), "ld-dangling-id"));
+
+ok("an unfilled placeholder in live schema is a major finding",
+   sevOf(S.judgeSchema(S.parseLd(LD({ "@type": "Organization", name: "[Business Name]" })),
+                       "", "static"), "ld-placeholder") === "MAJOR");
+ok("example.com in schema is caught too",
+   has(S.judgeSchema(S.parseLd(LD({ "@type": "Organization", url: "https://example.com" })),
+                     "", "static"), "ld-placeholder"));
+ok("a real value is not flagged as a placeholder",
+   !has(S.judgeSchema(S.parseLd(LD({ "@type": "Organization", name: "Bright Dental",
+                                     url: "https://brightdental.test" })), "", "static"),
+        "ld-placeholder"));
+
+ok("serviceType on LocalBusiness is reported",
+   has(S.judgeSchema(S.parseLd(LD({ "@type": "LocalBusiness", serviceType: "Plumbing" })),
+                     "", "static"), "ld-servicetype"));
+ok("serviceType on Service is correct and not reported",
+   !has(S.judgeSchema(S.parseLd(LD({ "@type": "Service", serviceType: "Plumbing" })),
+                      "", "static"), "ld-servicetype"));
+
+const faqBad = S.judgeSchema(S.parseLd(LD({ "@type": "FAQPage", mainEntity: [
+  { "@type": "Question", name: "Do you offer emergency callouts at night?",
+    acceptedAnswer: { "@type": "Answer", text: "Yes." } }] })),
+  "We fix taps and boilers across Leeds.", "static");
+ok("an FAQ question that is not in the visible text is a major finding",
+   sevOf(faqBad, "ld-faq-invisible") === "MAJOR",
+   "the markup has to match what a visitor reads");
+ok("an FAQ question that is on the page is accepted",
+   !has(S.judgeSchema(S.parseLd(LD({ "@type": "FAQPage", mainEntity: [
+     { "@type": "Question", name: "Do you offer emergency callouts at night?" }] })),
+     "Do you offer emergency callouts at night? Yes we do.", "static"), "ld-faq-invisible"));
+
+ok("an article page with no Article block is reported",
+   has(S.judgeSchema(S.parseLd(LD({ "@type": "Organization" })), "", "editorial"),
+       "ld-no-article"));
+ok("a static page is not expected to carry an Article block",
+   !has(S.judgeSchema(S.parseLd(LD({ "@type": "Organization" })), "", "static"),
+        "ld-no-article"));
+ok("a page with no schema at all produces no schema findings beyond the missing one",
+   S.judgeSchema([], "", "static").length === 0,
+   "judgePage already reports the absence");
+
+ok("no Organization anywhere on the site is a major finding",
+   sevOf(S.judgeSchemaCoverage(["WebSite"], 3), "ld-no-org") === "MAJOR");
+ok("LocalBusiness satisfies the Organization requirement",
+   !has(S.judgeSchemaCoverage(["LocalBusiness", "WebSite"], 0), "ld-no-org"));
+ok("no BreadcrumbList with inner pages present is reported",
+   has(S.judgeSchemaCoverage(["Organization", "WebSite"], 4), "ld-no-breadcrumb"));
+ok("a site with no inner pages is not asked for breadcrumbs",
+   !has(S.judgeSchemaCoverage(["Organization", "WebSite"], 0), "ld-no-breadcrumb"));
+
+// -------------------------------------------------- internal linking
+
+ok("a blog post is an editorial page", S.pageKind("https://x.test/blog/a-post/") === "editorial");
+ok("a dated permalink is editorial too",
+   S.pageKind("https://x.test/2026/08/05/a-post/") === "editorial");
+ok("the blog index is a hub, not an article",
+   S.pageKind("https://x.test/blog/") === "hub",
+   "an archive is never a link source");
+ok("a service page is static", S.pageKind("https://x.test/services/plumbing/") === "static");
+ok("the home page is static", S.pageKind("https://x.test/") === "static");
+ok("an unrecognised path is neither", S.pageKind("https://x.test/whatever/") === "other");
+ok("the silo is the first path segment", S.siloOf("https://x.test/learn/x/") === "learn");
+ok("the root has its own silo", S.siloOf("https://x.test/") === "(root)");
+
+const mkPage = (url, anchors) => ({ url, ok: true, anchors: anchors || [] });
+const g = S.buildGraph([
+  mkPage("https://x.test/blog/one", [
+    { href: "https://x.test/services/plumbing", text: "emergency plumbing", nav: false },
+    { href: "https://x.test/contact", text: "click here", nav: false }]),
+  mkPage("https://x.test/services/plumbing", [
+    { href: "https://x.test/blog/one", text: "our guide", nav: true }]),
+  mkPage("https://x.test/orphan", []),
+]);
+ok("the graph counts inbound links", g.get("https://x.test/services/plumbing").inbound === 1);
+ok("it separates in-content links from navigation",
+   g.get("https://x.test/blog/one").inbound === 1
+   && g.get("https://x.test/blog/one").inContent === 0,
+   "a nav link is not editorial support");
+ok("it counts a page's own outgoing in-content links",
+   g.get("https://x.test/blog/one").outContent === 2);
+
+const pagesForGraph = [mkPage("https://x.test/blog/one"), mkPage("https://x.test/services/plumbing"),
+                       mkPage("https://x.test/orphan")];
+const full = S.judgeInternalLinking(g, pagesForGraph, 1);
+ok("a page nothing links to is reported when the crawl is complete",
+   has(full, "orphans"), (full.find((f) => f.id === "orphans") || {}).detail);
+ok("an article with fewer than three in-content links is reported",
+   has(full, "thin-internal-links"));
+ok("a non-descriptive anchor is reported", has(full, "anchor-vague"));
+ok("and it names the offending text",
+   /click here/i.test((full.find((f) => f.id === "anchor-vague") || {}).detail));
+
+const partial = S.judgeInternalLinking(g, pagesForGraph, 0.4);
+ok("orphans are NOT claimed from a partial crawl",
+   !has(partial, "orphans") && has(partial, "orphans-unknown"),
+   "a page linked from an unread page would look orphaned");
+ok("and the report says what is needed to count them",
+   /Raise --pages/.test((partial.find((f) => f.id === "orphans-unknown") || {}).detail));
+
+// Measured on a live site: with no readable sitemap, coverage defaulted to 1
+// and the orphan count was stated as fact on that basis.
+const noSitemap = S.judgeInternalLinking(g, pagesForGraph, null);
+ok("orphans are NOT claimed when there is no sitemap at all",
+   !has(noSitemap, "orphans") && has(noSitemap, "orphans-unknown"),
+   "unknown coverage is not complete coverage");
+ok("and the reason given is the missing sitemap, not a percentage",
+   /no readable sitemap/.test((noSitemap.find((f) => f.id === "orphans-unknown") || {}).detail));
+
+const repeated = S.buildGraph(Array.from({ length: 6 }, (_, i) =>
+  mkPage("https://x.test/blog/p" + i, [
+    { href: "https://x.test/services/x", text: "best plumber leeds", nav: false },
+    { href: "https://x.test/a", text: "one", nav: false },
+    { href: "https://x.test/b", text: "two", nav: false }])));
+const rep = S.judgeInternalLinking(repeated,
+  Array.from({ length: 6 }, (_, i) => mkPage("https://x.test/blog/p" + i)), 1);
+ok("the same exact-match anchor across six pages is reported",
+   has(rep, "anchor-repetition"),
+   (rep.find((f) => f.id === "anchor-repetition") || {}).detail);
+
 // -------------------------------------------------------- against a page
 
 const GOOD = (slug) => `<!doctype html><html lang="en"><head><meta charset="utf-8">

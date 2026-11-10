@@ -72,8 +72,13 @@ SECRETS = [
         r"(?i)(?<![\w.+-])(?!git@|noreply@|hello@|info@)"
         r"[\w.+-]+@(?!example\.|yourdomain|github\.com|site\.com)"
         # .test .example .invalid .localhost are reserved by RFC 2606 and can
-        # never belong to a client, so a fixture may use them freely
-        r"(?![\w.-]*\.(?:test|example|invalid|localhost)\b)"
+        # never belong to a client, so a fixture may use them freely. The file
+        # extensions are there because `logo@2x.png` is a retina image, not an
+        # address - which is exactly the bug site-recon had, found in its own
+        # fixture and then repeated here.
+        r"(?![\w.-]*\.(?:test|example|invalid|localhost"
+        r"|png|jpe?g|gif|webp|svg|ico|avif|css|js|mjs|map"
+        r"|woff2?|ttf|eot|pdf|zip|mp4|webm|mp3|wav)\b)"
         r"[\w-]+\.[\w.]{2,12}\b")),
 ]
 

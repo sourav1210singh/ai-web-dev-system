@@ -43,6 +43,33 @@ Apply them at build time, not as a later pass.
 > guideline of a 150 to 160 band rather than sit just inside it and flag
 > approved work as a defect. 160 is the gate; 150 to 160 is what to aim for.
 
+### Changing a title carries a risk a description does not
+
+This is the correction that matters most in this section, and it is the
+opposite of what a checklist implies.
+
+**A page that gets impressions is already ranking, and rewriting its title can
+disturb that.** So on a live page, the default answer is **leave it alone**.
+Change a title only for a stated reason - the keyword is absent, the intent is
+wrong, it contradicts the H1 - and **length on its own is not a reason.** A
+title at 68 characters that is ranking is worth more than a title at 58 that is
+not. Never rewrite a blog or article title in a sitewide pass.
+
+**A meta description does not affect ranking, so rewriting one risks nothing.**
+That is where to spend the effort: write it for the person deciding whether to
+click, not to a character count. Fitting the window is not the same as being
+short, and if the current one is already strong, say "no change needed".
+
+And the honest line to give the client once: **a page sitting at position 15 to
+20 has a low click-through rate because it is on page two or three, not because
+of its description.** Meta and FAQ work helps; ranking is the larger lever. Say
+it once, plainly, and do not pad the report with it.
+
+No year in a title. "(2026)" dates the page the moment the year turns.
+
+So when the tool reports a title over 60 on a live site, that is a flag to look
+at, not an instruction to rewrite.
+
 ## HTML entities — the field decides
 
 Plain-text fields (`title`, `name`, `excerpt`, `metatitle`, `metadescription`,
@@ -221,6 +248,72 @@ sites rather than fixtures:
 - **A real site uses its own vocabulary.** A pharmacy says "pharmacy" and a
   casino review site says "casino". Spam-vertical wording is a weak secondary
   signal, never a conclusion on its own.
+
+## NAP, for a business with one address
+
+Name, address and phone have to be identical everywhere: page copy, header,
+footer, contact and about blocks, the map embed, and the local schema. A
+mismatch splits the business's local signals.
+
+Audit in this order, because each step changes what the next one means: **name,
+then phone, then address, then the map pin, then the schema.**
+
+- **The confirmed values are the source of truth**, and they come from the
+  client. Never infer them from the site - the site is the thing being audited.
+  If they are not written down, ask for them before starting.
+- **Be granular on the address.** A wrong ZIP, a missing suite, "Ste" against
+  "Suite", "W Carmel Dr" against "West Carmel Drive" - each one is a finding on
+  its own.
+- **More than one phone number across the site is a finding**, but a second
+  number can be legitimate - a fax, a department line. Flag it for the client to
+  confirm rather than picking one.
+- **The schema's `name`, `telephone` and `address` must match the visible
+  NAP.** Schema that disagrees with the page is worse than no schema.
+- Audit and record; do not edit. Implementing the fixes is a separate pass with
+  its own approval.
+- Confirm a sample of findings against the live page before reporting them, so
+  the list carries no false positives.
+
+`seo.js` reports the part that needs no source of truth: **whether the site
+agrees with itself.** If three different phone numbers appear across the pages
+it read, or the schema's telephone matches none of them, that is a finding
+whichever one turns out to be correct.
+
+## Keywords, when there is keyword data
+
+The tooling for this lives outside here, but two rules travel with it:
+
+- **Verify the target locations from the site before researching anything.**
+  Take them from the sitemap and the existing location pages, never from which
+  cities happen to have volume. A location keyword maps to a page that exists
+  or is planned, and that page's URL is recorded against it. A location page
+  whose keywords carry almost no volume gets flagged, not padded with weak
+  terms.
+- **What to exclude by default:** the client's own brand, anything two words or
+  shorter, and "near me". But **"local SEO" as a service term is not a "near
+  me" keyword** - someone searching "best local seo agency" is a business owner
+  hiring, not a consumer looking for something nearby. Confusing the two drops
+  the client's most commercial keywords.
+
+Quick wins have a definition worth using: **position 6 to 20 with 100 or more
+impressions.** Those are pages one good change away from page one.
+
+Never apply one country's search volumes to another country's pages.
+
+## Competitors
+
+- **Pick them for relevance** - same niche, same city or region, similar
+  services - and confirm the list with the client before analysing anyone. The
+  tool's idea of a competitor is whoever overlaps on keywords, which is often
+  somebody the client has never heard of.
+- Two things are measurable without any paid tool and are usually the most
+  useful: **whether each competitor is actually publishing** (does a blog
+  exist, how often, when was the last post, which of them are dormant), and
+  **what their negative reviews say repeatedly** - billing, wait times, staff,
+  hours. Each recurring complaint is a thing the client can be better at, which
+  is a content and positioning brief rather than a statistic.
+- One backlink per referring domain, deduplicated, with spam TLDs dropped.
+  Counting the same domain fifty times flatters everyone.
 
 ## Multilingual
 

@@ -396,6 +396,57 @@ ok("a real casino site is not flagged for its own subject",
    !has(S.judgeContent(page({ title: "Casino reviews",
      bodyText: prose(20) + " casino " })), "spam-vertical-words"));
 
+// ------------------------------------------------------------------ NAP
+
+const napPage = (url, tel, ld) => ({ url, ok: true, telLinks: tel || [],
+                                     ldBlocks: S.parseLd(ld || "") });
+
+ok("the same number written two ways is one number",
+   S.phoneKey("+44 (113) 496-0000") === S.phoneKey("01134960000"),
+   "formatting must not create a false inconsistency");
+ok("a string too short to be a number is ignored", S.phoneKey("12") === "");
+
+ok("one number across the site is clean",
+   S.judgeNap([napPage("/a", ["0113 496 0000"]),
+               napPage("/b", ["+44 113 496 0000"])]).length === 0);
+const twoNums = S.judgeNap([napPage("/a", ["0113 496 0000"]),
+                            napPage("/b", ["0113 496 9999"])]);
+ok("two different numbers across the site is reported",
+   has(twoNums, "nap-phone-inconsistent"));
+ok("and it says a second number can be legitimate",
+   /confirm with the client rather than picking one/
+     .test(twoNums.find((f) => f.id === "nap-phone-inconsistent").detail),
+   "a fax or a department line");
+ok("the finding counts how many pages each number is on",
+   /\(1 page\(s\)\)/.test(twoNums.find((f) => f.id === "nap-phone-inconsistent").detail));
+
+const mismatch = S.judgeNap([napPage("/a", ["0113 496 0000"],
+  LD({ "@type": "LocalBusiness", name: "Bright", telephone: "0113 496 7777",
+       address: { "@type": "PostalAddress", postalCode: "LS1" } }))]);
+ok("schema telephone that matches nothing on the page is reported",
+   has(mismatch, "nap-schema-phone"));
+ok("and it says disagreeing schema is worse than none",
+   /worse than no\s+schema/.test(
+     mismatch.find((f) => f.id === "nap-schema-phone").detail));
+ok("schema that agrees with the page is not reported",
+   !has(S.judgeNap([napPage("/a", ["0113 496 0000"],
+     LD({ "@type": "LocalBusiness", name: "Bright", telephone: "+441134960000",
+          address: {} }))]), "nap-schema-phone"),
+   "the same number in another format");
+ok("two different business names in schema are reported",
+   has(S.judgeNap([napPage("/a", ["0113 496 0000"],
+     LD({ "@type": "LocalBusiness", name: "Bright Dental", telephone: "0113 496 0000", address: {} })
+     + LD({ "@type": "Organization", name: "Bright Dental Ltd", telephone: "0113 496 0000" }))]),
+     "nap-schema-name"));
+ok("local schema with a phone and no address is reported",
+   has(S.judgeNap([napPage("/a", ["0113 496 0000"],
+     LD({ "@type": "LocalBusiness", name: "Bright", telephone: "0113 496 0000" }))]),
+     "nap-no-address"));
+ok("a site with no phone numbers produces no NAP findings",
+   S.judgeNap([napPage("/a", [])]).length === 0,
+   "absence is not inconsistency");
+ok("no pages at all is handled", S.judgeNap([]).length === 0);
+
 // -------------------------------------------------- internal linking
 
 ok("a blog post is an editorial page", S.pageKind("https://x.test/blog/a-post/") === "editorial");

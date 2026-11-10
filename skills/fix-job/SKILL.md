@@ -63,6 +63,41 @@ the finding:
 "Nothing has changed since the last run" is a real answer and worth sending to
 the client as plainly as a list of problems would be.
 
+### Make it run without being remembered
+
+A weekly check that needs a person to remember it is not a weekly check. The
+form that quietly disappeared was found when the client asked where the leads
+had gone, and that is exactly what a schedule exists to prevent.
+
+```bash
+python "C:\Claude-Code\.ai-system\skills\fix-job\watchrun.py" --dry-run
+python "C:\Claude-Code\.ai-system\skills\fix-job\watchrun.py" --status
+python "C:\Claude-Code\.ai-system\skills\fix-job\watchrun.py" --schedule
+```
+
+`watchrun.py` finds every open watch job in every project, runs them, writes
+one summary a person reads into `.context-system\watch\`, and records the run.
+It exits non-zero when something moved, so a scheduler's own failure mail
+becomes the signal.
+
+**It will not register the scheduled task itself.** That changes the machine's
+configuration, which is the user's to do. `--schedule` prints the exact
+`schtasks` command; run it yourself, then confirm with `--status`.
+
+**`--status` is the part worth running often.** It reads whether the task is
+actually registered and when the run last happened, and says so plainly:
+
+- never run, and no task registered
+- last ran more than ten days ago - **a schedule that stopped looks exactly
+  like a set of sites with no problems**, which is why staleness is reported as
+  loudly as a finding
+- no open watch jobs at all, which is itself worth knowing if those sites are
+  live
+
+A session that is about to tell someone the sites are healthy should check this
+first. "No problems reported" and "nothing has been checked for a month" read
+identically in a job file and mean opposite things.
+
 ## golive - the launch gate
 
 Runs what `fix` runs, plus the security pass, and **close refuses while a

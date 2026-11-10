@@ -681,6 +681,85 @@ function judgeContent(p) {
   return out;
 }
 
+// ------------------------------------------------------------------ NAP
+
+/** Digits only, last 10 kept, so formatting differences stop mattering. */
+function phoneKey(s) {
+  const d = String(s || "").replace(/\D+/g, "");
+  return d.length >= 7 ? d.slice(-10) : "";
+}
+
+/**
+ * Does the site agree with itself about its own name, phone and address?
+ *
+ * The full audit needs the client's confirmed values, and those cannot be
+ * inferred from the site because the site is the thing being audited. What
+ * needs no source of truth at all is internal consistency: if three different
+ * numbers appear across the pages, or the schema's telephone matches none of
+ * the visible ones, that is a finding whichever one turns out to be right.
+ */
+function judgeNap(pages) {
+  const out = [];
+  const ok = pages.filter((p) => p.ok);
+  if (!ok.length) return out;
+
+  const visible = new Map();
+  for (const p of ok) {
+    for (const t of (p.telLinks || [])) {
+      const k = phoneKey(t);
+      if (k) {
+        if (!visible.has(k)) visible.set(k, { shown: t, pages: new Set() });
+        visible.get(k).pages.add(p.url);
+      }
+    }
+  }
+  if (visible.size > 1) {
+    out.push({ sev: "MAJOR", id: "nap-phone-inconsistent",
+               title: visible.size + " different phone numbers across the site",
+               detail: Array.from(visible.values())
+                 .map((v) => v.shown + " (" + v.pages.size + " page(s))")
+                 .join(", ")
+                     + ". A second number can be legitimate - a fax or a "
+                     + "department line - so confirm with the client rather "
+                     + "than picking one.",
+               fix: "One number everywhere, or a documented reason for each." });
+  }
+
+  // The schema has to agree with what the page shows.
+  const schemaPhones = new Set();
+  const schemaNames = new Set();
+  let addressNodes = 0;
+  for (const p of ok) {
+    for (const n of ldNodes(p.ldBlocks || [])) {
+      const types = TYPES_OF(n);
+      if (!types.some((t) => /LocalBusiness|Organization|.*Business|Dentist|Physician|Store/.test(t))) continue;
+      if (n.telephone) schemaPhones.add(phoneKey(n.telephone));
+      if (n.name) schemaNames.add(String(n.name).trim());
+      if (n.address) addressNodes += 1;
+    }
+  }
+  const sp = Array.from(schemaPhones).filter(Boolean);
+  if (sp.length && visible.size && !sp.some((k) => visible.has(k))) {
+    out.push({ sev: "MAJOR", id: "nap-schema-phone",
+               title: "The schema's telephone matches no number shown on the site",
+               detail: "Schema says " + sp.join(", ") + "; the pages show "
+                     + Array.from(visible.keys()).join(", ")
+                     + ". Schema that disagrees with the page is worse than no "
+                     + "schema." });
+  }
+  if (schemaNames.size > 1) {
+    out.push({ sev: "MINOR", id: "nap-schema-name",
+               title: "The schema gives " + schemaNames.size + " different "
+                    + "business names",
+               detail: Array.from(schemaNames).slice(0, 4).join(" / ") });
+  }
+  if (sp.length && !addressNodes) {
+    out.push({ sev: "MINOR", id: "nap-no-address",
+               title: "Local schema has a phone number but no postal address" });
+  }
+  return out;
+}
+
 // ------------------------------------------------------ internal linking
 
 const EDITORIAL_HEADS = new Set(["blog", "news", "article", "articles", "learn",
@@ -933,6 +1012,8 @@ async function readPage(ctx, page, url, opts) {
         text: (a.textContent || "").replace(/\s+/g, " ").trim().slice(0, 80),
         nav: !!a.closest("nav,header,footer,aside"),
       })),
+      telLinks: Array.from(document.querySelectorAll('a[href^="tel:"]'))
+        .map((a) => a.getAttribute("href").replace(/^tel:/i, "").trim()),
       bodyText: ((document.body && document.body.innerText) || "")
         .replace(/\s+/g, " ").slice(0, 20000),
       // Text served to a crawler and hidden from a visitor - but only the kind
@@ -1121,6 +1202,7 @@ async function run(url, opts) {
   }
   for (const p of pages) findings.push(...judgePage(p));
   findings.push(...judgeCanonical(pages));
+  findings.push(...judgeNap(pages));
 
   // Structured data and content quality, per page.
   for (const p of pages) {
@@ -1284,6 +1366,7 @@ if (require.main === module) {
 module.exports = { judgeTitle, judgeDescription, judgeH1, judgeVariants, isDevHost,
                    parseLd, ldNodes, judgeSchema, judgeSchemaCoverage, judgeContent,
                    pageKind, siloOf, buildGraph, judgeInternalLinking,
+                   judgeNap, phoneKey,
                    judgeCanonical, judgeRobots, judge404, judgeLinks,
                    judgeSitemap, judgePage, classifyLink, entityLeak, similar,
                    firstWords, sortFindings, report, LIMITS, AI_AGENTS, MISSING };

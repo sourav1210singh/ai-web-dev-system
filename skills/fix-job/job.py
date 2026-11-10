@@ -6,6 +6,7 @@
     python job.py gate <id> --awaiting user-paste --note "prompt file path"
     python job.py resume <id>                # user has done their part
     python job.py verify <id>                # re-check, diff against before
+    python job.py watch <id>                 # live site: what changed since last time
     python job.py status [<id>] | list
     python job.py close <id> --summary "..."
 
@@ -26,6 +27,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SKILLS = os.path.dirname(HERE)
 CHECK = os.path.join(SKILLS, "launch-files", "check.py")
 RQA = os.path.join(SKILLS, "responsive-qa", "rqa.js")
+PERF = os.path.join(SKILLS, "responsive-qa", "perf.js")
+A11Y = os.path.join(SKILLS, "responsive-qa", "a11y.js")
 PARITY = os.path.join(SKILLS, "migration-parity", "parity.py")
 
 # Each type runs its own checks and takes its own path. intake changes
@@ -49,6 +52,15 @@ JOB_TYPES = {
         "checks": ["launch", "responsive", "parity"],
         "gate": True, "strict": True,
         "what": "the launch gate: nothing ships with a blocker standing",
+    },
+    # A job that ends at handover is a job that finds out from the client.
+    # This one is meant to be run again on the same id, weekly, and it reports
+    # what has CHANGED rather than producing another audit nobody reads.
+    "watch": {
+        "stages": ["diagnose", "report"],
+        "checks": ["launch", "responsive", "perf", "a11y"],
+        "gate": False, "strict": False,
+        "what": "a site that is already live: has anything broken since last time",
     },
 }
 ROUTES = ("lovable", "wordpress", "direct")
@@ -109,6 +121,80 @@ def run_rqa(url, out):
         return json.loads(io.open(f, encoding="utf-8").read())
     except Exception as e:
         return {"error": "findings.json unreadable: %s" % e}
+
+
+def run_perf(url, out):
+    """What the page costs to load. Returns the parsed report or an error."""
+    if not os.path.isfile(PERF):
+        return {"error": "perf.js not found"}
+    try:
+        subprocess.run(["node", PERF, url, "--out", out],
+                       capture_output=True, text=True, timeout=600)
+    except Exception as e:
+        return {"error": "perf.js could not run: %s" % e}
+    f = os.path.join(out, "perf.json")
+    if not os.path.isfile(f):
+        return {"error": "perf.js produced no perf.json"}
+    try:
+        return json.loads(io.open(f, encoding="utf-8").read())
+    except Exception as e:
+        return {"error": "perf.json unreadable: %s" % e}
+
+
+def run_a11y(url, out):
+    if not os.path.isfile(A11Y):
+        return {"error": "a11y.js not found"}
+    try:
+        subprocess.run(["node", A11Y, url, "--out", out],
+                       capture_output=True, text=True, timeout=900)
+    except Exception as e:
+        return {"error": "a11y.js could not run: %s" % e}
+    f = os.path.join(out, "a11y.json")
+    if not os.path.isfile(f):
+        return {"error": "a11y.js produced no a11y.json"}
+    try:
+        return json.loads(io.open(f, encoding="utf-8").read())
+    except Exception as e:
+        return {"error": "a11y.json unreadable: %s" % e}
+
+
+def perf_problems(data):
+    """One line per finding, stable enough to diff against the last run."""
+    if not isinstance(data, dict) or data.get("error"):
+        return ["perf: %s" % (data or {}).get("error", "did not run")]
+    out = []
+    for f in data.get("findings") or []:
+        if f.get("sev") in ("BLOCKER", "MAJOR"):
+            out.append("%s: %s" % (f.get("sev"), f.get("title")))
+    kb = round((data.get("totalBytes") or 0) / 1024)
+    # Weight is reported every time, not only when it is over budget: a page
+    # that doubles between two runs is the finding, and no threshold catches
+    # that on its own.
+    out.append("weight: %d KB over %d requests" % (kb, data.get("requests") or 0))
+    return out
+
+
+def a11y_problems(data):
+    if not isinstance(data, dict) or data.get("error"):
+        return ["a11y: %s" % (data or {}).get("error", "did not run")]
+    out = []
+    for row in data.get("rows") or []:
+        where = "%s @%s" % (row.get("route", "/"), row.get("width", "?"))
+        for v in row.get("violations") or []:
+            if v.get("impact") in ("critical", "serious"):
+                out.append("%s: %s x%d" % (where, v.get("id"), v.get("nodes", 0)))
+        for n in (row.get("sr") or {}).get("notes") or []:
+            if n.get("sev") == "MAJOR":
+                out.append("%s: %s - %s" % (where, n.get("kind"), n.get("detail")))
+        if (row.get("focus") or {}).get("invisible"):
+            out.append("%s: focus not visible on %d control(s)"
+                       % (where, len(row["focus"]["invisible"])))
+        sr = row.get("sr") or {}
+        # Counted rather than judged, so a later run can see them disappear.
+        out.append("%s: %d form(s), %d submit(s), %d mailto, %d tel"
+                   % (where, sr.get("forms", 0), sr.get("submits", 0),
+                      sr.get("mailto", 0), sr.get("tel", 0)))
+    return out
 
 
 def run_recon(domain, out):
@@ -235,6 +321,10 @@ def snapshot(job, label):
         f_rqa = ex.submit(run_rqa, url, out) if "responsive" in wants else None
         f_recon = (ex.submit(run_recon, domain, os.path.join(out, "recon"))
                    if "recon" in wants else None)
+        f_perf = (ex.submit(run_perf, url, os.path.join(out, "perf"))
+                  if "perf" in wants else None)
+        f_a11y = (ex.submit(run_a11y, url, os.path.join(out, "a11y"))
+                  if "a11y" in wants else None)
         f_par = None
         if "parity" in wants and job.get("old_url"):
             f_par = ex.submit(
@@ -244,6 +334,8 @@ def snapshot(job, label):
                     capture_output=True, text=True, timeout=600).stdout)
         check_txt = f_check.result() if f_check else ""
         rqa_data = f_rqa.result() if f_rqa else None
+        perf_data = f_perf.result() if f_perf else None
+        a11y_data = f_a11y.result() if f_a11y else None
         recon_txt = f_recon.result() if f_recon else ""
         par_txt = f_par.result() if f_par else ""
 
@@ -254,8 +346,10 @@ def snapshot(job, label):
         "parity": [l.strip() for l in (par_txt or "").splitlines()
                    if l.strip().startswith("- ")][:20],
         "recon": recon_facts(recon_txt) if f_recon else [],
-        "ran": [k for k in ("launch", "responsive", "parity", "recon")
-                if k in wants],
+        "perf": perf_problems(perf_data) if f_perf else [],
+        "a11y": a11y_problems(a11y_data) if f_a11y else [],
+        "ran": [k for k in ("launch", "responsive", "parity", "recon",
+                            "perf", "a11y") if k in wants],
         "qa_dir": out,
         "raw_launch": check_txt,
     }
@@ -277,7 +371,9 @@ def digest(snap, title):
         L.append("")
     for key, head in (("launch", "Launch files"),
                       ("responsive", "Responsive QA"),
-                      ("parity", "Content parity")):
+                      ("parity", "Content parity"),
+                      ("perf", "Load"),
+                      ("a11y", "Accessibility")):
         if key not in ran:
             continue
         rows = snap.get(key) or []
@@ -437,6 +533,81 @@ def cmd_verify(a):
     return 0
 
 
+WATCH_KEYS = (("launch", "Launch files"), ("responsive", "Responsive QA"),
+              ("perf", "Load"), ("a11y", "Accessibility"))
+
+
+def cmd_watch(a):
+    """Run the checks again on a live site and report only what CHANGED.
+
+    A job that ends at handover is a job that finds out from the client. The
+    point of this one is the diff: another full audit every week is a thing
+    nobody reads, while four lines saying what is different gets read.
+    """
+    project = os.path.abspath(a.get("dir") or os.getcwd())
+    job, path = find(a["id"], project)
+    if not job:
+        print("no job %s" % a["id"])
+        return 2
+    snaps = job.setdefault("snapshots", {})
+    previous = sorted(k for k in snaps if k.startswith("watch-"))
+    # Numbered, not stamped. now() is minute-precision, so two runs in the
+    # same minute shared a label, the second overwrote the first, and the
+    # diff was then against itself - reporting no change on a site that had
+    # just lost its contact form. The time it was taken is inside the
+    # snapshot, where it belongs.
+    label = "watch-%03d" % (len(previous) + 1)
+    snap = snapshot(job, label)
+    job["stage"] = "report"
+    save(job, path)
+
+    if not previous:
+        print(digest(snap, "First watch"))
+        print("\nNothing to compare against yet. This run is the baseline;")
+        print("run it again in a week and it will report the difference.")
+        log(job, "watch baseline taken")
+        save(job, path)
+        return 0
+
+    before = snaps[previous[-1]]
+    print("# Watch: %s\n" % job["domain"])
+    print("Comparing against %s.\n" % before.get("taken", previous[-1]))
+    worse, changed = [], False
+    for key, head in WATCH_KEYS:
+        b, af = set(before.get(key) or []), set(snap.get(key) or [])
+        if not b and not af:
+            continue
+        fixed, new = sorted(b - af), sorted(af - b)
+        if not fixed and not new:
+            continue
+        changed = True
+        print("**%s**" % head)
+        for r in fixed:
+            print("  GONE   %s" % r)
+        for r in new:
+            print("  NEW    %s" % r)
+            worse.append("%s: %s" % (head, r))
+        print("")
+
+    if not changed:
+        print("Nothing has changed since the last run.\n")
+        print("That is the answer, and it is worth saying to the client as")
+        print("plainly as a list of problems would be.")
+    log(job, "watch: %d new, %s" % (len(worse), "changed" if changed else "no change"))
+    save(job, path)
+
+    if worse:
+        print("## Act on these\n")
+        for w in worse:
+            print("- %s" % w)
+        print("")
+        print("A NEW line here is something that was working and is not now.")
+        print("Open the screenshots in %s before deciding what it means."
+              % snap.get("qa_dir"))
+        return 1
+    return 0
+
+
 def cmd_close(a):
     project = os.path.abspath(a.get("dir") or os.getcwd())
     job, path = find(a["id"], project)
@@ -531,7 +702,8 @@ def main():
         return 2
     a["id"] = pos[0]
     fn = {"diagnose": cmd_diagnose, "gate": cmd_gate, "resume": cmd_resume,
-          "verify": cmd_verify, "close": cmd_close}.get(cmd)
+          "verify": cmd_verify, "watch": cmd_watch,
+          "close": cmd_close}.get(cmd)
     if not fn:
         print(__doc__)
         return 2

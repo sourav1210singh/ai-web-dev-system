@@ -171,7 +171,19 @@ function srChecks() {
                          `name: ${unnamed.slice(0, 3).map((e) => e.tagName.toLowerCase() +
                            (e.className ? "." + String(e.className).split(" ")[0] : "")).join(", ")}` });
   }
-  return { notes, landmarks: land, headings: levels.length, focusables: focusables.length };
+  // Counted so a later run can notice they have gone. On one site the
+  // endpoint, the table and the mailer were all healthy for two months after
+  // the forms themselves had been replaced with links to an off-site page,
+  // and nobody found out until the client asked where the leads were.
+  const forms = q("form").filter(shown);
+  return {
+    notes, landmarks: land, headings: levels.length,
+    focusables: focusables.length,
+    forms: forms.length,
+    submits: q("form button, button[type=submit], input[type=submit]").filter(shown).length,
+    mailto: q("a[href^='mailto:']").length,
+    tel: q("a[href^='tel:']").length,
+  };
 }
 
 /**

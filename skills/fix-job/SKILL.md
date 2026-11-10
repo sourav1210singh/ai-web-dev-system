@@ -1,6 +1,6 @@
 ---
 name: fix-job
-description: Run client site work end to end as a job with state, in three types - fix (something live is wrong), intake (a new client, read everything, change nothing) and golive (the launch gate, nothing ships with a blocker standing). Every check runs at once, the job stops at the human gate, and verify diffs against the before state. Use when a client reports a problem, when a new client arrives, before any launch, or when picking up work left half done. Triggers on "fix karo", "ye issue hai", "client ne bola hai", "form kaam nahi kar raha", "naya client", "new client", "intake", "go live", "launch", "live karna hai", "job", "resume". It owns "go live": the launch gate runs site-recon, migration-parity, responsive-qa and launch-files as its checks, so those do not need calling separately.
+description: Run client site work end to end as a job with state, in four types - fix (something live is wrong), intake (a new client, read everything, change nothing), golive (the launch gate, nothing ships with a blocker standing) and watch (a site that is already live: run it weekly and it reports only what changed, including a form that has quietly disappeared or a page that has doubled in weight). Every check runs at once, the job stops at the human gate, and verify diffs against the before state. Use when a client reports a problem, when a new client arrives, before any launch, or when picking up work left half done. Triggers on "fix karo", "ye issue hai", "client ne bola hai", "form kaam nahi kar raha", "naya client", "new client", "intake", "go live", "launch", "live karna hai", "job", "resume", "watch", "monitor karo", "sab theek chal raha hai", "leads aa rahe hain", "weekly check". It owns "go live": the launch gate runs site-recon, migration-parity, responsive-qa and launch-files as its checks, so those do not need calling separately.
 ---
 
 # Client work, run as a job
@@ -13,6 +13,7 @@ a gate, and what they refuse to do.
 | `fix` | something live is wrong | yes | nothing, but verify fails on a regression |
 | `intake` | a new client, before touching anything | no | it changes nothing at all |
 | `golive` | the launch gate | yes | to close while a blocker stands |
+| `watch` | a site that is already live, run again weekly | no | nothing; it reports only what changed |
 
 ```bash
 python job.py new "<name>" --domain <d> --dir "<project>" --type intake
@@ -30,6 +31,37 @@ something is not an intake. It ends at `report`, where you write the three
 things that matter: the facts with how each was checked, the risks including
 what must survive a change, and the short list of what genuinely has to come
 from the client. See `site-recon` for what that report should contain.
+
+## watch - after it is live, which is where most of the risk is
+
+Every other type ends at handover, and a job that ends at handover is a job
+that finds out from the client. Run this one again on the same id, weekly, and
+it reports **only what changed** since last time:
+
+```bash
+python job.py new "<client> watch" --domain <d> --dir "<project>" --type watch
+python job.py watch <id> --dir "<project>"      # and again next week
+```
+
+The first run is a baseline and says so. Every run after it prints `GONE` for
+anything that was a problem and no longer is, and `NEW` for anything that was
+not a problem and now is. Nothing else. A full audit every week is a thing
+nobody reads; four lines saying what is different gets read.
+
+It runs the launch files, responsive QA, the load pass and the accessibility
+pass, and it records two things even when they are fine, because the change is
+the finding:
+
+- **page weight and request count.** A threshold catches a page that is too
+  heavy. Nothing but a comparison catches a page that doubled.
+- **how many forms, submit buttons, mailto and tel links there are.** On one
+  site the endpoint, the table and the mailer were all healthy for two months
+  after the forms had been replaced with links to an off-site page, and nobody
+  found out until the client asked where the leads had gone. A watch sees
+  `1 form(s)` become `0 form(s)` the week it happens.
+
+"Nothing has changed since the last run" is a real answer and worth sending to
+the client as plainly as a list of problems would be.
 
 ## golive - the launch gate
 

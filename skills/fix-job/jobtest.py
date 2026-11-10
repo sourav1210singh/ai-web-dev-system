@@ -245,6 +245,75 @@ def main():
                                    jid + ".json")))
 
     shutil.rmtree(tmp, ignore_errors=True)
+
+    # --- watch: a live site, and only what changed ------------------------
+    # A job that ends at handover is a job that finds out from the client.
+    job.run_perf = lambda u, o: {
+        "findings": [{"sev": "MAJOR", "title": "LCP is over the target in the lab"}],
+        "totalBytes": 1024 * 900, "requests": 40}
+    job.run_a11y = lambda u, o: {"rows": [{
+        "route": "/", "width": 390,
+        "violations": [{"id": "color-contrast", "impact": "serious", "nodes": 3}],
+        "sr": {"notes": [], "forms": 1, "submits": 1, "mailto": 0, "tel": 1},
+        "focus": {"invisible": []}}]}
+
+    rc, out = run(job.cmd_new, {"name": "Watch It", "domain": "example.test",
+                                "dir": tmp, "type": "watch", "route": "lovable"})
+    wid = None
+    for line in out.splitlines():
+        if line.startswith("job ") and " opened" in line:
+            wid = line.split()[1]
+    ok("a watch job opens", rc == 0 and wid, out.strip()[:60])
+
+    rc, out = run(job.cmd_watch, {"id": wid, "dir": tmp})
+    ok("the first run is a baseline, not a report of changes",
+       rc == 0 and "baseline" in out, out.strip()[-70:])
+    ok("the baseline shows what it measured",
+       "Load" in out and "Accessibility" in out)
+    ok("the page weight is recorded even when it is fine",
+       "900 KB" in out, [l for l in out.splitlines() if "KB" in l][:1])
+    ok("the forms are counted so a later run can miss them",
+       "1 form(s)" in out, [l for l in out.splitlines() if "form(s)" in l][:1])
+
+    rc, out = run(job.cmd_watch, {"id": wid, "dir": tmp})
+    ok("a second run with nothing changed says exactly that",
+       rc == 0 and "Nothing has changed" in out, out.strip()[:70])
+
+    # the forms are replaced with links to an off-site page, which is how a
+    # real site ran for two months with the endpoint and mailer both healthy
+    job.run_a11y = lambda u, o: {"rows": [{
+        "route": "/", "width": 390,
+        "violations": [{"id": "color-contrast", "impact": "serious", "nodes": 3}],
+        "sr": {"notes": [], "forms": 0, "submits": 0, "mailto": 0, "tel": 1},
+        "focus": {"invisible": []}}]}
+    rc, out = run(job.cmd_watch, {"id": wid, "dir": tmp})
+    ok("a form disappearing is reported as new", rc == 1 and "NEW" in out,
+       [l for l in out.splitlines() if "NEW" in l][:1])
+    ok("and the line that went is shown too", "GONE" in out)
+    ok("it says what to act on", "Act on these" in out)
+
+    # a page that doubles in weight is the finding, and no threshold alone
+    # catches it
+    job.run_perf = lambda u, o: {
+        "findings": [{"sev": "MAJOR", "title": "LCP is over the target in the lab"}],
+        "totalBytes": 1024 * 1800, "requests": 62}
+    rc, out = run(job.cmd_watch, {"id": wid, "dir": tmp})
+    ok("a page that got much heavier shows up as a change",
+       "1800 KB" in out and "900 KB" in out,
+       [l for l in out.splitlines() if "KB" in l][:2])
+
+    # a fault that is fixed should read as fixed, not vanish quietly
+    job.run_perf = lambda u, o: {"findings": [], "totalBytes": 1024 * 1800,
+                                 "requests": 62}
+    rc, out = run(job.cmd_watch, {"id": wid, "dir": tmp})
+    ok("a fault that is fixed is reported as gone",
+       "GONE   MAJOR: LCP is over the target in the lab" in out,
+       [l for l in out.splitlines() if "LCP" in l][:1])
+
+    ok("watch has no apply stage, because it changes nothing",
+       "apply" not in job.JOB_TYPES["watch"]["stages"])
+    ok("watch has no gate", job.JOB_TYPES["watch"]["gate"] is False)
+
     bad = RESULTS.count(False)
     print("\n%d/%d checks passed" % (len(RESULTS) - bad, len(RESULTS)))
     return 1 if bad else 0

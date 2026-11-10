@@ -226,3 +226,19 @@ otherwise."
 Bad: "Can you clarify the scope?"
 
 Two rounds of questions on one point means the first round was written badly.
+
+> **One question at a time is a real pattern, and it is deliberately not used
+> here.** Several agent-skill collections build requirements by interrogation,
+> asking a single question and letting each answer shape the next. It works
+> when there is nothing to read and the thing is being invented in the
+> conversation. It is the wrong shape for this work, where the standing
+> instruction is that we are the developers: analyse, decide, and take only the
+> big decisions to the client, short and simple. A questionnaire hands the
+> thinking back.
+>
+> The failure that pattern exists to prevent is real though, and it is the
+> expensive one here too: **building the wrong thing because a gap was filled
+> with something plausible.** The house answer to that gap is not a question,
+> it is a **written assumption with a default already applied**, which is what
+> the example above does. State it, proceed, and let a one-word reply correct
+> it.

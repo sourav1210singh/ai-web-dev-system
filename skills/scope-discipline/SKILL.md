@@ -36,6 +36,38 @@ has the rule on pace: finishing is not the goal, work that is right is.
 - Do not change identifiers that other things depend on: slugs, publish dates,
   status, IDs, file paths, route names.
 
+## Write the least code that does it
+
+Scope creep in an AI's hands does not usually look like extra features. It
+looks like extra **code**, and that is the single most common thing to correct
+in machine-written work.
+
+- **Use what is already there** before adding anything. A helper that almost
+  does the job and needs one argument is better than a second helper beside it.
+  Read the file first; the function you are about to write is often ten lines
+  further down.
+- **No abstraction for one caller.** A base class, a config object, a strategy
+  map or a `utils/` file introduced for a single use is a cost with no payer.
+  Write it inline, and extract it the second time it is needed, not the first.
+- **No speculative generality.** Parameters nothing passes, cases nothing hits,
+  options nobody set. If it is not needed by this task, it is not needed.
+- **No defensive wrapping of things that cannot fail.** A try/except round a
+  dictionary literal, a null check on a value the type guarantees, a fallback
+  for a branch that cannot be reached. Each one hides the real failure later.
+- **Delete as part of the change.** When something is replaced, the thing it
+  replaced goes in the same commit. A dead export left behind is what the next
+  session reads and believes.
+
+> **Read your own diff before reporting, looking only for what can be
+> deleted.** Not for bugs, which is a different pass. The question is: what in
+> here is not pulling its weight? That one reading catches more than any review
+> checklist, because the author is the only person who knows which lines were
+> written out of habit.
+
+The smallest change that fully does the job is the correct change. "Smallest"
+is not the same as "quickest": skipping the test or the edge case is not a
+smaller change, it is an unfinished one.
+
 ## After, before reporting
 
 **Diff the rendered HTML of every affected page against the before capture.

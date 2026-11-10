@@ -1,6 +1,6 @@
 ---
 name: copy-standards
-description: How client-facing words are written here — no em or en dashes, no AI filler, no invented facts, clearly marked placeholders, and the two exceptions where dashes are allowed. Use whenever writing or editing any text a client or their visitors will read: page copy, blog posts, meta descriptions, emails, proposals, button labels. Triggers on "content likho", "blog likho", "copy write karo", "rewrite this", "AI jaisa lag raha hai", or any request that produces words for a client.
+description: How client-facing words are written here — no em or en dashes, no AI filler, no invented facts, clearly marked placeholders, the two exceptions where dashes are allowed, and the correction that matters most: the failure in machine-written copy is not its vocabulary, it is that nothing is being said. Ships a checker for a document or a live page. Use whenever writing or editing any text a client or their visitors will read: page copy, blog posts, meta descriptions, emails, proposals, button labels. Triggers on "content likho", "blog likho", "copy write karo", "rewrite this", "AI jaisa lag raha hai", "slop", "human jaisa likho", "copy check karo", or any request that produces words for a client.
 ---
 
 # Client-facing copy
@@ -43,6 +43,74 @@ sentence. A spaced hyphen ` - ` is its own tell; prefer restructuring.
 2. **Legacy content.** The rule is an authoring standard for new work. It must
    not block a small fix to an article written before the rule existed. Apply it
    on create; on update, only reject a dash that the edit itself introduces.
+
+## The word list is the easy half
+
+This is the correction worth absorbing, and it came from reading how the
+anti-slop work is actually written down.
+
+**The failure in machine-written copy is not its vocabulary. It is that
+nothing is being said.** A page can pass every rule above, carry no banned
+word and no dash, and still be filler that scans as competent. Banning
+"leverage" does not fix it.
+
+So judge a draft on four things, in this order of weight:
+
+| | The question | Weight |
+|---|---|---|
+| **Plain** | Can someone outside the field read it once and get it? | 30% |
+| **Human** | Does it read like a person who did the work, not like a model that read about the work? | 30% |
+| **Structured** | Does the shape of the page match the shape of the information? | 25% |
+| **Dense** | Does every sentence carry something a reader could not have guessed? | 15% |
+
+**Dense is the test to apply hardest**, despite carrying the least weight,
+because it is the one that fails silently. Take any sentence and ask whether a
+reader could have written it themselves without being told. "Our approach is
+built on trust" could. "A visit costs 85 pounds and we say the price before
+starting" could not. A paragraph of the first kind is what people mean when
+they say something reads like AI.
+
+Two practical consequences:
+
+- **Contractions read human. Keep them.** The technical-writing standards that
+  ban them were written to remove ambiguity for a mechanic, not to be readable
+  by a customer. "We'll call you back" is better copy than "We will call you
+  back" in almost every client-facing sentence.
+- **Gloss the jargon** the first time it appears, in a half-sentence, rather
+  than assuming the reader is in the trade.
+
+### The numbers, for a general audience
+
+Taken from a standard that states them rather than implying them. These are for
+a general reader; a technical audience takes 28 and 5, a social post 20 and 2.
+
+- Sentences: **25 words maximum**
+- Paragraphs: **4 sentences maximum**, broken at the topic shift
+- Reading grade: **target 9, hard cap 13**
+- Bold: **under 5% of the words**, one idea per section
+- Three parallel items become a list. A sequence becomes numbered steps. A
+  comparison becomes a table.
+- Heading levels never skip. Sentence case, not Title Case.
+- A long piece leads with the answer in one to three lines, then the detail.
+
+```bash
+python "C:\Claude-Code\.ai-system\skills\copy-standards\copy.py" <file-or-url>
+```
+
+It reports defects (a dash in any of its five stored forms, an exclamation
+mark, an emoji, a placeholder that never got replaced), judged findings
+(filler, heading skips, long paragraphs, bold everywhere), and three signals
+with **no threshold** - sentence-length spread, how many sentences carry a
+concrete specific, and reading grade.
+
+**It is not a detector and cannot be one.** A person can write something that
+scores badly and a model can write something clean. It measures whether a
+person can read it, which is the only thing worth measuring.
+
+It also reads only the served HTML for a URL, not the rendered page, so the
+dash check still has to be repeated on the live page. For a full score across
+43 rules, run clearmode (MIT, Python standard library only):
+`github.com/eugeniughelbur/clearmode`. This does not reimplement it.
 
 ## Voice
 
@@ -99,3 +167,5 @@ Mark any image that is a stand-in as a placeholder, visibly, so it cannot ship.
    placeholder
 4. Read it out loud once. If it sounds like a brochure written by nobody, it is
    not finished.
+5. Pick three sentences at random and ask of each: **could the reader have
+   guessed this?** If two of the three could, rewrite rather than patch.

@@ -1,0 +1,199 @@
+# -*- coding: utf-8 -*-
+"""Does the copy check catch the house defects without accusing good writing?
+
+The dash rule is the one that matters most here: it has been asked for on 12
+projects and the difficulty is that a renderer stores it as an entity, so
+searching for the character finds nothing. Every form it is stored in is
+tested.
+
+The other half of the file is about restraint. Three of the measures are
+signals with no threshold, and the test pins that they stay signals: a tool
+that calls good prose synthetic gets switched off, and then it is not catching
+the dash either.
+
+    python copytest.py
+"""
+import os
+import sys
+
+sys.stdout.reconfigure(encoding="utf-8")
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import copy as C  # noqa: E402
+
+RESULTS = []
+
+
+def ok(name, cond, extra=""):
+    RESULTS.append(bool(cond))
+    print("%s %s%s" % ("PASS " if cond else "FAIL ", name,
+                       ("  [" + str(extra)[:120] + "]") if extra else ""))
+
+
+ids = lambda l: [x["id"] for x in l]
+has = lambda l, i: i in ids(l)
+sev = lambda l, i: next((x["sev"] for x in l if x["id"] == i), None)
+
+# ------------------------------------------------------------ the dash
+for t, want, why in [
+        ("Clear pricing — no surprises.", True, "em dash character"),
+        ("Clear pricing – no surprises.", True, "en dash character"),
+        ("Clear pricing &mdash; no surprises.", True, "mdash entity"),
+        ("Clear pricing &ndash; no surprises.", True, "ndash entity"),
+        ("Clear pricing &#8212; no surprises.", True, "decimal entity"),
+        ("Clear pricing &#8211; no surprises.", True, "decimal en entity"),
+        ("Clear pricing &#x2014; no surprises.", True, "hex entity"),
+        ("Clear pricing - no surprises.", False, "a plain hyphen is allowed"),
+        ("Go to the page → then click.", False, "an arrow is not a dash"),
+        ("A well-known, long-standing firm.", False, "hyphenated words"),
+]:
+    ok("%s: %s" % (why, "caught" if want else "not flagged"),
+       has(C.check(t), "dash") == want)
+
+ok("the dash finding says which form it was in",
+   "entity" in next(x for x in C.check("a &mdash; b") if x["id"] == "dash")["detail"])
+ok("a dash in the HTML but not the stripped text is still caught",
+   has(C.check("a b", "<p>a &mdash; b</p>"), "dash"),
+   "the renderer introduced it, which is the case the skill warns about")
+ok("a dash is a defect, not a matter of taste",
+   sev(C.check("a — b"), "dash") == "DEFECT")
+
+# -------------------------------------------------------- other certains
+ok("an exclamation mark is a defect",
+   sev(C.check("Book today!"), "exclamation") == "DEFECT")
+ok("emoji in the copy is a defect",
+   sev(C.check("Great service \U0001F680 every time."), "emoji") == "DEFECT")
+ok("an arrow is not counted as emoji",
+   not has(C.check("Step one → step two."), "emoji"))
+ok("a registered mark is not counted as emoji",
+   not has(C.check("Brandname® is ours."), "emoji"))
+
+for t, why in [("Contact [AUTHORNAME] today.", "a bracketed placeholder"),
+               ("Figures: PLACEHOLDER jobs done.", "the word PLACEHOLDER"),
+               ("Price TBD for now.", "TBD"),
+               ("Lorem ipsum dolor sit amet.", "lorem ipsum"),
+               ("Call your-business-name on 0113.", "an unreplaced name")]:
+    ok("%s is a defect" % why, sev(C.check(t), "placeholder") == "DEFECT")
+ok("the placeholder finding says it must never ship",
+   "must never ship" in next(x for x in C.check("[AUTHORNAME]")
+                             if x["id"] == "placeholder")["detail"])
+ok("an ordinary capitalised word is not a placeholder",
+   not has(C.check("We serve Leeds and Bradford."), "placeholder"))
+
+# ------------------------------------------------------------- judged
+ok("filler vocabulary is reported",
+   has(C.check("We unlock seamless synergy for every client."), "filler"))
+ok("the filler finding names the phrases",
+   "unlock" in next(x for x in C.check("We unlock synergy.")
+                    if x["id"] == "filler")["detail"])
+ok("plain writing is not reported as filler",
+   not has(C.check("We clear blocked drains in Leeds. A visit costs 85 pounds."),
+           "filler"))
+
+ok("a sentence opening with a filler phrase is reported",
+   has(C.check("It is important to note that the price is fixed."),
+       "hedge-opener"))
+ok("the same sentence without the opener is clean",
+   not has(C.check("The price is fixed."), "hedge-opener"))
+
+ok("a heading level skip is reported",
+   has(C.check("# One\n\ntext here\n\n### Three\n\nmore text"), "heading-skip"))
+ok("going one level at a time is not reported",
+   not has(C.check("# One\n\ntext\n\n## Two\n\nmore"), "heading-skip"))
+ok("a heading skip in HTML is caught too",
+   has(C.check("One Three", "<h1>One</h1><h3>Three</h3>"), "heading-skip"))
+
+long_para = " ".join("Sentence number %d here." % i for i in range(1, 8))
+ok("a paragraph over the cap is reported",
+   has(C.check(long_para), "paragraph-length"))
+ok("a heading does not count as a sentence in the paragraph below it",
+   not has(C.check("# A title\n\nOne. Two. Three."), "paragraph-length"),
+   "counting it made a four line section read as five sentences")
+ok("the social profile has a tighter paragraph cap",
+   has(C.check("One. Two. Three.", None, "social"), "paragraph-length")
+   and not has(C.check("One. Two. Three.", None, "general"), "paragraph-length"))
+
+FILLER_WORDS = " ".join(["ordinary"] * 60)
+ok("bold used on most of the words is reported",
+   has(C.check("**" + FILLER_WORDS + "** and a few plain words after it here."),
+       "bold-share"))
+ok("a little bold on a real page is not reported",
+   not has(C.check("One **key** word. " + FILLER_WORDS + "."), "bold-share"))
+ok("bold share is not judged on a short fragment at all",
+   not has(C.check("One **key** word among many other ordinary words now."),
+           "bold-share"),
+   "one bold word in ten is 10% and means nothing")
+
+ok("a sentence over the word cap is reported",
+   has(C.check(" ".join(["word"] * 30) + "."), "sentence-length"))
+ok("the technical profile allows longer sentences",
+   not has(C.check(" ".join(["word"] * 27) + ".", None, "technical"),
+           "sentence-length")
+   and has(C.check(" ".join(["word"] * 27) + ".", None, "general"),
+           "sentence-length"))
+
+# ------------------------------------------------ signals stay signals
+GOOD = ("We clear blocked drains across Leeds. A visit costs 85 pounds, and we "
+        "say the price before starting.\n\n"
+        "Last year we handled 412 jobs. The average took 90 minutes. "
+        "Call 0113 496 0000 for the same day.")
+g = C.check(GOOD)
+ok("good plain copy produces no defects",
+   not [x for x in g if x["sev"] == "DEFECT"], ids(g))
+ok("and nothing judged against it either",
+   not [x for x in g if x["sev"] == "JUDGED"], ids(g))
+ok("cadence is reported as a signal, never as a defect",
+   sev(g, "cadence") == "SIGNAL")
+ok("specifics are reported as a signal, never as a defect",
+   sev(g, "specifics") == "SIGNAL")
+ok("reading grade is reported as a signal, never as a defect",
+   sev(g, "reading-grade") == "SIGNAL")
+ok("the cadence signal says there is no honest cut-off",
+   "no honest cut-off" in next(x for x in g if x["id"] == "cadence")["detail"])
+ok("the specifics signal says the proxy is weak",
+   "proxy is weak" in next(x for x in g if x["id"] == "specifics")["detail"],
+   "it counts rather than accuses")
+
+ok("copy full of specifics scores well on the specifics count",
+   "5 of 5" in next(x for x in g if x["id"] == "specifics")["title"],
+   next(x for x in g if x["id"] == "specifics")["title"])
+VAGUE = ("Our approach is built on trust. We believe in quality above all. "
+         "Every project matters to us. We care about the outcome. Service is "
+         "what we do best.")
+v = C.check(VAGUE)
+ok("copy that says nothing scores low on the specifics count",
+   next(x for x in v if x["id"] == "specifics")["title"].startswith("0 of"),
+   next(x for x in v if x["id"] == "specifics")["title"])
+ok("but it is still only a signal, not a defect",
+   not [x for x in v if x["sev"] == "DEFECT"], ids(v),)
+
+# ------------------------------------------------------------- helpers
+ok("HTML is stripped to its visible text",
+   "hidden" not in C.strip_html("<p>shown</p><script>hidden</script>"))
+ok("entities are decoded when stripping",
+   "Bath & Body" in C.strip_html("<p>Bath &amp; Body</p>"))
+ok("sentences split on terminators",
+   len(C.sentences("One. Two! Three? Four.")) == 4)
+ok("reading grade comes back as a number",
+   isinstance(C.reading_grade("The cat sat on the mat. It was warm."), float))
+ok("a sentence with a figure counts as carrying a specific",
+   C.has_specific("A visit costs 85 pounds."))
+ok("a sentence with a place name counts too",
+   C.has_specific("We cover Leeds and Bradford."))
+ok("a sentence of generalities does not",
+   not C.has_specific("we believe in quality above all else"))
+
+ok("the three profiles carry real numbers rather than an impression",
+   C.PROFILES["general"]["sentence"] == 25
+   and C.PROFILES["social"]["sentence"] == 20
+   and C.PROFILES["technical"]["grade_cap"] == 15)
+
+txt = C.report("x.md", C.check("a — b"), "general")
+ok("the report states it is not a detector", "Not a detector" in txt)
+ok("it says only the served HTML was read", "not the rendered page" in txt)
+ok("it points at clearmode rather than reimplementing it",
+   "clearmode" in txt, "43 rules already exist, MIT and stdlib only")
+
+passed = sum(1 for r in RESULTS if r)
+print("\n%d/%d checks passed" % (passed, len(RESULTS)))
+sys.exit(0 if passed == len(RESULTS) else 1)

@@ -47,7 +47,7 @@ Hooks                 the parts that must never be skipped
 ```
 
 An MCP gives a model **tools**. Most of what matters here is not a tool, it is
-**procedure** — "test it three different ways", "look at it before and after",
+**procedure:** "test it three different ways", "look at it before and after",
 "say what is fact and what is assumption". That belongs in skills. And the part
 that must never be skipped belongs in hooks, because a rule in a document is
 forgotten once the context fills up, while a hook fires every single time.
@@ -85,7 +85,7 @@ needs no editing.
 | `responsive-qa` | Opens a page at six real widths and measures what a developer would catch by looking: sideways scroll and the element causing it, tap targets under 44x44, broken images, missing alt, hero dead space, a container that never grows, a heading that is not fluid, `overflow-x:hidden` breaking a sticky header. Exits non-zero on a blocker, so it can gate a claim. |
 | `web-build-standards` | The house defaults: smooth scroll with the gotchas that waste a day, the overflow fixes measured at 320 and 360px, `100svh` for a hero that must fit, motion that respects `prefers-reduced-motion`. |
 | `seo-complete` | Title and meta limits, server-rendered JSON-LD verified from raw HTML, sitemaps built from data rather than a hand-kept list, internal links that actually resolve, and the entity rules that stop `&amp;` rendering literally in a page title. |
-| `launch-files` | The files a site launches without: the real favicon (head tags do not replace `/favicon.ico`), `llms.txt`, `robots.txt`, `og:image` — and the rule that each must carry the live domain, never a preview URL. |
+| `launch-files` | The files a site launches without: the real favicon (head tags do not replace `/favicon.ico`), `llms.txt`, `robots.txt`, `og:image`, and the rule that each must carry the live domain, never a preview URL. |
 | `migration-parity` | Everything on the client's old page has to exist on the page replacing it. Compares headings, body text, phone numbers, email addresses, forms, images, alt text and links, one by one, and refuses to pass a page it could not actually read. |
 | `study-reference` | Reads a reference page's real numbers instead of an impression of them: type scale, colour, spacing, section rhythm, every transition and animation with its duration and easing, what changes on hover, what animates in on scroll and how far it travels, and whether any of it is switched off for reduced motion. |
 | `ai-image-direction` | Photography that reads as real: the phrases to always include, the negative prompt, and the list of images never to generate at all. |
@@ -127,7 +127,7 @@ reporting success is a mistake it exists to prevent.
 
 It hands back three sections and nothing else: **facts** with how each was
 checked, **risks** including what must survive a change, and **what still has
-to come from the client** — never asking for something already in the facts.
+to come from the client,** never asking for something already in the facts.
 
 ---
 
@@ -159,7 +159,7 @@ impressions.
 Every one of these came from something that actually went wrong.
 
 1. **Test three or four different ways, not the same way three times.** Code,
-   live DOM, and the data layer — not the same request repeated.
+   live DOM, and the data layer, not the same request repeated.
 2. **Look at it, every time.** Screenshot at phone and desktop width and read
    it. A page can pass every technical check and still be visibly broken, so
    reading the code or the DOM is not looking. This one is enforced.
@@ -255,7 +255,7 @@ what the skill is for.
 
 ## Status
 
-In daily use: 24 skills, one agent, thirteen tools and four hooks — session start,
+In daily use: 24 skills, one agent, thirteen tools and four hooks: session start,
 the context recorder, a guard on writes that land outside the project, and the
 claim gate.
 

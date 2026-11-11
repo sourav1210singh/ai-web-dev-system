@@ -1,6 +1,6 @@
 ---
 name: site-recon
-description: Work out everything about a client's existing website before touching it — registrar, who really owns the domain, which DNS zone is actually being served, hosting, CMS and stack, email records, TLS, analytics IDs, brand assets, phone and email — then say plainly what still has to come from the client. Use at the start of any new client, before any migration, go-live, DNS change or domain transfer, and whenever "the site is down" or "leads stopped". Triggers on "new client", "client ki website", "domain kahan hai", "DNS", "hosting", "migration", "site down", "kaun si CMS hai", "what do we need from the client".
+description: Work out everything about a client's existing website before touching it. Registrar, who really owns the domain, which DNS zone is actually being served, hosting, CMS and stack, email records, TLS, analytics IDs, brand assets, phone and email, then say plainly what still has to come from the client. Use at the start of any new client, before any migration, go-live, DNS change or domain transfer, and whenever "the site is down" or "leads stopped". Triggers on "new client", "client ki website", "domain kahan hai", "DNS", "hosting", "migration", "site down", "kaun si CMS hai", "what do we need from the client".
 ---
 
 # Site recon
@@ -66,7 +66,7 @@ inner page while you are there.
 Then write the findings into the project's memory so the next session, on any
 account, starts from facts instead of asking the client again.
 
-## What to ask the client — and what not to
+## What to ask the client, and what not to
 
 Ask only for what genuinely cannot be found. Asking for things already
 discovered makes the agency look careless.
@@ -94,6 +94,6 @@ IDs, sitemap or page list. Those are in the report already.
 
 ## Hand it to the main agent as
 
-- **Facts** — verified, with how each was checked
-- **Risks** — what will break, and what must survive a change
-- **Blocked on the client** — the short list above, nothing more
+- **Facts:** verified, with how each was checked
+- **Risks:** what will break, and what must survive a change
+- **Blocked on the client:** the short list above, nothing more

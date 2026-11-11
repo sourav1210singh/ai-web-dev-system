@@ -190,12 +190,12 @@ different layers:
 
 For anything a client will read, or any claim that matters, split it:
 
-**Verified** — with how it was checked, briefly. "Submitted two test enquiries,
+**Verified:** with how it was checked, briefly. "Submitted two test enquiries,
 both arrived."
 
-**Assumed** — what you are taking on trust and why.
+**Assumed:** what you are taking on trust and why.
 
-**Not checked** — plainly. "I have not been able to confirm the email
+**Not checked:** plainly. "I have not been able to confirm the email
 deliverability; that needs access to the mailbox."
 
 An honest gap is useful. A plausible guess is how an account is lost: a mockup

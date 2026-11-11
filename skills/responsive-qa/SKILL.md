@@ -1,6 +1,6 @@
 ---
 name: responsive-qa
-description: Check a page at real device widths - phone through to a 2560px desktop, never stopping at 1440 - and find the layout, tap-target, image and heading problems a developer would catch by looking — measured, not eyeballed. Also measures what the page costs to load on a throttled mobile connection: LCP and the element that is the LCP, layout shift and what moved, page weight split into yours and third parties, render-blocking scripts, fonts with no font-display, oversized and lazy-loaded hero images. And whether everyone can use it: axe-core for WCAG 2 A and AA, skip links, landmarks, heading outline, accessible names, and focus that has no visible style. Use after building or changing any page, before telling the user it works, and whenever they report that something "looks broken" on a phone or tablet. Also use to audit a client's existing site. Triggers on "check responsive", "mobile pe dekho", "test on devices", "koi bug to nahi", "is it working on mobile", "page check karo", "site slow hai", "speed check karo", "page weight", "core web vitals", "LCP", "CLS", "kitna heavy hai", "accessibility", "a11y", "WCAG", "screen reader", "keyboard se chalta hai", "axe", or any claim about a page being done.
+description: Check a page at real device widths - phone through to a 2560px desktop, never stopping at 1440 - and find the layout, tap-target, image and heading problems a developer would catch by looking. Measured, not eyeballed. Also measures what the page costs to load on a throttled mobile connection: LCP and the element that is the LCP, layout shift and what moved, page weight split into yours and third parties, render-blocking scripts, fonts with no font-display, oversized and lazy-loaded hero images. And whether everyone can use it: axe-core for WCAG 2 A and AA, skip links, landmarks, heading outline, accessible names, and focus that has no visible style. Use after building or changing any page, before telling the user it works, and whenever they report that something "looks broken" on a phone or tablet. Also use to audit a client's existing site. Triggers on "check responsive", "mobile pe dekho", "test on devices", "koi bug to nahi", "is it working on mobile", "page check karo", "site slow hai", "speed check karo", "page weight", "core web vitals", "LCP", "CLS", "kitna heavy hai", "accessibility", "a11y", "WCAG", "screen reader", "keyboard se chalta hai", "axe", or any claim about a page being done.
 ---
 
 # Responsive QA
@@ -149,7 +149,7 @@ is a claim the run does not support.
 | MINOR | text under 12px on mobile; images served far larger than displayed; first section taller than the screen; text clipped by a hidden-overflow ancestor; more than one H1 |
 | MINOR | **scale and proportion** (see below): hero dead space, a container that never grows, a heading that is not fluid, `overflow-x:hidden` on the root, anchors that overshoot the sticky header |
 
-## Scale and proportion — "bade desktop pe responsive nahi hai"
+## Scale and proportion: "bade desktop pe responsive nahi hai"
 
 A page can pass every breakage check and still be wrong, because it does not
 use the screen. The report prints the measurements for each width so the
@@ -173,34 +173,34 @@ argument is numbers, not impressions:
 | Anchors landing below the target | `scroll-padding-top` does not match the measured sticky header. Drive both from one CSS variable so they cannot drift apart. |
 
 Screen-reader-only elements (`.sr-only`, `.screen-reader-text`, skip links,
-clip-rect hidden) are excluded — they are 1px on purpose. Images with no `src`
+clip-rect hidden) are excluded, because they are 1px on purpose. Images with no `src`
 yet are treated as lazy-load placeholders, not as broken images.
 
-## After it runs — this is the part that matters
+## After it runs: this is the part that matters
 
 1. **Open the screenshots and look at them.** The script catches measurable
    faults. It cannot tell you the hero reads badly, the spacing is cramped, or
    the colours fight. That is your job, at each width.
 2. **Fix what you can fix**, then run it again and show the before/after counts.
    Do not hand back a list of problems you were able to solve yourself.
-3. **Report what you did not fix and why** — plainly, not buried.
+3. **Report what you did not fix and why,** plainly, not buried.
 4. A finding you believe is wrong is a finding to **verify**, not to dismiss.
    Open the page at that width and check with your own eyes before calling it a
    false positive.
 
 ## What a finding usually means
 
-- **Sideways scroll** — almost always one element with a fixed width, a long
+- **Sideways scroll:** almost always one element with a fixed width, a long
   unbroken string, a negative margin, or a `100vw` next to a scrollbar. The
   report names the outermost offender; fix that, not its children.
-- **Tap target under 44x44** — on a phone this is a thumb that misses. On a
+- **Tap target under 44x44:** on a phone this is a thumb that misses. On a
   landing page with a "Call" or "Book Now" button it costs conversions
   directly. Increase padding, not font size.
-- **No alt** — an SEO and accessibility fault. Write a real description of the
+- **No alt:** an SEO and accessibility fault. Write a real description of the
   image, not the filename.
-- **Image far larger than displayed** — slow page, bad Core Web Vitals. Serve a
+- **Image far larger than displayed:** slow page, bad Core Web Vitals. Serve a
   correctly sized image or add `srcset`.
-- **Hero taller than the screen** — the call to action starts below the fold.
+- **Hero taller than the screen:** the call to action starts below the fold.
   On PPC landing pages this is a standing rule: the hero must fit.
 
 ## Writing the diagnosis
@@ -219,14 +219,14 @@ diagnosis rather than a vague complaint. The shape that works:
    same x, there is no misalignment. Nothing overflows at any width." This
    stops the next person fixing things that are already right, which is where
    regressions come from.
-4. **Acceptance criteria per viewport** — what must be true at 1366x660,
+4. **Acceptance criteria per viewport:** what must be true at 1366x660,
    1920x1000 and 2560x1400 afterwards.
 5. **An order of work.** Group the changes that interact (hero height, hero
    alignment and hero padding are one change). Separate the ones that alter
    global scale (container width, fluid headings), because widening the
    container changes every grid on the site and deserves its own look.
 
-## Limits — say these rather than overstating
+## Limits: say these rather than overstating
 
 - It renders in Chromium. Safari and Firefox can differ; if the user reports a
   problem on iPhone specifically, that needs a real Safari check.

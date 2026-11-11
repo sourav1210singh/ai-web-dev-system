@@ -43,7 +43,7 @@ instead of saying the form works.
 
 | Trap | Where | How it looks |
 |---|---|---|
-| WPForms markup pasted as static HTML — the nonce is dead | WordPress landing pages | Form submits, success shows, nothing is stored. Leads vanish for weeks. |
+| WPForms markup pasted as static HTML, the nonce is dead | WordPress landing pages | Form submits, success shows, nothing is stored. Leads vanish for weeks. |
 | reCAPTCHA token expires before submit | any | "Error trying to send your message", intermittent, worse on slow fills |
 | Synthetic JS clicks in the WP admin | WordPress settings | The setting looks saved and is not. Always save through the real UI and reload to confirm. |
 | A page rebuilt without its form | landing pages | The old page had a working lead form; the new one looks better and captures nothing. |
@@ -107,7 +107,7 @@ look in the spam folder before calling it delivered.
 search and mail together, and the SPF lookup count creeping towards ten is
 exactly what a weekly run should catch before it crosses.
 
-## Privacy — the hard line
+## Privacy: the hard line
 
 A lead's personal data goes to the systems the client agreed to, and nowhere
 else.
@@ -271,8 +271,8 @@ Work outward from the destination, not inward from the form:
 1. Is anything arriving at the destination at all, from any source?
 2. Did a deploy, plugin update or page rebuild land near the date it stopped?
    Check the site's own change log.
-3. Submit a test and follow it through every hop — handler, database, email,
-   CRM — and find the hop where it disappears.
+3. Submit a test and follow it through every hop: handler, database, email,
+   CRM. Find the hop where it disappears.
 4. Only then look at the form markup.
 
 Report the hop where it fails, with the evidence, before proposing a fix.

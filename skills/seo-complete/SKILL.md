@@ -1,6 +1,6 @@
 ---
 name: seo-complete
-description: The SEO, schema and indexing rules this agency actually works to — title and meta limits, server-rendered JSON-LD, sitemaps built from data, internal links that resolve, HTML entities in the right fields, redirect hygiene, and multilingual parity. Use when building or editing any page, publishing a blog post, auditing a site, fixing 404s or redirects, touching a sitemap or schema, or whenever the user says SEO, schema, meta, breadcrumb, canonical, indexing, GEO or AEO.
+description: The SEO, schema and indexing rules this agency actually works to. Title and meta limits, server-rendered JSON-LD, sitemaps built from data, internal links that resolve, HTML entities in the right fields, redirect hygiene, and multilingual parity. Use when building or editing any page, publishing a blog post, auditing a site, fixing 404s or redirects, touching a sitemap or schema, or whenever the user says SEO, schema, meta, breadcrumb, canonical, indexing, GEO or AEO.
 ---
 
 # SEO, schema and indexing
@@ -18,7 +18,7 @@ Apply them at build time, not as a later pass.
   truncated brand name.
 - **One separator in a title, not several.** `Main subject - Brand` reads; a
   title chopped into three or four segments by dashes and pipes does not.
-- **Lead with the primary keyword** — in the first five words of the title, and
+- **Lead with the primary keyword:** in the first five words of the title, and
   inside the first 120 characters of the description, which is the part an AI
   overview is most likely to lift.
 - **Avoid superlatives and boilerplate** - "Best", "Top", "Leading", a repeated
@@ -70,11 +70,11 @@ No year in a title. "(2026)" dates the page the moment the year turns.
 So when the tool reports a title over 60 on a live site, that is a flag to look
 at, not an instruction to rewrite.
 
-## HTML entities — the field decides
+## HTML entities: the field decides
 
 Plain-text fields (`title`, `name`, `excerpt`, `metatitle`, `metadescription`,
 `imagealt`) must hold **decoded** characters. `&amp;` in a title renders as the
-literal five characters `&amp;` on the page — this reached a client screenshot.
+literal five characters `&amp;` on the page. This reached a client screenshot.
 
 `content` is HTML, so entities **belong** there: `&nbsp;`, `&rsquo;`, `&amp;`
 inside content are correct and must not be "fixed".
@@ -85,7 +85,7 @@ and leave content alone.
 ## JSON-LD
 
 - Must be **server-rendered into the head**. Verify from the raw HTML with
-  JavaScript never executed — `curl` it and look. A block that only appears
+  JavaScript never executed. `curl` it and look. A block that only appears
   after hydration does not count.
 - One source of truth. If the template emits `BlogPosting` + `BreadcrumbList`,
   remove any inline `<script type="application/ld+json">` from the post body.
@@ -131,7 +131,7 @@ and leave content alone.
 - 3 to 4 internal links per article, natural and varied anchor text. Do not
   repeat the same exact-match keyword anchor across dozens of posts.
 - Add a guard on the publish path that warns when a link target does not
-  resolve. Warn, do not block — a redirecting link is avoidable, not an error.
+  resolve. Warn, do not block. A redirecting link is avoidable, not an error.
 - **Anchor text says where the link goes.** "Click here", "read more", "learn
   more" tell a reader and a crawler nothing.
 - **No page should have zero internal links pointing at it.** A page reachable
@@ -144,7 +144,7 @@ and leave content alone.
 This is the rule that gets broken most often, and it is about the **source**
 page, not the destination.
 
-> **Links are placed on editorial content only** — blog posts, articles, learn
+> **Links are placed on editorial content only:** blog posts, articles, learn
 > and resources pages, news, guides. **Never on** the home page, a service
 > page, about, contact, team, pricing, legal, a landing page, or a category and
 > archive hub such as `/blog/` itself.
@@ -158,7 +158,7 @@ Two rules that follow from it:
 - **The anchor text must already exist, word for word, in the article body.**
   Find the phrase in the live page and link it. Never write a plausible
   sentence to hang a link on, and never link from a heading or a button. If no
-  suitable phrase exists on the page, there is no suggestion — say so rather
+  suitable phrase exists on the page, there is no suggestion. Say so rather
   than inventing one.
 - **Check what is already linked before proposing anything.** A link that is
   already on the page, including in a "related posts" block, is recorded as
@@ -217,7 +217,7 @@ and check the `rel=canonical` on each one points at the same single address.
 
 - `alt` on every content image, describing the image. Decorative images get
   `alt=""`. Never use the filename.
-- Never depend on a third-party placeholder image service in production — one
+- Never depend on a third-party placeholder image service in production. One
   failed and broke 87 pages.
 
 ## Content quality, as far as it can be measured
@@ -325,7 +325,7 @@ Never apply one country's search volumes to another country's pages.
 - Do not leave Latin brand text inside RTL prose; use the translated rendering
   except in URLs and proper nouns with no local form.
 
-## GEO / AEO — being quotable by AI answers
+## GEO / AEO: being quotable by AI answers
 
 - Answer the page's question in the **first paragraph**, directly, before any
   build-up. Answer engines quote the opening.
@@ -333,7 +333,7 @@ Never apply one country's search volumes to another country's pages.
 - Facts with numbers, dates and named sources are quotable; vague claims are
   not. Never invent a figure to fill the gap.
 - `FAQPage` schema on pages with real questions, matching visible on-page text.
-- Keep entity names consistent sitewide — same company name, same spelling,
+- Keep entity names consistent sitewide: same company name, same spelling,
   same service names.
 - **Check robots.txt does not block the AI crawlers.** Being quotable means
   being fetchable: `GPTBot`, `ClaudeBot`, `PerplexityBot`, `Google-Extended`,

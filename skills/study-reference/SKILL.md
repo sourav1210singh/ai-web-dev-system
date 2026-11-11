@@ -55,23 +55,23 @@ separately from everything else; check before using the same family.
 
 ## What you get
 
-**Tokens** — type scale per role with family, size, line height, weight and
+**Tokens:** type scale per role with family, size, line height, weight and
 tracking; colour palette normalised to hex, because modern stylesheets compute
 to `oklab()` which nobody can build from; radii; shadows; borders; gradients;
 flex and grid gaps; section padding; content width.
 
-**Rhythm** — section heights as a multiple of the viewport, their padding and
+**Rhythm:** section heights as a multiple of the viewport, their padding and
 their headings. If the page has no `<section>` markup the table says *do not
 trust this table* and tells you to read the rhythm off the screenshot. Believe
 it when it says that.
 
-**Motion** — every transition and animation with its property, duration,
+**Motion:** every transition and animation with its property, duration,
 easing and delay, with the keyframes. Then the measured behaviour: how many
 elements animate in on scroll, the typical duration and easing, the median
 distance they travel, and what actually changes on hover with the before and
 after values.
 
-**Reduced motion** — the page is loaded a second time with
+**Reduced motion:** the page is loaded a second time with
 `prefers-reduced-motion: reduce` and the elements carrying motion are counted
 both times. A reference that does not switch its motion off is common; the
 report says so, and you do not copy that.

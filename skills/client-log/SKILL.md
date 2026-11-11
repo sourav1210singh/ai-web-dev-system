@@ -1,6 +1,6 @@
 ---
 name: client-log
-description: Keep a dated record of everything the client gives or says — files, images, briefs, instructions, decisions, approvals and complaints — filed in the project so it can be found months later when something is disputed. Use the moment the user mentions that a client sent, said, asked for, approved or changed something. Triggers on "client ne ye file di", "client ne bola", "client ne bheja", "client said", "client sent", "client approved", "client wants", "ye image client ne di hai", "client ka brief", or any sentence where the client is the source.
+description: Keep a dated record of everything the client gives or says (files, images, briefs, instructions, decisions, approvals and complaints), filed in the project so it can be found months later when something is disputed. Use the moment the user mentions that a client sent, said, asked for, approved or changed something. Triggers on "client ne ye file di", "client ne bola", "client ne bheja", "client said", "client sent", "client approved", "client wants", "ye image client ne di hai", "client ka brief", or any sentence where the client is the source.
 ---
 
 # The client log

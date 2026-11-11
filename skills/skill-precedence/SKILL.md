@@ -12,7 +12,7 @@ sheet, which editor, what order the buttons go in, what that client's own
 rules are. They are usually specific to one site, one agency process or one
 tool, and they are usually synced to an account rather than kept on disk.
 
-**Standards** — this set — say what good work is and what may be claimed about
+**Standards** (this set) say what good work is and what may be claimed about
 it. They are not about any one system.
 
 Both apply at the same time. The standard does not lose because the executor
@@ -39,7 +39,7 @@ was more specific about the task.
 - **Only what was asked changes.** A builder skill that "improves while it is
   in there" is a regression generator. Capture before, diff after.
 - **A record of an action is not evidence of an outcome.** A row written to a
-  tracking sheet, a task marked complete, a tool reporting success — all of
+  tracking sheet, a task marked complete, a tool reporting success. All of
   these are claims to verify. See `verify-before-claiming`.
 
 ## What the standards never override
@@ -94,7 +94,7 @@ only ever resolved quietly.
 ## A skill that lives only on an account
 
 It is one login away from gone. Anything worth keeping belongs on disk, in the
-project, where it survives a switch — and anything worth keeping *permanently*
+project, where it survives a switch, and anything worth keeping *permanently*
 belongs in this system with the client's details stripped out, so it survives
 the next machine as well.
 

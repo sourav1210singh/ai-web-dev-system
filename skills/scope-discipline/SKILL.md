@@ -21,8 +21,8 @@ has the rule on pace: finishing is not the goal, work that is right is.
 2. **Capture the before state.** For a page change, save the rendered HTML of
    every affected page. For a data change, save the rows. For a file change,
    note the checksum.
-3. **Write down the blast radius** — the files, routes, tables and components
-   this edit can reach — and say it back before starting on anything live.
+3. **Write down the blast radius:** the files, routes, tables and components
+   this edit can reach, and say it back before starting on anything live.
 
 ## While working
 
@@ -31,7 +31,7 @@ has the rule on pace: finishing is not the goal, work that is right is.
 - Do not "improve" layout, reorder sections, rename things, reformat files or
   upgrade dependencies that were not part of the ask.
 - Do not null fields you were not given. On an update, write only the fields
-  that were passed — a missing field must never overwrite a stored value with
+  that were passed. A missing field must never overwrite a stored value with
   empty.
 - Do not change identifiers that other things depend on: slugs, publish dates,
   status, IDs, file paths, route names.
@@ -71,7 +71,7 @@ smaller change, it is an unfinished one.
 ## After, before reporting
 
 **Diff the rendered HTML of every affected page against the before capture.
-Anything other than a whitespace difference is a regression — fix it before
+Anything other than a whitespace difference is a regression. Fix it before
 reporting.**
 
 That sentence is from a real prompt on this work and it is the single most
@@ -124,7 +124,7 @@ of a review whether that command ran or not.
 
 ## The pattern that keeps appearing
 
-> "First, what is already confirmed working — do not redo or improve it."
+> "First, what is already confirmed working. Do not redo or improve it."
 > "Do not touch the enquiry form, the CRM submission, or anything outside these
 > two pages."
 > "Do not change slug, publisheddate, publishedat or status on any row."

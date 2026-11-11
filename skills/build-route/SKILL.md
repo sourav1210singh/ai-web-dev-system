@@ -1,6 +1,6 @@
 ---
 name: build-route
-description: Decide which of the three routes a piece of website work takes — Lovable (read the project through its MCP first, then one narrow prompt), WordPress (work carefully inside the live install), or built directly here in Claude Code — and never assume the route. Use at the start of any website task, when a new client arrives, or when it is unclear where the site actually lives. Triggers on "website banao", "ye kaam kaise karein", "new client site", "kahan banayein", "lovable ya wordpress", "kis platform pe". Runs AFTER the project is understood - for a new client with material to read, project-intake comes first.
+description: Decide which of the three routes a piece of website work takes, and never assume it. Lovable (read the project through its MCP first, then one narrow prompt), WordPress (work carefully inside the live install), or built directly here in Claude Code. Use at the start of any website task, when a new client arrives, or when it is unclear where the site actually lives. Triggers on "website banao", "ye kaam kaise karein", "new client site", "kahan banayein", "lovable ya wordpress", "kis platform pe". Runs AFTER the project is understood - for a new client with material to read, project-intake comes first.
 ---
 
 # Which route does this work take
@@ -11,12 +11,12 @@ clients with the same kind of site are often on different stacks.
 ## Find out first
 
 1. Read the project's `.claude-context/memory/` and `CLIENT-LOG.md`.
-2. If the stack is still unclear, run the recon tool — it names the platform
+2. If the stack is still unclear, run the recon tool. It names the platform
    from the live site:
    `python "C:\Claude-Code\.ai-system\skills\site-recon\recon.py" <domain>`
 3. Say which route you are taking and why, before starting.
 
-## Route 1 — Lovable
+## Route 1: Lovable
 
 **When:** the site already lives in a Lovable project, or a new site is being
 built there.
@@ -34,7 +34,7 @@ Afterwards, verify from outside: Lovable saying "done" is a claim, not a fact.
 `curl` the live page with JavaScript never executed, open it at 390 and 1440,
 and check the build hash changed rather than trusting the deploy message.
 
-## Route 2 — WordPress
+## Route 2: WordPress
 
 **When:** the client's site runs on WordPress, which is most takeovers.
 
@@ -47,7 +47,7 @@ Never rebuild a WordPress site as something else because it would be easier.
 That is the client's decision, and it carries their URLs, their rankings and
 their plugins.
 
-## Route 3 — built directly here
+## Route 3: built directly here
 
 **When:** a greenfield build with no existing site, a mockup or pitch, or
 something that genuinely needs code the other two routes cannot carry.

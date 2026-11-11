@@ -71,7 +71,7 @@ Approval of the change is not approval to press enter.
 ## Before you write the prompt
 
 **Read the code through the Lovable MCP first.** Reading is free. Never describe
-a change from memory or from the rendered page — open the actual file and quote
+a change from memory or from the rendered page. Open the actual file and quote
 the current code in the prompt. Half the wasted credits come from a prompt that
 describes a file wrongly.
 
@@ -82,11 +82,11 @@ in order. The user pastes them one at a time and the numbering is the history.
 
 1. **One concern.** Bugs or structure, never both. Say the rest follows in a
    separate prompt.
-2. **Quote the current code** and the exact replacement. Not "update the hero" —
-   show the block.
+2. **Quote the current code** and the exact replacement. Not "update the hero".
+   Show the block.
 3. **Name what must not change**, by file and by component. Lovable will
    otherwise tidy adjacent code.
-4. **Give the acceptance check** — the specific thing that proves it worked.
+4. **Give the acceptance check:** the specific thing that proves it worked.
 5. **End with the stop instruction.**
 
 ```
@@ -127,7 +127,7 @@ Copy these into prompts when they apply:
 - Do not touch the enquiry form, its server handler, or the CRM submission.
 - Do not add any redirecting URL to the sitemap.
 - Only write the fields that are passed. A missing field must never be nulled.
-- Do not break the existing block handling — tables, blockquotes, headings and
+- Do not break the existing block handling: tables, blockquotes, headings and
   lists already render correctly and must continue to.
 - Everything confirmed working in the earlier prompts must not regress.
 

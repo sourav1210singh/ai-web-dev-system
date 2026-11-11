@@ -1,6 +1,6 @@
 ---
 name: ai-image-direction
-description: Generate site photography that looks like a real photographer took it, not like AI made it — the always-include phrases, the negative prompt, composition rules, and the list of images never to generate at all. Use before generating any image for a client website, hero, blog header, share card or section background, and when a generated image looks glossy, plastic or synthetic. Triggers on "image banao", "generate image", "hero image", "photo chahiye", "AI image", "og image", "banner", "stock photo".
+description: Generate site photography that looks like a real photographer took it, not like AI made it. The always-include phrases, the negative prompt, composition rules, and the list of images never to generate at all. Use before generating any image for a client website, hero, blog header, share card or section background, and when a generated image looks glossy, plastic or synthetic. Triggers on "image banao", "generate image", "hero image", "photo chahiye", "AI image", "og image", "banner", "stock photo".
 ---
 
 # Directing AI photography

@@ -1,6 +1,6 @@
 ---
 name: launch-files
-description: The small files a site is launched without and then nobody notices — favicon (the real .ico, not just head tags), llms.txt, robots.txt, sitemap and og:image — plus the rule that every one of them must carry the live domain, never a lovable.app or preview URL. Use before any go-live, after a domain is pointed, when a platform's default icon is still showing, or when asked about favicon, llms.txt, robots.txt, sitemap or share image. Triggers on "favicon", "llms.txt", "robots.txt", "sitemap", "og image", "share image", "launch checklist", "favicon missing".
+description: The small files a site is launched without and then nobody notices. Favicon (the real .ico, not just head tags), llms.txt, robots.txt, sitemap and og:image, plus the rule that every one of them must carry the live domain, never a lovable.app or preview URL. Use before any go-live, after a domain is pointed, when a platform's default icon is still showing, or when asked about favicon, llms.txt, robots.txt, sitemap or share image. Triggers on "favicon", "llms.txt", "robots.txt", "sitemap", "og image", "share image", "launch checklist", "favicon missing".
 ---
 
 # Launch files
@@ -75,10 +75,10 @@ icon it takes days to weeks to change, and there is nothing to do but wait.
 
 Verify two ways:
 
-1. `https://<domain>/favicon.ico` in an incognito window — the brand icon, and
+1. `https://<domain>/favicon.ico` in an incognito window: the brand icon, and
    a file with a non-zero size. One client site is currently serving a **0
    byte** favicon, which the browser silently falls back from.
-2. `https://www.google.com/s2/favicons?domain=<domain>&sz=64` — what Google
+2. `https://www.google.com/s2/favicons?domain=<domain>&sz=64`: what Google
    has.
 
 ## Twitter cards
@@ -118,9 +118,9 @@ asks an assistant, as facts rather than marketing:
 - **A contact and key-facts block**: full address, phone and WhatsApp, email,
   opening hours by day, the service area named town by town, and whether travel
   is charged.
-- **Ratings with their source and count** — "5.0 from 122 Google reviews, 4.91
+- **Ratings with their source and count:** "5.0 from 122 Google reviews, 4.91
   on ProvenExpert". A rating with no source is not quotable.
-- **A dated price block** — "Prices (fixed, as of October 2026)" with the real
+- **A dated price block:** "Prices (fixed, as of October 2026)" with the real
   figures, the minimum order value, and what needs an individual quote. The
   date matters: an assistant quoting it later should be able to see its vintage.
 - **The operational answers**: the method used, how long until the furniture is
@@ -212,7 +212,7 @@ backend. Do not write a report.
 ## The prompt for a Lovable project
 
 Fill in `[DOMAIN]` and the business details before sending. Note the closing
-lines — see the `lovable-prompting` skill for why they matter.
+lines. See the `lovable-prompting` skill for why they matter.
 
 ```
 Add a correct llms.txt and robots.txt to this website.
@@ -282,17 +282,17 @@ backend. Do not write a report.
 Open all three in a browser. Each must show text, not an error and not the
 homepage:
 
-- `https://<domain>/robots.txt` — last line is the sitemap, on the real domain
-- `https://<domain>/llms.txt` — business info and links
+- `https://<domain>/robots.txt`: last line is the sitemap, on the real domain
+- `https://<domain>/llms.txt`: business info and links
 - `https://<domain>/sitemap.xml`
 
 Click a few of the llms.txt links and confirm they open. Then run `check.py`
 again and compare against the run from before the change.
 
 A site that returns the homepage for `/robots.txt` has a catch-all route eating
-it — the file is not being served at all. See the `seo-complete` skill.
+it. The file is not being served at all. See the `seo-complete` skill.
 
 The same catch-all hides the opposite problem too: files that must **not** be
-served. Before a launch, run `security-pass` as well — it checks that `/.env`,
+served. Before a launch, run `security-pass` as well. It checks that `/.env`,
 `/.git` and config backups are not readable, and that no key has been shipped
 into the browser bundle.

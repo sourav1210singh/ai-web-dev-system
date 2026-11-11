@@ -1,6 +1,6 @@
 ---
 name: client-reply
-description: Write the reply that goes to the client — short, plain English, no em dashes, no markdown so it pastes into email unchanged, and nothing claimed that has not been tested first. Use whenever the user asks for a reply, an update, an email or a message to a client, or says "client ko reply do", "client ko bata do", "email draft karo", "update bhejo". Always verify the claims before writing, not after.
+description: Write the reply that goes to the client. Short, plain English, no em dashes, no markdown so it pastes into email unchanged, and nothing claimed that has not been tested first. Use whenever the user asks for a reply, an update, an email or a message to a client, or says "client ko reply do", "client ko bata do", "email draft karo", "update bhejo". Always verify the claims before writing, not after.
 ---
 
 # Replying to a client
@@ -75,7 +75,7 @@ reply. A confident guess is how an account is lost.
 Never promise an outcome. Commit to the diagnosis and the method, never to the
 result, until the data is in hand.
 
-## Format — it must survive the paste
+## Format: it must survive the paste
 
 **Write plain text. No markdown at all.** No `**bold**`, no `#` headings, no
 `-` bullet characters, no backticks, no tables. Those paste into Gmail and

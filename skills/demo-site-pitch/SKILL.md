@@ -16,7 +16,7 @@ This was decided with evidence on a real pitch, not as a preference:
   Recognisable layout, default fonts, stock photos, generic copy. Reviewers
   spot it instantly.
 - Component catalogues like 21st.dev carry **no local-service or contractor
-  templates** — they are SaaS landing pages, AI products, dashboards, crypto
+  templates.** They are SaaS landing pages, AI products, dashboards, crypto
   and portfolios. And their house aesthetic (dark gradient heroes, glowing
   orbs, glassmorphism, animated beams) is exactly the "AI startup" look to
   avoid. On a trades site it reads as fake.

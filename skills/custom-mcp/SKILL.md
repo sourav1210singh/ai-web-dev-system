@@ -1,6 +1,6 @@
 ---
 name: custom-mcp
-description: How the per-site MCP servers in this workspace are built, secured, connected and kept honest — the hosted HTTP endpoint pattern, secret handling, server-side validators, and why the server's own instructions have to be re-checked against the live site. Use when building a new MCP for a client site, changing an existing one, connecting one to Claude, or when an MCP's tools behave unexpectedly. Triggers on "mcp banao", "new mcp", "mcp connect", "mcp server", "blog publishing", "edge function", "mcp tool".
+description: How the per-site MCP servers in this workspace are built, secured, connected and kept honest. The hosted HTTP endpoint pattern, secret handling, server-side validators, and why the server's own instructions have to be re-checked against the live site. Use when building a new MCP for a client site, changing an existing one, connecting one to Claude, or when an MCP's tools behave unexpectedly. Triggers on "mcp banao", "new mcp", "mcp connect", "mcp server", "blog publishing", "edge function", "mcp tool".
 ---
 
 # Building a per-site MCP
@@ -38,9 +38,9 @@ same way rather than inventing a new shape.
 **Host the MCP inside the site itself**, not as a local process. Two proven
 forms:
 
-1. **An app route** — `https://<site>/api/public/mcp?secret=<key>`, a route in
+1. **An app route:** `https://<site>/api/public/mcp?secret=<key>`, a route in
    the Lovable/TanStack app, sharing its validation with the REST endpoint.
-2. **A Supabase edge function** —
+2. **A Supabase edge function:**
    `https://<ref>.supabase.co/functions/v1/mcp`, MCP JSON-RPC, stateless, so
    `tools/list` works without a session.
 
@@ -99,7 +99,7 @@ So:
   and correct them when they drift. They are the only thing telling a fresh
   Claude what is safe.
 - Read one live post before writing a new one. The rendered page is the spec.
-- Find out what the template renders **for** you — breadcrumb, H1, byline, read
+- Find out what the template renders **for** you: breadcrumb, H1, byline, read
   time, TOC sidebar, author card, CTA, related posts, JSON-LD. Sending those in
   the body duplicates them.
 - Watch for a renderer that adds things: one site had a keyword auto-linker

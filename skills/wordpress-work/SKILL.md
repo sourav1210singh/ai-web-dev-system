@@ -1,6 +1,6 @@
 ---
 name: wordpress-work
-description: Working safely on a client's WordPress site — pull before you upload, the saves that silently do not save, the caches that hide your change, the dash WordPress rewrites behind your back, Elementor and ACF traps, and why site mail lands in spam. Use before touching any WordPress site, admin setting, theme file, Elementor page or form. Triggers on "wordpress", "wp-admin", "elementor", "kadence", "astra", "acf", "wpforms", "gravity forms", "plugin", "theme", "wp site me change".
+description: Working safely on a client's WordPress site. Pull before you upload, the saves that silently do not save, the caches that hide your change, the dash WordPress rewrites behind your back, Elementor and ACF traps, and why site mail lands in spam. Use before touching any WordPress site, admin setting, theme file, Elementor page or form. Triggers on "wordpress", "wp-admin", "elementor", "kadence", "astra", "acf", "wpforms", "gravity forms", "plugin", "theme", "wp site me change".
 ---
 
 # Working on a WordPress site
@@ -82,7 +82,7 @@ not done because the UI said so.
 A change can be correct in the database and invisible to Google, Ahrefs and
 visitors.
 
-- With NitroPack, verify using `?nonitro=1`. **Not** `?cb=` — that does not
+- With NitroPack, verify using `?nonitro=1`. **Not** `?cb=`, which does not
   bypass it.
 - Purge **the current page**, not the entire cache, on a site with paid
   traffic. One full purge rebuilt about 966 pages.
@@ -99,8 +99,8 @@ inconsistent and random.
 Write `&#45;` instead. It survives and renders as a real hyphen.
 
 This matters because the house rule is no em or en dashes anywhere. See
-`copy-standards`. Searching for the character in the editor will not find these
-— check the rendered page.
+`copy-standards`. Searching for the character in the editor will not find these.
+Check the rendered page.
 
 ## Forms
 
@@ -118,7 +118,7 @@ On one site every mail WordPress sent as the client's own domain failed SPF:
 the domain publishes `-all` and authorises only their real senders, while the
 site runs on a different host with a bare `googleusercontent.com` reverse DNS.
 
-- Changing the From address is **not** a workaround — another domain will not
+- Changing the From address is **not** a workaround. Another domain will not
   authorise that server either.
 - The fix is an SMTP sender the domain already trusts. If `include:sendgrid.net`
   is already in their SPF, that is the shortest path.

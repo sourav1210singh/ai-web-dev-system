@@ -1,6 +1,6 @@
 ---
 name: web-build-standards
-description: The house defaults for every website built or changed here — smooth scroll with Lenis, motion instead of a flat page, the small-phone overflow fixes, hero that fits the screen, no AI-tell punctuation or styling, SEO basics at build time, and forms that actually submit. Ships a scaffold that already meets all of it and is tested against the SEO, accessibility and security passes. Apply these without being asked on any new site, page, section or redesign, in Lovable, WordPress, Webflow, Next or plain HTML. Triggers on "website banao", "page banao", "landing page", "redesign", "section add karo", "flat lag raha hai", "animation nahi hai", "build a site", "scaffold", "naya site shuru karo", "starter", or any request that produces front-end output.
+description: The house defaults for every website built or changed here. Smooth scroll with Lenis, motion instead of a flat page, the small-phone overflow fixes, hero that fits the screen, no AI-tell punctuation or styling, SEO basics at build time, and forms that actually submit. Ships a scaffold that already meets all of it and is tested against the SEO, accessibility and security passes. Apply these without being asked on any new site, page, section or redesign, in Lovable, WordPress, Webflow, Next or plain HTML. Triggers on "website banao", "page banao", "landing page", "redesign", "section add karo", "flat lag raha hai", "animation nahi hai", "build a site", "scaffold", "naya site shuru karo", "starter", or any request that produces front-end output.
 ---
 
 # House build standards
@@ -81,7 +81,7 @@ real thing, so both go in together once the client has confirmed them.
 The exact complaint, 2026-10-06: *"tumne jo banaya h wo website flat lag raha h
 koi animation nahi and scroll karne pe glide kare like lenis ka use karo."*
 
-**Smooth scroll — Lenis.** On any React/Next/Lovable build, add Lenis at the
+**Smooth scroll: Lenis.** On any React/Next/Lovable build, add Lenis at the
 root so the page glides instead of jumping.
 
 ```bash
@@ -115,7 +115,7 @@ transitions for plain HTML and WordPress.
 asks for reduced motion. Skipping this is an accessibility failure, not a style
 choice.
 
-**Sticky header.** A header that reacts to scroll was asked for repeatedly — for
+**Sticky header.** A header that reacts to scroll was asked for repeatedly, for
 example *"scroll karne pe pill shape me ho jaye, centre me ho jaye"*: full-width
 and flush at the top, then on scroll it pulls into a centred rounded pill with a
 max width and a blurred background. Transition the width, radius, padding and
@@ -128,10 +128,10 @@ background, not `position`.
 The rule is: **open it at 320px and 360px and nothing may be wider than the
 screen.** 360px is the most common Android width and it is where the bugs are.
 
-Run the QA before claiming anything — see the `responsive-qa` skill.
+Run the QA before claiming anything. See the `responsive-qa` skill.
 
 **The overflow fixes that solved this on a live site** (measured at 320 and
-360px, desktop unchanged) — start from these, then re-measure:
+360px, desktop unchanged). Start from these, then re-measure:
 
 ```css
 /* grid and flex children refuse to shrink below their content without this */
@@ -156,7 +156,7 @@ h1, h2, h3 { overflow-wrap: break-word; }
 Reach for it first.
 
 **Hero must fit the first screen.** Standing rule on every landing page: the
-whole hero — heading, copy, CTAs, form button — visible with no scrolling, on
+whole hero (heading, copy, CTAs, form button) visible with no scrolling, on
 any device.
 
 ```css
@@ -185,7 +185,7 @@ anywhere in client-facing copy. This has been asked for on 12 projects.
 > for the literal character finds nothing. Search for both the character and the
 > entity, in the database as well as the source.
 
-Replace with a comma, a colon, a full stop or a rewritten sentence — not with a
+Replace with a comma, a colon, a full stop or a rewritten sentence, not with a
 hyphen surrounded by spaces, which is its own tell.
 
 **Other tells to avoid:** emoji in body copy, "startup gradient" purple-to-blue
@@ -261,7 +261,7 @@ Ship every page with these already in place. The full audit lives in the
 - Images sized for their slot with `srcset`, `loading="lazy"` below the fold,
   and explicit `width`/`height` so the layout does not shift
 
-On a rebuild, nothing the old page ranked for may silently disappear — use the
+On a rebuild, nothing the old page ranked for may silently disappear. Use the
 `migration-parity` skill.
 
 ---
@@ -271,14 +271,14 @@ On a rebuild, nothing the old page ranked for may silently disappear — use the
 Forms are the most common thing to break here: 396 mentions across 18 projects.
 
 **Never claim a form works without submitting a real test and confirming the
-submission arrived** — the row in the database, the email in the inbox, the
+submission arrived:** the row in the database, the email in the inbox, the
 entry in the admin. Seeing a success message is not confirmation.
 
 Known traps already hit:
 
 | Trap | Where |
 |---|---|
-| WPForms HTML pasted as static markup — the nonce is dead and submissions silently vanish | WordPress |
+| WPForms HTML pasted as static markup, the nonce is dead and submissions silently vanish | WordPress |
 | reCAPTCHA token expiring before submit, giving "error trying to send your message" | any |
 | Synthetic JS clicks in the WP admin that look saved but are not | WordPress |
 | Replacing a page and losing the lead form that was quietly working | landing pages |
@@ -291,18 +291,18 @@ completed on mobile.
 
 ## 6. Per stack
 
-**Lovable / React / Next** — Lenis, framer-motion, Tailwind, shadcn all apply
+**Lovable / React / Next:** Lenis, framer-motion, Tailwind, shadcn all apply
 directly. Read the code free through the Lovable MCP before spending credits,
 and keep the prompt narrow. Lovable's agent pauses for plan approval that only
 the user can click, so a sent prompt may sit waiting. Lovable saying "done" is a
 claim to verify, not a fact.
 
-**WordPress** — no npm. Use an IntersectionObserver plus CSS transitions for
+**WordPress:** no npm. Use an IntersectionObserver plus CSS transitions for
 reveals, and a small vanilla smooth-scroll instead of Lenis unless the theme
 already bundles it. Put CSS in the child theme, never in the parent. On a server
 the client also edits, pull before uploading or their work is destroyed.
 
-**Webflow** — native interactions instead of libraries; header and footer are
+**Webflow:** native interactions instead of libraries; header and footer are
 components, and shared classes need combo classes rather than edits.
 
 ---
@@ -310,7 +310,7 @@ components, and shared classes need combo classes rather than edits.
 ## Before saying a page is done
 
 1. `responsive-qa` has run and its blockers and majors are fixed
-2. Scrolled with the mouse — it glides, sections reveal, hovers respond
+2. Scrolled with the mouse. It glides, sections reveal, hovers respond
 3. Hero fits the first screen at 390px and on a 900px-tall laptop
 4. Searched for em dash and en dash, as characters **and** as entities
 5. A real form submission was made and its arrival confirmed

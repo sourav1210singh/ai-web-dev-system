@@ -1,6 +1,6 @@
 ---
 name: copy-standards
-description: How client-facing words are written here — no em or en dashes, no AI filler, no invented facts, clearly marked placeholders, the two exceptions where dashes are allowed, and the correction that matters most: the failure in machine-written copy is not its vocabulary, it is that nothing is being said. Ships a checker for a document or a live page. Use whenever writing or editing any text a client or their visitors will read: page copy, blog posts, meta descriptions, emails, proposals, button labels. Triggers on "content likho", "blog likho", "copy write karo", "rewrite this", "AI jaisa lag raha hai", "slop", "human jaisa likho", "copy check karo", or any request that produces words for a client.
+description: How client-facing words are written here. No em or en dashes, no AI filler, no invented facts, clearly marked placeholders, the two exceptions where dashes are allowed, and the correction that matters most: the failure in machine-written copy is not its vocabulary, it is that nothing is being said. Ships a checker for a document or a live page. Use whenever writing or editing any text a client or their visitors will read: page copy, blog posts, meta descriptions, emails, proposals, button labels. Triggers on "content likho", "blog likho", "copy write karo", "rewrite this", "AI jaisa lag raha hai", "slop", "human jaisa likho", "copy check karo", or any request that produces words for a client.
 ---
 
 # Client-facing copy
@@ -20,7 +20,7 @@ the work leaves behind.
 A client once called a mockup "designed by AI" and the project was nearly lost.
 Everything here protects against that.
 
-## Punctuation — the AI tell
+## Punctuation: the AI tell
 
 **No em dash (—, `&#8212;`, U+2014). No en dash (–, `&#8211;`).** Anywhere in
 copy. This has been asked for on 12 separate projects.
@@ -33,7 +33,7 @@ sentence. A spaced hyphen ` - ` is its own tell; prefer restructuring.
 - They are often stored as the entity `&#8212;` or `&mdash;`, so searching for
   the literal character finds nothing. Search for the character **and** the
   entities, in the database as well as the source.
-- Check rendered output too, not only source — a renderer can introduce them.
+- Check rendered output too, not only source, because a renderer can introduce them.
 - `→` is allowed. It is an arrow, not a dash.
 - **A dash inside code is not a dash.** Inline spans, fenced blocks and
   `<code>`, `<pre>`, `<kbd>` and `<samp>` quote literal text rather than
@@ -171,9 +171,9 @@ dash check still has to be repeated on the live page. For a full score across
 
 Calm, specific, second person, short sentences.
 
-Never: exclamation marks, hype, emoji in body copy, or the filler vocabulary —
-"unlock", "dive in", "game-changer", "supercharge", "elevate", "seamless",
-"in today's fast-paced world", "it's not just X, it's Y".
+Never: exclamation marks, hype, emoji in body copy, or the filler vocabulary
+("unlock", "dive in", "game-changer", "supercharge", "elevate", "seamless",
+"in today's fast-paced world", "it's not just X, it's Y").
 
 Match the tone that is already on the site. If the existing pages read well,
 keep their structure, headings and plain-English register; change only what was
@@ -186,7 +186,7 @@ This is the rule that saves accounts. Do not invent:
 - company history, founding dates, locations, registration or licence numbers
 - credentials, certifications, employer names, years of experience
 - review counts, ratings, awards, client names
-- market figures — rental yields, capital growth, occupancy, population,
+- market figures: rental yields, capital growth, occupancy, population,
   transaction volumes
 - listings, products, services or team members that do not exist
 

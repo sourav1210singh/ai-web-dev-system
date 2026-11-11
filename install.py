@@ -11,6 +11,8 @@ signing in as somebody else.
     python install.py --status   what is installed right now
     python install.py --gate on|off   turn the claim gate on or off
     python install.py --apply --no-hooks   skills only, leave settings.json alone
+    python install.py --rules [--apply]   put the working rules into every
+                                 folder that is already a project
 
 Three things are installed: the skills and agents, the context system that
 records each session beside the projects, and the four hooks that run them.
@@ -114,7 +116,71 @@ def install_context(bad):
             continue
         if copy_verified(at, os.path.join(CTX_DST, rel), rel, bad):
             n += 1
+    # The working rules travel WITH the context system rather than being read
+    # out of the repo each time, so the recorder keeps putting them into
+    # project folders even if the repo is moved or removed. Same mechanism as
+    # the code: copied, checksum verified, replaced when it changes.
+    tpl = os.path.join(HERE, "templates", "CLAUDE.md")
+    if os.path.isfile(tpl) and copy_verified(
+            tpl, os.path.join(CTX_DST, "rules.md"), "rules.md", bad):
+        n += 1
     return n
+
+
+def project_folders():
+    """Folders that are already projects, by their own evidence.
+
+    A folder with a context directory or a CLAUDE.md has been worked in. One
+    without either has not, and giving it a rules file would be inventing a
+    project that nobody started.
+    """
+    out = []
+    for name in sorted(os.listdir(WORKSPACE)):
+        folder = os.path.join(WORKSPACE, name)
+        if not os.path.isdir(folder) or name.startswith("."):
+            continue
+        if os.path.isdir(os.path.join(folder, ".claude-context")) or \
+                os.path.isfile(os.path.join(folder, "CLAUDE.md")):
+            out.append(folder)
+    return out
+
+
+def install_rules(apply_it):
+    """Put the working rules into every folder that is already a project.
+
+    The recorder does this by itself from now on, but only when a folder is
+    next worked in. Measured 11 Nov: the rules sat in 0 of 24 project folders
+    because the template was built for a NEW project and nothing ever reached
+    the ones that already existed. This is that one catch-up pass.
+    """
+    sys.path.insert(0, CTX_DST if os.path.isdir(CTX_DST) else CTX_SRC)
+    import backfill
+    body = backfill.rules_text().strip()
+    if not body:
+        print("rules: no template found, nothing to install")
+        return 0
+    done, already = [], 0
+    for folder in project_folders():
+        p = os.path.join(folder, "CLAUDE.md")
+        before = backfill.read(p) if os.path.isfile(p) else ""
+        if backfill.RULES_BEGIN in before:
+            already += 1
+            if not apply_it:
+                continue
+        if apply_it:
+            backfill.install_rules_md(folder)
+            if backfill.read(p) != before:
+                done.append(os.path.basename(folder))
+        else:
+            done.append(os.path.basename(folder))
+    verb = "updated" if apply_it else "would be given the rules"
+    print("rules: %d folder(s) %s, %d already had the block"
+          % (len(done), verb, already))
+    for name in done:
+        print("   %s" % name)
+    if not apply_it:
+        print("\nDRY RUN. Re-run with --rules --apply to write them.")
+    return 0
 
 
 def register_hooks():
@@ -224,6 +290,8 @@ def main():
             print("usage: install.py --gate on|off")
             return 1
         return gate(v)
+    if "--rules" in sys.argv:
+        return install_rules(apply)
     if "--status" in sys.argv:
         return status()
     names = skills()

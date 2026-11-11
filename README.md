@@ -237,6 +237,32 @@ What does not travel is the history itself. The context files, the memory and
 the per-machine history corrections stay where they were written, because they
 are that machine's record and nobody else's.
 
+### The rules each project carries
+
+`templates/CLAUDE.md` is the standing instruction for a project folder: read
+this folder's history first, work as the expert rather than a transcriptionist,
+understand the whole job in the first pass, render anything visual and look at
+it, no false statements, verify more than one way, plain replies, scope
+discipline, and the live-site and credential rules. It is self-contained, so it
+also works dropped into a folder on a machine where none of this is installed.
+Claude Code auto-loads no other filename, so it has to be called `CLAUDE.md`.
+
+The recorder keeps it in every project folder by itself, in its own marker
+block beside the context pointer. Anything outside the markers is yours and
+survives; anything inside is kept current from the template. The half of the
+template that repeats what the context pointer already says is dropped when the
+two share a file.
+
+```bash
+python install.py --rules            # what would change
+python install.py --rules --apply    # write them into every project folder
+```
+
+That catch-up pass exists because the template was written for a **new**
+project to be given, and a measurement on 11 November found it in **0 of 24**
+folders that already existed. A folder with no context directory and no
+`CLAUDE.md` is left alone, because it was never a project.
+
 ---
 
 ## The gate
@@ -283,7 +309,7 @@ In daily use: 25 skills, one agent, 27 tools and four hooks. The hooks are
 session start, the context recorder, a guard on writes that land outside the
 project, and the claim gate.
 
-**1,276 checks across 28 test suites, all passing**, plus a full-file verifier
+**1,289 checks across 28 test suites, all passing**, plus a full-file verifier
 and a leak check. One total rather than a count per suite, because ten numbers
 drift ten ways and these were wrong in four places before anyone measured them
 again.

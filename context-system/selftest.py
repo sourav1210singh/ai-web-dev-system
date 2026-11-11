@@ -213,6 +213,76 @@ def main():
     else:
         ok("bad input never breaks the session", True)
 
+    # ---------------------------------------------- 10. the working rules
+    # The rules template was correct and sat in 0 of 24 project folders,
+    # because it was written for a NEW project to be given and nothing ever
+    # reached the ones that already existed. It has its own marker block now,
+    # on the same contract as the context pointer: inside the markers is ours
+    # and kept current, outside is the user's and survives untouched.
+    import backfill
+    rules = os.path.join(TEST, "_rules")
+    os.makedirs(rules, exist_ok=True)
+    md = os.path.join(rules, "CLAUDE.md")
+
+    body = backfill.rules_text()
+    ok("the rules template is found from the installed copy", bool(body.strip()),
+       "%d chars" % len(body))
+
+    # a) a folder with nothing in it
+    backfill.install_rules_md(rules)
+    got = c.read(md)
+    ok("a folder with no CLAUDE.md gets one with the rules",
+       backfill.RULES_BEGIN in got and "No false statements" in got)
+    ok("with no context block, the history section is kept",
+       "INDEX.md" in got)
+
+    # b) the context block goes in beside it, and neither eats the other
+    backfill.install_claude_md(rules, "single",
+                               [{"label": "Rules test", "slug": ""}])
+    got = c.read(md)
+    ok("installing the context pointer leaves the rules block alone",
+       backfill.RULES_BEGIN in got and backfill.MARK_BEGIN in got)
+
+    # c) refreshed beside a context block, the duplicated half is dropped
+    backfill.install_rules_md(rules)
+    got = c.read(md)
+    ok("beside a context block the repeated half is dropped",
+       got.count("`.claude-context/INDEX.md` lists what exists") == 0, "")
+    ok("but the rules in that same section survive the drop",
+       "Never substitute your own memory" in got)
+    ok("and the marker that did the dropping is not left in the file",
+       "only-without-context-system" not in got)
+    ok("the cut does not leave a heading with two blank lines under it",
+       "\n\n\n" not in got, repr(got[got.find("## Read this"):][:70]))
+
+    # d) the user's own text survives, and a second run changes nothing
+    c.write(md, c.read(md).rstrip() + "\n\n## My own note\n\nKeep this.\n")
+    before = c.read(md)
+    backfill.install_rules_md(rules)
+    backfill.install_rules_md(rules)
+    after = c.read(md)
+    ok("text outside both blocks survives", "## My own note" in after and
+       "Keep this." in after)
+    ok("running it again changes nothing", after == before, "idempotent")
+    ok("the rules block is not duplicated",
+       after.count(backfill.RULES_BEGIN) == 1,
+       "%d blocks" % after.count(backfill.RULES_BEGIN))
+
+    # e) an edit inside the block is ours to overwrite, which is the contract
+    c.write(md, c.read(md).replace("No false statements", "SOMETHING ELSE"))
+    backfill.install_rules_md(rules)
+    ok("an edit inside the block is restored from the template",
+       "No false statements" in c.read(md))
+
+    # f) and the recorder itself installs them, which is what reaches the
+    # folders nobody will run a command in
+    folder_md = os.path.join(TEST, "CLAUDE.md")
+    if os.path.isfile(folder_md):
+        ok("the recorder put the rules into the project folder it recorded",
+           backfill.RULES_BEGIN in c.read(folder_md),
+           "block present" if backfill.RULES_BEGIN in c.read(folder_md)
+           else "missing")
+
     shutil.rmtree(TEST, ignore_errors=True)
     shutil.rmtree(TRANS, ignore_errors=True)
 

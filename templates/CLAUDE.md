@@ -6,6 +6,7 @@ report overrides them.
 
 ## Read this folder's history before starting
 
+<!-- only-without-context-system:begin -->
 This folder keeps a running record of the work in `.claude-context/`, so the
 history survives switching to a different Claude account or machine.
 
@@ -13,6 +14,8 @@ history survives switching to a different Claude account or machine.
 - The history itself is in numbered files, `CONTEXT-01.md`, `CONTEXT-02.md` and
   so on. **Each one holds at most 10,000 words; when it fills, the next number
   opens by itself.** The current one is the one to read.
+<!-- only-without-context-system:end -->
+
 - **Read it before starting work, not after getting stuck.** It is where the
   decisions, the dead ends and the client's actual words are.
 - **Never substitute your own memory of a past session for reading it.** If the

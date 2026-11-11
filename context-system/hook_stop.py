@@ -260,7 +260,8 @@ def main():
 def ensure_claude_md(folder, cfg):
     """Keep the CLAUDE.md pointer in sync so a fresh account finds the context."""
     import ctxlib as c
-    from backfill import MARK_BEGIN, claude_md_block, install_claude_md
+    from backfill import (MARK_BEGIN, claude_md_block, install_claude_md,
+                          install_rules_md)
     mode = cfg.get("mode") or "single"
     groups = [{"label": lbl, "slug": slug}
               for slug, lbl in sorted((cfg.get("labels") or {}).items())]
@@ -271,10 +272,14 @@ def ensure_claude_md(folder, cfg):
         return
     p = os.path.join(folder, "CLAUDE.md")
     block = claude_md_block(mode, groups, folder)
-    if os.path.isfile(p) and MARK_BEGIN in c.read(p):
-        if block.strip() in c.read(p):
-            return                                   # already current
-    install_claude_md(folder, mode, groups)
+    cur = c.read(p) if os.path.isfile(p) else ""
+    if not (MARK_BEGIN in cur and block.strip() in cur):
+        install_claude_md(folder, mode, groups)
+    # The rules block is a separate concern and must not sit behind the
+    # pointer's "already current" check: the 24 folders that already had a
+    # context block were current forever and so would never have been given
+    # the rules at all. install_rules_md writes nothing when it is unchanged.
+    install_rules_md(folder)
 
 
 if __name__ == "__main__":

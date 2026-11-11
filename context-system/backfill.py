@@ -50,6 +50,68 @@ ROOT_DIR = _ctx_root()
 MARK_BEGIN = "<!-- claude-context-system:begin -->"
 MARK_END = "<!-- claude-context-system:end -->"
 
+# The working rules get their own block for the same reason the context
+# pointer has one: everything outside the markers is the user's and survives,
+# everything inside is ours and is kept current. Measured 11 Nov, the rules
+# template was correct and sat in 0 of 24 project folders, because it was
+# built for a NEW project to be given and nothing ever reached the ones that
+# already existed.
+RULES_BEGIN = "<!-- claude-rules:begin -->"
+RULES_END = "<!-- claude-rules:end -->"
+
+# Part of the template repeats what the context block already says, so that
+# part is marked in the template itself and dropped when both blocks share a
+# file. Marked rather than detected by heading, because a heading that gets
+# reworded would silently start duplicating again.
+ONLY_NO_CTX = re.compile(
+    r"[ \t]*<!-- only-without-context-system:begin -->.*?"
+    r"<!-- only-without-context-system:end -->[ \t]*\n?", re.S)
+
+
+def rules_text():
+    """The working rules, as install.py put them beside this code.
+
+    Falls back to the repo's own copy so the function still works when run
+    from a checkout, and returns empty rather than raising when neither is
+    there: a missing template must never break the recorder.
+    """
+    for p in (os.path.join(HERE, "rules.md"),
+              os.path.join(ROOT_DIR, ".ai-system", "templates", "CLAUDE.md")):
+        try:
+            if os.path.isfile(p):
+                return read(p)
+        except Exception:
+            pass
+    return ""
+
+
+def install_rules_md(folder):
+    """Merge the working rules into this folder's CLAUDE.md.
+
+    Writes nothing when the block is already current, because this runs after
+    every reply in every project folder.
+    """
+    body = rules_text().strip()
+    if not body:
+        return None
+    p = os.path.join(folder, "CLAUDE.md")
+    cur = read(p) if os.path.isfile(p) else ""
+    if MARK_BEGIN in cur:
+        # Cutting a block out of the middle leaves the blank line that was
+        # above it and the one that was below it, so a heading ends up with
+        # two. This is a file a person reads.
+        body = re.sub(r"\n{3,}", "\n\n", ONLY_NO_CTX.sub("", body)).strip()
+    block = RULES_BEGIN + "\n" + body + "\n" + RULES_END
+    if RULES_BEGIN in cur and RULES_END in cur:
+        new = re.sub(re.escape(RULES_BEGIN) + r".*?" + re.escape(RULES_END),
+                     lambda m: block, cur, flags=re.S)
+    else:
+        new = (cur.rstrip() + "\n\n" + block) if cur.strip() else block
+    if new.strip() == cur.strip():
+        return p
+    write(p, new)
+    return p
+
 
 def blocks_text(content):
     if isinstance(content, str):

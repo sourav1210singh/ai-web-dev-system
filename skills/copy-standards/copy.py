@@ -41,6 +41,27 @@ import unicodedata
 # renderer wrote an entity, which is the whole difficulty.
 DASH = re.compile(r"[–—]|&#x?201[34];|&#821[12];|&[mn]dash;", re.I)
 
+# A dash inside a code span or a code block is literal text being shown, not
+# punctuation being used. A document that states the dash rule has to be able
+# to name `&mdash;` without failing its own check, which is how this was
+# found. Code is blanked before the dash check only, so a dash in the prose
+# of the same document is still caught.
+#
+# Indented code blocks are deliberately not handled: four spaces inside a list
+# is a continuation line, not code, and blanking those would hide real prose.
+# Inline spans are matched on a single line so an unclosed backtick cannot run
+# away and blank the rest of the document.
+FENCE = re.compile(r"(?ms)^(```|~~~).*?^\1[ \t]*$")
+INLINE_CODE = re.compile(r"`+[^`\n]*`+")
+HTML_CODE = re.compile(r"(?is)<(code|pre|kbd|samp)\b[^>]*>.*?</\1>")
+
+
+def prose_only(s):
+    """The text with code removed, for checks that judge punctuation."""
+    if not s:
+        return s
+    return INLINE_CODE.sub(" ", FENCE.sub(" ", HTML_CODE.sub(" ", s)))
+
 # Two tiers, because flattening them is what makes a checker get switched off.
 #
 # Tier 1 is a tell wherever it appears in client-facing copy. Tier 2 is a
@@ -105,8 +126,39 @@ def strip_html(html):
     return re.sub(r"[ \t]+", " ", h)
 
 
+# A sentence in a Markdown document does not always end at the period. The
+# period can be followed by closing emphasis before the space ("...any of
+# it.** The whole file"), and the next sentence can open with a list marker or
+# emphasis instead of a capital ("hit.\n- **Finishing"). Neither form matched,
+# so consecutive sentences merged into one. Measured against a real rules
+# document, this reported a 338 word sentence where the longest was 51, and
+# carried that error into the reading grade and the length spread.
+#
+# The separator consumes the markup rather than the pattern trying to look
+# past it, because a lookbehind cannot be variable width here. What must still
+# NOT split is a period inside a reference or an abbreviation, which is why a
+# capital is still required: "see fig. 3 and" and "use e.g. this" stay whole.
+# A capital is the right test only where there is nothing else to go on. Once a
+# list marker has been consumed, a new item has definitionally begun, whatever
+# character follows: "- `.claude-context/INDEX.md` lists what exists" opens on
+# a backtick and a dot and is still a new sentence. The marker's own trailing
+# space is what keeps "-5 degrees" from being read as one.
+_CLOSE = r"[*_`\"')\]]*"
+_MARK = r"(?:[-*+]|\d+\.)\s+"
+_OPEN = r"[*_`\"'(\[]*"
+SENT_SPLIT = re.compile(r"(?<=[.!?])" + _CLOSE + r"\s+"
+                        r"(?:" + _MARK + _OPEN + r"|" + _OPEN + r"(?=[A-Z]))")
+
+# A heading carries no terminal punctuation, so it glues itself to the
+# sentence below it. The paragraph check already dropped heading lines; the
+# sentence-length and reading-grade checks did not, so the two disagreed about
+# the same document. One definition, used by both.
+HEAD_LINE = re.compile(r"^\s*(#{1,6}\s|={3,}|-{3,}\s*$)")
+
+
 def sentences(text):
-    parts = re.split(r"(?<=[.!?])\s+(?=[A-Z\"'(])", text.strip())
+    body = "\n".join(l for l in text.splitlines() if not HEAD_LINE.match(l))
+    parts = SENT_SPLIT.split(body.strip())
     return [s.strip() for s in parts if len(s.strip()) > 1]
 
 
@@ -164,7 +216,14 @@ def check(text, html=None, profile="general"):
         {"sev": sev, "id": id_, "title": title, "detail": detail})
 
     # ------------------------------------------------------------ certain
-    hits = DASH.findall(html or text) + (DASH.findall(text) if html else [])
+    # Both sides have to be code-free, and the visible text cannot be made so
+    # by blanking: by the time it reaches here the tags are gone, so there is
+    # nothing left to say a span was <code>. Where the HTML is available the
+    # text side is therefore re-derived from the code-free HTML rather than
+    # taken as passed, which is how the caller produced it in the first place.
+    h_pr = prose_only(html)
+    t_pr = prose_only(strip_html(h_pr) if html else text)
+    hits = DASH.findall(h_pr or t_pr) + (DASH.findall(t_pr) if html else [])
     if hits:
         kinds = sorted({("entity" if h.startswith("&") else "character")
                         for h in hits})
@@ -236,8 +295,7 @@ def check(text, html=None, profile="general"):
 
     # Headings are not sentences in a paragraph. Counting them made a four
     # line section under an h1 read as a five sentence paragraph.
-    prose = "\n".join(l for l in text.splitlines()
-                      if not re.match(r"^\s*(#{1,6}\s|={3,}|-{3,}\s*$)", l))
+    prose = "\n".join(l for l in text.splitlines() if not HEAD_LINE.match(l))
     paras = [q for q in re.split(r"\n\s*\n", prose) if q.strip()]
     longp = [q for q in paras if len(sentences(q)) > p["per_para"]]
     if longp:

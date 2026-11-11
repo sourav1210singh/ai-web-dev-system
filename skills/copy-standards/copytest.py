@@ -58,6 +58,45 @@ ok("a dash in the HTML but not the stripped text is still caught",
 ok("a dash is a defect, not a matter of taste",
    sev(C.check("a — b"), "dash") == "DEFECT")
 
+# ------------------------------------------- a dash in code is not a dash
+#
+# Found by running this checker over a rules document that states the dash
+# rule: naming `&mdash;` in order to forbid it was reported as using it. Code
+# is a quotation of literal text, not punctuation. The guards matter more than
+# the exclusions: an exclusion that also hides a real dash in the prose has
+# made the check worse, not more precise.
+for t, want, why in [
+        ("Never write `&mdash;` in body copy.", False,
+         "an entity named inside inline code"),
+        ("Never write `a — b` in body copy.", False,
+         "a dash character inside inline code"),
+        ("Avoid it:\n\n```\nlet s = 'a — b'\n```\n\nThat is the rule.", False,
+         "a dash inside a fenced code block"),
+        ("Never write `&mdash;` — it is a tell.", True,
+         "a real dash in the prose beside one in code is still caught"),
+        ("Avoid it:\n\n```\n'a — b'\n```\n\nClear pricing — no surprises.", True,
+         "a real dash after a fenced block is still caught"),
+        ("Do not use the ` character — it is reserved.", True,
+         "one stray backtick must not blank the rest of the line"),
+        ("Clear pricing — no surprises.", True,
+         "ordinary prose is unaffected"),
+]:
+    ok("code span: %s" % why, has(C.check(t), "dash") == want)
+
+ok("a dash inside <code> in the served HTML is not reported",
+   not has(C.check("write &mdash; here", "<p>write <code>&amp;mdash;</code> here</p>"),
+           "dash"),
+   "the page is documenting the entity, not using it")
+ok("but a dash in the HTML prose beside one in <code> still is",
+   has(C.check("a b", "<p><code>&amp;mdash;</code> is banned &mdash; always</p>"),
+       "dash"),
+   "the exclusion must not become a hiding place")
+ok("prose_only leaves ordinary text alone",
+   C.prose_only("Clear pricing — no surprises.") ==
+   "Clear pricing — no surprises.")
+ok("prose_only on empty or missing input returns it unchanged",
+   C.prose_only("") == "" and C.prose_only(None) is None)
+
 # -------------------------------------------------------- other certains
 ok("an exclamation mark is a defect",
    sev(C.check("Book today!"), "exclamation") == "DEFECT")
@@ -222,6 +261,85 @@ ok("the report states it is not a detector", "Not a detector" in txt)
 ok("it says only the served HTML was read", "not the rendered page" in txt)
 ok("it points at clearmode rather than reimplementing it",
    "clearmode" in txt, "43 rules already exist, MIT and stdlib only")
+
+# ------------------------------------------ sentences inside Markdown
+#
+# The splitter needed the period to sit immediately before the space and the
+# next sentence to open with a capital. Markdown breaks both ends: closing
+# emphasis comes between the period and the space, and a list marker comes
+# before the capital. Consecutive sentences merged into one, and the error
+# travelled into the reading grade and the length spread as well. Every case
+# marked "was merged" below failed before the fix; the rest guard it from
+# being made permissive instead of precise.
+for text, want, why in [
+        ("Read the whole thing.** The whole file matters.", 2,
+         "was merged: closing bold before the space"),
+        ("See the note.) The next point follows.", 2,
+         "was merged: closing bracket before the space"),
+        ("Not a search hit.\n- Finishing is not the goal.", 2,
+         "was merged: a list marker opens the next sentence"),
+        ("Not a search hit.\n- **Finishing** is not the goal.", 2,
+         "was merged: a list marker and bold open it"),
+        ("First thing here. 2. Second thing here.", 2,
+         "a numbered list item opens a sentence"),
+        ("One point here. Another point here.", 2,
+         "plain prose still splits"),
+        ("See fig. 3 and the table below.", 1,
+         "a figure reference must still not split"),
+        ("Use e.g. this form when writing.", 1,
+         "a lowercase abbreviation must still not split"),
+        ("Version 1. 5 was never shipped.", 1,
+         "a bare number must not open a sentence"),
+        ("survives a switch.\n- `.claude-context/INDEX.md` lists it.", 2,
+         "was merged: a list item opening on code and a dot"),
+        ("It fell to minus five.\n-5 degrees was the low.", 1,
+         "a negative number is not a list marker"),
+]:
+    got = len(C.sentences(text))
+    ok("markdown: %s" % why, got == want, "got %d, want %d" % (got, want))
+
+# Counting the parts is not enough here. The old splitter also returned two
+# parts for a numbered list, but cut in the wrong place and left the marker
+# stuck to the sentence before it. A count-only assertion hid that, which is
+# the shape of a test that tolerates its own bug.
+num = C.sentences("First thing here. 2. Second thing here.")
+ok("the list marker is not left stuck to the previous sentence",
+   num[0] == "First thing here." and num[-1] == "Second thing here.", num)
+
+one = C.sentences("## Scope\n\nChange only what was asked.")
+ok("a heading does not glue itself to the sentence below it",
+   len(one) == 1, one)
+ok("the heading rule has one definition, shared with the paragraph check",
+   bool(C.HEAD_LINE.match("## Scope")) and bool(C.HEAD_LINE.match("---"))
+   and not C.HEAD_LINE.match("- a list item"),
+   "a one-dash list item is not a horizontal rule")
+
+# The regression in the shape it was found: a rules document written as
+# Markdown bullets. It reported a 338 word sentence where the longest was 51,
+# so the figure is checked against this document rather than a constant.
+doc = "\n".join([
+    "# How work is done",
+    "",
+    "- **Read the whole thing before changing it.** The whole file, not the"
+    " first screen.",
+    "- **Finishing is not the goal.** Being right is. There is no credit for"
+    " an early answer.",
+    "",
+    "## Proof",
+    "",
+    "- **Verify more than one way.** Two angles, not the same check twice.",
+])
+ss = C.sentences(doc)
+longest = max(len(C.words(s)) for s in ss)
+ok("a markdown rules document splits into its real sentences",
+   len(ss) >= 6, "%d sentences" % len(ss))
+ok("the longest sentence is the document's, not the whole bullet list",
+   longest <= 12, "longest %d words" % longest)
+ok("headings are not counted as very short sentences",
+   not has(C.check(doc), "staccato"), ids(C.check(doc)))
+ok("the reading grade is computed on real sentences",
+   C.reading_grade(doc) is not None and C.reading_grade(doc) < 20,
+   C.reading_grade(doc))
 
 passed = sum(1 for r in RESULTS if r)
 print("\n%d/%d checks passed" % (passed, len(RESULTS)))

@@ -35,6 +35,13 @@ sentence. A spaced hyphen ` - ` is its own tell; prefer restructuring.
   entities, in the database as well as the source.
 - Check rendered output too, not only source — a renderer can introduce them.
 - `→` is allowed. It is an arrow, not a dash.
+- **A dash inside code is not a dash.** Inline spans, fenced blocks and
+  `<code>`, `<pre>`, `<kbd>` and `<samp>` quote literal text rather than
+  punctuate a sentence, so `copy.py` blanks them before this check. A document
+  has to be able to name `&mdash;` in order to forbid it, which is how this was
+  found: the checker reported this rule's own wording as breaking it. A dash in
+  the prose of the same document is still caught, because an exclusion that
+  doubles as a hiding place has made the check worse rather than more precise.
 
 **Two exceptions:**
 

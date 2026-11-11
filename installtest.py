@@ -34,9 +34,22 @@ def main():
         home = os.path.join(tmp, "home")
         sysdir = os.path.join(work, ".ai-system")
         os.makedirs(home)
+        # The second group are files the running system writes beside its own
+        # code, and they are gitignored, so a real clone never has them. They
+        # were being copied anyway, and the claim-gate hook rewrites
+        # gate-state.json on every reply, so the copy raced the hook and this
+        # suite failed with WinError 2 on a file that existed when the walk
+        # began and not when the copy reached it. A flaky suite in a pre-push
+        # gate is worse than no gate: it teaches you to re-run until green.
         shutil.copytree(HERE, sysdir, ignore=shutil.ignore_patterns(
-            "__pycache__", ".git", "node_modules", "*.pyc"))
+            "__pycache__", ".git", "node_modules", "*.pyc",
+            "gate-state.json", "hook.log", "runs.log", "audit.json",
+            "audit.err", "inventory.json", "session_routes.json"))
         ok("the system was cloned to another root", os.path.isdir(sysdir))
+        volatile = [f for f in ("gate-state.json", "hook.log", "runs.log")
+                    if os.path.exists(os.path.join(sysdir, f))]
+        ok("nothing the running system writes was cloned with it",
+           not volatile, volatile or "a real clone has none of these either")
 
         env = {"USERPROFILE": home, "HOME": home, "HOMEDRIVE": "",
                "HOMEPATH": ""}

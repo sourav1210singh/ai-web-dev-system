@@ -5,7 +5,7 @@ with a system that carries what every project already knows, checks its own
 work before it claims anything, and refuses to ship the things that make a site
 look AI-made.
 
-This repository is that system: 25 skills, one agent, four hooks and 26 tools,
+This repository is that system: 25 skills, one agent, four hooks and 27 tools,
 all built out of real client work and the mistakes it produced.
 
 ---
@@ -164,6 +164,7 @@ impressions. `scaffold.py` is the exception: it builds.
 | `scaffold.py` | A site skeleton that already passes this system's own gates, tested by serving it and running the real SEO, accessibility and security passes against it |
 | `install.py` | Set the whole system up on a machine: skills, agents, the context system and the hooks, every file checksum verified and every path resolved from where the files are |
 | `leakcheck.py` | Reads the client names off the machine and refuses to let any of them into this repository |
+| `runtests.py` | Every suite with one command, found by what they print rather than by filename, then the figures below checked against what was just measured. It exists because a number nobody can re-derive in one command is a number that drifts, and all of these had |
 
 ---
 
@@ -268,13 +269,22 @@ what the skill is for.
 
 ## Status
 
-In daily use: 25 skills, one agent, 26 tools and four hooks. The hooks are
+In daily use: 25 skills, one agent, 27 tools and four hooks. The hooks are
 session start, the context recorder, a guard on writes that land outside the
 project, and the claim gate.
 
-**1,191 checks across 27 test suites, all passing**, plus a full-file verifier
-and a leak check that runs before every push. One total rather than a count per
-suite, because ten numbers drift ten ways and this one was already wrong in
-four places before it was measured again. It still has to be re-measured when
-checks are added: every suite prints `N/N checks passed`, and the figure above
-is the sum of them.
+**1,244 checks across 28 test suites, all passing**, plus a full-file verifier
+and a leak check. One total rather than a count per suite, because ten numbers
+drift ten ways and these were wrong in four places before anyone measured them
+again.
+
+```
+python runtests.py
+```
+
+That runs every suite, the verifier and the leak check, then compares this
+figure and the tools table above against what it just measured. It exits 2 if
+either has gone stale, and `--fix-readme` writes the new total in. The counts
+here were wrong for weeks because re-deriving them meant writing a shell loop
+by hand, and a number nobody can re-derive in one command is a number nobody
+re-derives.

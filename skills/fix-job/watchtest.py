@@ -97,6 +97,29 @@ try:
     ok("an unreadable last-run record is reported, not ignored",
        W.staleness(tmp, today=now)[0] == "MAJOR")
 
+    # A schedule with nothing in it. Registering the task and running it once
+    # turned "never run" into OK while zero sites were being watched, which
+    # is the same silence this file exists to break, one step further on.
+    empty = tempfile.mkdtemp(prefix="watchtest-empty-")
+    try:
+        os.makedirs(W.state_dir(empty), exist_ok=True)
+        io.open(os.path.join(W.state_dir(empty), "last-run.json"), "w",
+                encoding="utf-8").write(json.dumps(
+                    {"taken": (now - timedelta(days=1)).strftime("%Y-%m-%d %H:%M"),
+                     "sites": 0, "changed": 0, "failed": 0}))
+        ok("no open watch jobs is not OK, however recently it ran",
+           W.staleness(empty, today=now)[0] == "MAJOR",
+           W.staleness(empty, today=now)[1])
+        ok("and it says plainly that nothing is being watched",
+           "watched nothing" in W.staleness(empty, today=now)[1],
+           W.staleness(empty, today=now)[1])
+        mkjob(empty, "Client D", "d-watch-001")
+        ok("one open job and a recent run is OK again",
+           W.staleness(empty, today=now)[0] == "OK",
+           W.staleness(empty, today=now)[1])
+    finally:
+        shutil.rmtree(empty, ignore_errors=True)
+
     # ------------------------------------------------------- the summary
     res = [{"id": "a", "name": "Client A watch", "domain": "a.test",
             "changed": True, "rc": 1,

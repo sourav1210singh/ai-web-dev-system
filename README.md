@@ -160,7 +160,7 @@ impressions. `scaffold.py` is the exception: it builds.
 | `materials.py` | Inventories everything handed over at the start of a project and reads it, pulling the text out of every document so none of it can be skipped |
 | `render.py` | Turns anything into pictures so it can be looked at instead of parsed. A PDF becomes page images, an Office file gives up the pictures buried in it, a recording becomes frames |
 | `rollback.py` | Is there a way back from this launch, and has anyone checked. Builds the plan from what recon already knows, then checks the plan is real rather than written |
-| `watchrun.py` | Runs every open watch job and records when it last ran, because nothing here ran by itself. Prints the schedule command rather than registering it, since system configuration is the user's |
+| `watchrun.py` | Runs every open watch job and records when it last ran, because nothing here ran by itself. Prints the schedule command rather than registering it, since system configuration is the user's. `--status` is a finding, not a note: it is MAJOR and non-zero when the run is stale **and when nothing is being watched at all**, because an empty schedule reports exactly what a full one that found nothing reports |
 | `scaffold.py` | A site skeleton that already passes this system's own gates, tested by serving it and running the real SEO, accessibility and security passes against it |
 | `install.py` | Set the whole system up on a machine: skills, agents, the context system and the hooks, every file checksum verified and every path resolved from where the files are |
 | `leakcheck.py` | Reads the client names off the machine and refuses to let any of them into this repository |
@@ -309,7 +309,7 @@ In daily use: 25 skills, one agent, 27 tools and four hooks. The hooks are
 session start, the context recorder, a guard on writes that land outside the
 project, and the claim gate.
 
-**1,371 checks across 30 test suites, all passing**, plus a full-file verifier
+**1,374 checks across 30 test suites, all passing**, plus a full-file verifier
 and a leak check. One total rather than a count per suite, because ten numbers
 drift ten ways and these were wrong in four places before anyone measured them
 again.

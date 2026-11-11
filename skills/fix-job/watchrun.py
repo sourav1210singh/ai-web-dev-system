@@ -153,6 +153,14 @@ def staleness(root, today=None):
         return ("MAJOR", "The weekly watch last ran %d days ago (%s). A "
                 "schedule that stopped looks exactly like a site with no "
                 "problems." % (days, lr["taken"]))
+    # The same silence one step further on. Registering the task and running
+    # it once turned "never run" into "OK" while nothing at all was being
+    # watched, measured 11 Nov on this machine. An empty schedule reports
+    # exactly what a full one that found nothing reports.
+    if not open_watch_jobs(root):
+        return ("MAJOR", "The weekly watch ran %s and watched nothing: there "
+                "are no open watch jobs. An empty schedule looks exactly like "
+                "a set of sites with no problems." % lr["taken"])
     return ("OK", "Last ran %s, %d site(s) checked."
             % (lr["taken"], lr.get("sites", 0)))
 

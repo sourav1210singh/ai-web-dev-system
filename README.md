@@ -5,8 +5,8 @@ with a system that carries what every project already knows, checks its own
 work before it claims anything, and refuses to ship the things that make a site
 look AI-made.
 
-This repository is that system: 23 skills, one agent, four hooks and thirteen
-tools, all built out of real client work and the mistakes it produced.
+This repository is that system: 25 skills, one agent, four hooks and 26 tools,
+all built out of real client work and the mistakes it produced.
 
 ---
 
@@ -134,7 +134,7 @@ to come from the client,** never asking for something already in the facts.
 ## The tools
 
 Each one is small, does one thing, and reports measurements rather than
-impressions.
+impressions. `scaffold.py` is the exception: it builds.
 
 | Tool | What it does |
 |---|---|
@@ -148,9 +148,22 @@ impressions.
 | `check.py` | favicon, `robots.txt`, `llms.txt`, sitemap and `og:image` across any number of domains |
 | `preflight.py` | Before a demo goes to GitHub: secrets, `.gitignore`, dashes in visible content, clean tree, and that the production build passes |
 | `clog.py` | Add to and search the client log |
+| `security.js` | Loads the page in a real browser and reads what the server actually sent: transport headers, cookies, every subresource and every script body, plus the short fixed list of files that must never be reachable. Tells the four Supabase key types apart, so the two that are meant to be public are not reported as leaks |
+| `seo.js` | Reads the **raw** HTML for everything that must be server-rendered and the **rendered** DOM for what a visitor sees, because one fetch cannot answer both. Finds soft 404s first and then refuses to report link status at all if the site answers 200 for everything |
+| `copy.py` | The dash rule in every form it is stored in, filler vocabulary in two tiers, placeholders that were never replaced, and three measures reported as signals with no threshold because there is no honest cut-off |
+| `mail.py` | Will the client's mail authenticate, or quietly land in spam. SPF, DKIM and DMARC, with the SPF DNS lookups counted recursively against the limit of ten that makes it fail entirely |
+| `analytics.js` | Do the tags actually fire, once, and without the lead's own data in them. A tag in the source is not a tag that fired, and one that fires twice is worse than one that never fired |
+| `a11y.js` | axe-core for the WCAG 2 A and AA rules, then the checks a rule cannot make: skip links, landmarks, the heading outline, and focus with no visible style |
+| `perf.js` | What the page costs to load, on a cold cache and a throttled connection: LCP and the element that is the LCP, layout shift and what moved, page weight split into yours and third parties |
+| `crossbrowser.js` | The same pages in Chromium, Firefox and WebKit, because `rqa.js` runs Chromium only and a page it calls clean has been seen by one engine |
+| `designmd.js` | Turns a measured page into a `DESIGN.md`, the format for handing a design system to a coding agent |
+| `materials.py` | Inventories everything handed over at the start of a project and reads it, pulling the text out of every document so none of it can be skipped |
+| `render.py` | Turns anything into pictures so it can be looked at instead of parsed. A PDF becomes page images, an Office file gives up the pictures buried in it, a recording becomes frames |
+| `rollback.py` | Is there a way back from this launch, and has anyone checked. Builds the plan from what recon already knows, then checks the plan is real rather than written |
+| `watchrun.py` | Runs every open watch job and records when it last ran, because nothing here ran by itself. Prints the schedule command rather than registering it, since system configuration is the user's |
+| `scaffold.py` | A site skeleton that already passes this system's own gates, tested by serving it and running the real SEO, accessibility and security passes against it |
 | `install.py` | Set the whole system up on a machine: skills, agents, the context system and the hooks, every file checksum verified and every path resolved from where the files are |
 | `leakcheck.py` | Reads the client names off the machine and refuses to let any of them into this repository |
-| `gatetest.py` | 35 cases proving the claim gate fires exactly when it should and never otherwise |
 
 ---
 
@@ -242,7 +255,7 @@ still be visibly broken.
 
 It blocks at most once per turn, so it cannot loop. A reply that is honest
 about not having checked is never blocked, and neither is a turn that changed
-nothing. `gatetest.py` covers all 35 cases, including the Hinglish phrasings
+nothing. `gatetest.py` covers all 51 cases, including the Hinglish phrasings
 this workspace actually uses.
 
 ```bash
@@ -255,11 +268,13 @@ what the skill is for.
 
 ## Status
 
-In daily use: 24 skills, one agent, thirteen tools and four hooks. They are
+In daily use: 25 skills, one agent, 26 tools and four hooks. The hooks are
 session start, the context recorder, a guard on writes that land outside the
 project, and the claim gate.
 
-Test suites: 38 gate cases, 49 fix-job cases, 42 project-intake cases,
-22 migration-parity cases, 19 meeting-intake cases, 19 install cases,
-17 render cases, 11 ogcard cases, 38 study-reference cases,
-27 context-system cases, a full-file verifier and a leak check, all passing.
+**1,191 checks across 27 test suites, all passing**, plus a full-file verifier
+and a leak check that runs before every push. One total rather than a count per
+suite, because ten numbers drift ten ways and this one was already wrong in
+four places before it was measured again. It still has to be re-measured when
+checks are added: every suite prints `N/N checks passed`, and the figure above
+is the sum of them.

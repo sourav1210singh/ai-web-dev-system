@@ -32,8 +32,18 @@ CLAIM = re.compile(
     r"done|fixed|resolved|completed?|working now|now works|it works|"
     r"is live|went live|deployed|shipped|all good|no issues|"
     r"verified|confirmed working|passing|ready to go|"
-    r"ho gaya|kar diya|kardiya|ban gaya|chal raha|theek hai|thik hai|"
-    r"laga diya|lag gaya|fix kar diya|sahi ho gaya|poora ho gaya"
+    # Romanised Hindi agrees the auxiliary with the gender and number of the
+    # thing finished, and only the masculine singular of each was listed, so
+    # "ho gayi" and "ho gaye" went straight through. Measured over the 2,630
+    # replies recorded in this workspace: 241 of them claimed completion in a
+    # form this pattern could not see at all, "ho gaye" alone 207 times. That
+    # was the first real miss in this gate; every earlier bug was the gate
+    # blocking honest work.
+    r"ho ga(?:ya|yi|ye|i)|kar d(?:iya|iye|i)|kard(?:iya|iye|i)|"
+    r"ban ga(?:ya|yi|ye|i)|chal rah(?:a|i|e)|theek hai|thik hai|"
+    r"laga d(?:iya|iye|i)|lag ga(?:ya|yi|ye|i)|"
+    r"fix kar d(?:iya|iye|i)|sahi ho ga(?:ya|yi|ye|i)|"
+    r"poor(?:a|i) ho ga(?:ya|yi|ye|i)"
     r")(?![a-z])")
 
 # --- language that means the reply is already being honest -------------
@@ -59,8 +69,22 @@ EVIDENCE_TOOL_SUBSTR = (
 )
 EVIDENCE_BASH = re.compile(
     r"(?i)\b("
-    r"curl|wget|rqa\.js|verify\.py|selftest\.py|check\.py|preflight\.py|"
-    r"recon\.py|leakcheck\.py|install\.py --status|"
+    r"curl|wget|install\.py --status|"
+    # This system's own measurement tools. The list held five of twenty eight,
+    # all of them from the first week, so running the SEO, accessibility,
+    # performance, security, mail or parity pass read as nothing checked at
+    # all. job.py was the sharpest case: the one command that runs every check
+    # for a job at once counted as having looked at nothing. Same bug as the
+    # test-suite one below, which was fixed for suites and never for these.
+    # gatetest.py pins this list against the tools on disk, so a tool added
+    # later fails the suite until it is classified.
+    r"rqa\.js|seo\.js|a11y\.js|perf\.js|security\.js|analytics\.js|"
+    r"crossbrowser\.js|study\.js|designmd\.js|"
+    r"check\.py|preflight\.py|recon\.py|mail\.py|parity\.py|copy\.py|"
+    r"job\.py|watchrun\.py|rollback\.py|materials\.py|render\.py|"
+    r"meeting\.py|runtests\.py|leakcheck\.py|verify\.py|selftest\.py|"
+    r"memcheck\.py|audit\.py|audit_report\.py|estimate\.py|timespent\.py|"
+    r"range\.py|"
     # This system verifies itself with suites named <thing>test.py and
     # <thing>test.js. Only gatetest.py was listed, so running ten of its
     # own suites and saying so was read as no evidence at all.
@@ -188,6 +212,41 @@ def has_visual_evidence(tools):
 
 SENTENCE = re.compile(r"[^.!?\n]+[.!?\n]?")
 
+# "chal raha / rahi / rahe" is the one claim form that can mean the opposite
+# of itself. A site that runs is a claim. A job that is still running is a
+# progress report, and blocking those is how a gate gets switched off.
+# Measured over the 107 real uses in this workspace: the progress kind names
+# the process within the three words before it, or says background. Checked
+# both ways against the corpus, "Site chal rahi hai" stays a claim and
+# "Deploy chal raha hai" does not become one. "abhi" is deliberately not in
+# this list: it reads both ways, as in "Super Charge abhi theek chal raha hai".
+PROGRESS = re.compile(
+    r"(?i)\b(background|deploy|publish|sweep|runs?|agents?|checks?|loop|"
+    r"migration|verification|confirmation|resize|subagent|sync|job)\b"
+    r"(?:\s+\w+){0,2}\s*$")
+RUNNING = re.compile(r"(?i)^chal rah[aie]$")
+
+
+def progress_report(sentence, claim):
+    """Is this "chal raha" a thing that works, or a job still running?"""
+    if not RUNNING.match(claim.group(1)):
+        return False
+    return bool(PROGRESS.search(sentence[:claim.start()]))
+
+
+def find_claim(prose):
+    """The first claim in the reply that survives the sentence level filters.
+
+    One pattern match is not enough on its own: the same words carry a claim
+    or a progress report depending on what sits beside them, so the filtering
+    has to happen per sentence and the search has to keep going afterwards.
+    """
+    for s in SENTENCE.findall(prose):
+        for m in CLAIM.finditer(s):
+            if not progress_report(s, m):
+                return m
+    return None
+
 
 def claim_is_visual(prose):
     """Is the CLAIM itself about something visual?
@@ -200,7 +259,8 @@ def claim_is_visual(prose):
     for s in SENTENCE.findall(prose):
         if not (VISUAL_CLAIM.search(s) or VISUAL_SECTION.search(s)):
             continue
-        if any(not relative_clause(s, m) for m in CLAIM.finditer(s)):
+        if any(not relative_clause(s, m) and not progress_report(s, m)
+               for m in CLAIM.finditer(s)):
             return True
     return False
 
@@ -338,7 +398,8 @@ def main():
         return
 
     prose = prose_only(final)
-    if not CLAIM.search(prose):
+    found = find_claim(prose)
+    if not found:
         return
     if HEDGE.search(final):
         c.heartbeat("Gate", "claim is already hedged, allowed")
@@ -346,7 +407,7 @@ def main():
     if not changed_something(tools):
         c.heartbeat("Gate", "no change made this turn, allowed")
         return
-    claim = CLAIM.search(prose).group(1)
+    claim = found.group(1)
     ok, how = has_evidence(tools)
 
     # Anything a person judges with their eyes needs an eye. Reading the code

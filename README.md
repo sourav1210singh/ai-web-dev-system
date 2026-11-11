@@ -256,8 +256,18 @@ still be visibly broken.
 
 It blocks at most once per turn, so it cannot loop. A reply that is honest
 about not having checked is never blocked, and neither is a turn that changed
-nothing. `gatetest.py` covers all 51 cases, including the Hinglish phrasings
-this workspace actually uses.
+nothing. `gatetest.py` covers all 83 cases.
+
+The Hinglish ones are not typed out any more. Romanised Hindi agrees the
+auxiliary with the gender and number of the thing finished, and the pattern
+listed only the masculine singular of each, so `ho gayi` and `ho gaye` went
+straight through: **241 of the 2,630 replies recorded here claimed completion
+in a form the gate could not see, and `ho gaye` alone 207 times.** Fifty one
+cases never caught it because they used `ho gaya` five times and a feminine or
+plural form zero times, which is a fixture testing the memory it came from.
+The cases are now generated from the grammar, and pinned against the recorded
+replies themselves, so the next form nobody thought of is caught by
+measurement rather than by somebody noticing.
 
 ```bash
 python install.py --gate off     # and --gate on
@@ -273,7 +283,7 @@ In daily use: 25 skills, one agent, 27 tools and four hooks. The hooks are
 session start, the context recorder, a guard on writes that land outside the
 project, and the claim gate.
 
-**1,244 checks across 28 test suites, all passing**, plus a full-file verifier
+**1,276 checks across 28 test suites, all passing**, plus a full-file verifier
 and a leak check. One total rather than a count per suite, because ten numbers
 drift ten ways and these were wrong in four places before anyone measured them
 again.

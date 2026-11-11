@@ -325,6 +325,184 @@ def main():
     _rc, blocked, _r, _e = run(t)
     ok("UI change + honest 'not looked' -> allowed", not blocked)
 
+    # 11 - the gate's first real miss, found 11 Nov by running it against the
+    # recorded corpus instead of against invented examples. Romanised Hindi
+    # agrees the auxiliary with the gender and number of the thing finished,
+    # and only the masculine singular of each form was listed, so "ho gayi"
+    # and "ho gaye" sailed through. The 51 cases above use "ho gaya" five
+    # times and a feminine or plural form zero times, which is why they could
+    # never fail on what the pattern was missing.
+    #
+    # So these are GENERATED from the families rather than typed out, and
+    # pinned against the real corpus below. A fixture written from memory
+    # tests the memory it came from.
+    import collections
+    import importlib.util
+    import re as _re
+    sys.path.insert(0, HERE)
+    sys.path.insert(0, os.path.join(SYS, "context-system"))
+    _spec = importlib.util.spec_from_file_location(
+        "gate_under_test", os.path.join(HERE, "hook_claim_gate.py"))
+    gate = importlib.util.module_from_spec(_spec)
+    _spec.loader.exec_module(gate)
+
+    FAMILIES = {
+        "ho ga": ["ya", "yi", "ye", "i"],
+        "kar d": ["iya", "iye", "i"],
+        "ban ga": ["ya", "yi", "ye", "i"],
+        "lag ga": ["ya", "yi", "ye", "i"],
+        "laga d": ["iya", "iye", "i"],
+        "chal rah": ["a", "i", "e"],
+    }
+    for stem, endings in FAMILIES.items():
+        missed = [stem + e for e in endings
+                  if not gate.CLAIM.search(stem + e)]
+        ok("every gender and number of '%s' counts as a claim" % (stem + endings[0]),
+           not missed, ", ".join(missed) or "%d forms" % len(endings))
+
+    notclaims = ["kar dijiye", "ho gayab", "ban gayi" + "sh", "chal rahat"]
+    still = [w for w in notclaims if gate.CLAIM.search(w)]
+    ok("a longer word that merely starts the same is not a claim",
+       not still, ", ".join(still) or "4 non-words rejected")
+
+    # end to end, one word apart, which is how the miss was proven
+    for masc, variant in [
+            ("Attribution theek ho gaya.", "Attribution theek ho gayi."),
+            ("Dono kaam ho gaya, push kiya.", "Dono kaam ho gaye, push kiya."),
+            ("Fix kar diya.", "Fix kar di."),
+            ("Skill ban gaya.", "Skill ban gayi."),
+            ("Image lag gaya.", "Image lag gayi.")]:
+        reset(); transcript(t, masc, [WRITE])
+        _rc, b_masc, _r, _e = run(t)
+        reset(); transcript(t, variant, [WRITE])
+        _rc, b_var, _r, _e = run(t)
+        ok("'%s' blocks like '%s'" % (variant, masc), b_masc and b_var,
+           "control %s, variant %s" % (b_masc, b_var))
+
+    # 12 - "chal raha" is the one form that can mean the opposite of itself.
+    # Widening it to the feminine and plural multiplied an exposure that was
+    # already there, so the guard was added at the same time and has to be
+    # pinned in BOTH directions or it is just a weaker gate.
+    for reply, should_block, why in [
+            ("Deploy chal raha hai, verification background mein.", False,
+             "a job still running is not a claim"),
+            ("Lighthouse ke 11 runs background me chal rahe hain.", False,
+             "background work is not a claim"),
+            ("Dono research agents chal rahe hain.", False,
+             "agents still running is not a claim"),
+            ("Site chal rahi hai, koi 500 nahi.", True,
+             "a site that runs IS a claim"),
+            ("Database aur app theek chal rahe hain.", True,
+             "plural, and still a claim"),
+            ("Super Charge abhi theek chal raha hai.", True,
+             "'abhi' reads both ways and must not suppress a claim")]:
+        reset(); transcript(t, reply, [WRITE])
+        _rc, blocked, _r, _e = run(t)
+        ok("%s -> %s" % (why, "BLOCKS" if should_block else "allowed"),
+           blocked == should_block, reply)
+
+    # 13 - the pin that would have caught it. Every recorded reply on this
+    # machine, checked for a claim form the gate cannot see. The corpus is
+    # this machine's own history and never travels with the repo, so on a
+    # fresh clone this reports that it had nothing to read rather than
+    # passing quietly.
+    WORKSPACE = os.path.dirname(SYS)
+    RESULT_LINE = _re.compile(r"^- \*\*Result:\*\*\s*(.+)$", _re.M)
+    GENERATED = _re.compile(
+        r"(?i)(?<![a-z])(" +
+        "|".join(_re.escape(stem + e) for stem, es in FAMILIES.items()
+                 for e in es) + r")(?![a-z])")
+    replies, files = [], 0
+    for dirpath, dirnames, names in os.walk(WORKSPACE):
+        dirnames[:] = [d for d in dirnames
+                       if d not in (".ai-system", ".git", "node_modules")]
+        for n in names:
+            p = os.path.join(dirpath, n)
+            if n.startswith("CONTEXT-") and n.endswith(".md") and \
+                    os.sep + ".claude-context" + os.sep in p:
+                files += 1
+                replies += RESULT_LINE.findall(
+                    io.open(p, encoding="utf-8", errors="replace").read())
+    if not files:
+        ok("corpus pin: no recorded replies on this machine to check against",
+           True, "0 CONTEXT files, nothing read")
+    else:
+        # A form the guard deliberately dropped is not a form the gate cannot
+        # see, so the pin asks the exact question: is there a claim form that
+        # SURVIVES the filters and is still unseen? Checked against all 18
+        # suppressed replies by reading them, and every one is a job still
+        # running, twelve of them in the masculine form that was blocking
+        # honestly before this change.
+        blind, suppressed = collections.Counter(), 0
+        for line in replies:
+            prose = gate.prose_only(line)
+            if gate.find_claim(prose):
+                continue
+            for s in gate.SENTENCE.findall(prose):
+                for m in GENERATED.finditer(s):
+                    if gate.progress_report(s, m):
+                        suppressed += 1
+                    else:
+                        blind[m.group(1).lower()] += 1
+        ok("no recorded reply claims completion in a form the gate cannot see",
+           not blind,
+           ", ".join("%s x%d" % kv for kv in blind.most_common(6)) or
+           "%d replies in %d files, %d progress reports correctly allowed"
+           % (len(replies), files, suppressed))
+
+    # 14 - running this system's own tools has to count as having looked.
+    # The evidence list held five of twenty eight, all from the first week,
+    # so the SEO, accessibility, performance, security, mail and parity
+    # passes read as nothing checked. Pinned against the tools on disk rather
+    # than a list in this file, so a tool added next month fails here until
+    # somebody decides which kind it is.
+    NOT_EVIDENCE = {
+        "scaffold.py": "builds a site, it does not check one",
+        "ogcard.py": "builds a share card",
+        "clog.py": "writes the client log",
+        "install.py": "installs; only --status reads, and that is listed",
+        "install_hooks.py": "installs the hooks",
+        "backfill.py": "rewrites history",
+        "ctx.py": "mixed: rebuild, mode, rename and on/off all write",
+        "ctxlib.py": "a library, never invoked on its own",
+        "grouping.py": "a library, never invoked on its own",
+        "hook_claim_gate.py": "a hook, run by the harness",
+        "hook_stop.py": "a hook, run by the harness",
+        "hook_session_start.py": "a hook, run by the harness",
+        "hook_guard_write.py": "a hook, run by the harness",
+    }
+    unclassified, contradictory, counted = [], [], 0
+    for dirpath, dirnames, names in os.walk(SYS):
+        dirnames[:] = [d for d in dirnames
+                       if d not in ("node_modules", "__pycache__", ".git",
+                                    "vendor")]
+        for n in sorted(names):
+            if not n.endswith((".py", ".js")) or "test" in n.lower():
+                continue
+            runner = "node" if n.endswith(".js") else "python"
+            cmd = '%s "%s"' % (runner, os.path.join(dirpath, n))
+            evidence = bool(gate.EVIDENCE_BASH.search(cmd))
+            if evidence:
+                counted += 1
+            if evidence and n in NOT_EVIDENCE:
+                contradictory.append(n)
+            elif not evidence and n not in NOT_EVIDENCE:
+                unclassified.append(n)
+    ok("every tool on disk is either evidence or named as not evidence",
+       not unclassified, ", ".join(sorted(set(unclassified))) or
+       "%d counted, %d deliberately not" % (counted, len(NOT_EVIDENCE)))
+    ok("nothing is both counted as evidence and listed as not evidence",
+       not contradictory, ", ".join(sorted(set(contradictory))) or "clean")
+
+    for tool in ("seo.js", "a11y.js", "perf.js", "security.js", "analytics.js",
+                 "mail.py", "parity.py", "job.py", "runtests.py"):
+        ok("running %s counts as having checked something" % tool,
+           bool(gate.EVIDENCE_BASH.search('node "x\\%s" https://y' % tool)))
+    ok("python install.py --status still counts",
+       bool(gate.EVIDENCE_BASH.search("python install.py --status")))
+    ok("building a site is not checking it",
+       not gate.EVIDENCE_BASH.search('python "x\\scaffold.py" --out y'))
+
     # 10 - never breaks the session
     bad = subprocess.run(
         [PY, "-X", "utf8", os.path.join(HERE, "hook_claim_gate.py")],

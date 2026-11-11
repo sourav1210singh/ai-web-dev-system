@@ -309,7 +309,7 @@ In daily use: 25 skills, one agent, 27 tools and four hooks. The hooks are
 session start, the context recorder, a guard on writes that land outside the
 project, and the claim gate.
 
-**1,289 checks across 28 test suites, all passing**, plus a full-file verifier
+**1,371 checks across 30 test suites, all passing**, plus a full-file verifier
 and a leak check. One total rather than a count per suite, because ten numbers
 drift ten ways and these were wrong in four places before anyone measured them
 again.

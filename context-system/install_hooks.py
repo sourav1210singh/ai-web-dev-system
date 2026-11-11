@@ -14,7 +14,19 @@ TAG = "claude-context-system"
 PY = sys.executable
 
 
-AI_HOOKS = os.path.join(os.path.dirname(HERE), ".ai-system", "hooks")
+# This file runs from two places: the repo, where the hooks are in a sibling
+# folder, and the installed copy beside the projects, where .ai-system is a
+# child of the workspace. Assuming the second registered the claim gate at
+# C:\...\.ai-system\.ai-system\hooks when run from the repo, which is the
+# command this file's own docstring gives, and a hook registered at a path
+# that does not exist never runs and never says so. Pick the candidate that
+# actually holds the hook rather than the one that should.
+_PARENT = os.path.dirname(HERE)
+_CANDIDATES = (os.path.join(_PARENT, "hooks"),
+               os.path.join(_PARENT, ".ai-system", "hooks"))
+AI_HOOKS = next((p for p in _CANDIDATES
+                 if os.path.isfile(os.path.join(p, "hook_claim_gate.py"))),
+                _CANDIDATES[1])
 
 
 def hook_entry(script, status=None, matcher=None):

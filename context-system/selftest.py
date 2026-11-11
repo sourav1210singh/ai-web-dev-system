@@ -283,6 +283,90 @@ def main():
            "block present" if backfill.RULES_BEGIN in c.read(folder_md)
            else "missing")
 
+    # ------------------------------------------- 11. the guard on stray writes
+    # The only one of the four hooks with no test, and the one that exists
+    # because a script once wrote over every project's context. It warns and
+    # never blocks, so the thing to pin is what it notices and what it
+    # correctly stays quiet about.
+    import hook_guard_write as guard
+
+    def guarded(path, cwd=TEST, response=False):
+        payload = {"session_id": "guard-test", "cwd": cwd,
+                   "hook_event_name": "PostToolUse", "tool_name": "Write"}
+        if response:
+            payload["tool_response"] = {"filePath": path}
+        else:
+            payload["tool_input"] = {"file_path": path}
+        rc, out, err = run_hook("hook_guard_write.py", payload)
+        msg = ""
+        if out.strip():
+            try:
+                msg = json.loads(out).get("systemMessage", "")
+            except Exception:
+                msg = "UNPARSEABLE: " + out[:80]
+        return rc, msg
+
+    ok("the guard knows where stray files land", bool(guard.STRAY),
+       ", ".join(os.path.basename(s) for s in guard.STRAY))
+
+    for stray in guard.STRAY:
+        rc, msg = guarded(os.path.join(stray, "report.md"))
+        if "outside the project" not in msg:
+            ok("a file saved to %s is flagged" % os.path.basename(stray),
+               False, msg[:60] or "silent")
+            break
+    else:
+        ok("a file saved anywhere outside the project is flagged", True,
+           "%d locations" % len(guard.STRAY))
+
+    rc, msg = guarded(os.path.join(TEST, "deliverable.md"))
+    ok("a file saved inside the project is not flagged", not msg, msg[:60])
+
+    other = os.path.join(ROOT, "_ctxtest_other")
+    os.makedirs(other, exist_ok=True)
+    rc, msg = guarded(os.path.join(other, "notes.md"))
+    ok("writing into another project's folder is flagged",
+       "another project" in msg and "_ctxtest_other" in msg, msg[:70])
+    shutil.rmtree(other, ignore_errors=True)
+
+    rc, msg = guarded(os.path.join(c.ROOT, ".context-system", "runs.log"))
+    ok("the context system writing beside itself is not another project",
+       not msg, msg[:60])
+
+    for quiet in (os.path.join(os.environ.get("TEMP", "C:\\Windows\\Temp"),
+                               "scratch.md"),
+                  os.path.join(TEST, "node_modules", "x", "index.js"),
+                  os.path.join(TEST, ".git", "COMMIT_EDITMSG")):
+        rc, msg = guarded(quiet)
+        if msg:
+            ok("throwaway and machinery paths are ignored", False,
+               "%s -> %s" % (quiet[-30:], msg[:40]))
+            break
+    else:
+        ok("throwaway and machinery paths are ignored", True,
+           "temp, node_modules, .git")
+
+    rc, msg = guarded(os.path.join(guard.STRAY[0], "from-response.md"),
+                      response=True)
+    ok("the path is read from the tool's response as well as its input",
+       "outside the project" in msg, msg[:60] or "silent")
+
+    rc, out, err = run_hook("hook_guard_write.py",
+                            {"session_id": "guard-test", "cwd": TEST,
+                             "tool_input": {}})
+    ok("a tool call with no file path is ignored", not out.strip(), out[:60])
+
+    for bad_in in ["", "not json", "{}"]:
+        p = subprocess.run([PY, "-X", "utf8",
+                            os.path.join(HERE, "hook_guard_write.py")],
+                           input=bad_in, capture_output=True, text=True)
+        if p.returncode != 0:
+            ok("the guard never breaks the session (%r)" % bad_in[:10], False,
+               p.stderr[-60:])
+            break
+    else:
+        ok("the guard never breaks the session", True)
+
     shutil.rmtree(TEST, ignore_errors=True)
     shutil.rmtree(TRANS, ignore_errors=True)
 

@@ -1,6 +1,6 @@
 ---
 name: responsive-qa
-description: Check a page at real device widths - phone through to a 2560px desktop, never stopping at 1440 - and find the layout, tap-target, image and heading problems a developer would catch by looking. Measured, not eyeballed. Also measures what the page costs to load on a throttled mobile connection: LCP and the element that is the LCP, layout shift and what moved, page weight split into yours and third parties, render-blocking scripts, fonts with no font-display, oversized and lazy-loaded hero images. And whether everyone can use it: axe-core for WCAG 2 A and AA, skip links, landmarks, heading outline, accessible names, and focus that has no visible style. Use after building or changing any page, before telling the user it works, and whenever they report that something "looks broken" on a phone or tablet. Also use to audit a client's existing site. Triggers on "check responsive", "mobile pe dekho", "test on devices", "koi bug to nahi", "is it working on mobile", "page check karo", "site slow hai", "speed check karo", "page weight", "core web vitals", "LCP", "CLS", "kitna heavy hai", "accessibility", "a11y", "WCAG", "screen reader", "keyboard se chalta hai", "axe", or any claim about a page being done.
+description: Check a page at real device widths, from a phone through to a 2560px desktop, never stopping at 1440, and find the layout, tap-target, image and heading problems a developer would catch by looking. Measured, not eyeballed. Also measures what the page costs to load on a throttled mobile connection: LCP and the element that is the LCP, layout shift and what moved, page weight split into yours and third parties, render-blocking scripts, fonts with no font-display, oversized and lazy-loaded hero images. And whether everyone can use it: axe-core for WCAG 2 A and AA, skip links, landmarks, heading outline, accessible names, and focus that has no visible style. Use after building or changing any page, before telling the user it works, and whenever they report that something "looks broken" on a phone or tablet. Also use to audit a client's existing site. Triggers on "check responsive", "mobile pe dekho", "test on devices", "koi bug to nahi", "is it working on mobile", "page check karo", "site slow hai", "speed check karo", "page weight", "core web vitals", "LCP", "CLS", "kitna heavy hai", "accessibility", "a11y", "WCAG", "screen reader", "keyboard se chalta hai", "axe", or any claim about a page being done.
 ---
 
 # Responsive QA
@@ -17,7 +17,7 @@ node "C:\Claude-Code\.ai-system\skills\responsive-qa\crossbrowser.js" <url> \
 ```
 
 It opens every route in all three engines at every width, and reports **only
-the differences that survive measurement** - status, overflow, h1 size, weight
+the differences that survive measurement:** status, overflow, h1 size, weight
 and font, which image the browser chose off the srcset, broken images,
 background. It exits 1 when the engines disagree or a page fails to load.
 
@@ -94,7 +94,7 @@ above-the-fold image marked `loading="lazy"`, text served uncompressed, static
 files with no caching.
 
 **It is a lab measurement, and a lab measurement is not Core Web Vitals.**
-Google's targets - LCP 2.5s, INP 200ms, CLS 0.1 - are defined on real visitors
+Google's targets (LCP 2.5s, INP 200ms, CLS 0.1) are defined on real visitors
 at the **75th percentile over 28 days**. One run on one machine tells you what
 that machine saw. Use it to find the fault; use Search Console's field data to
 decide whether the site passes. Saying "Core Web Vitals pass" off a lab run is
@@ -125,7 +125,7 @@ each control and comparing the computed style before and after.
 
 **It runs at 390 and 1440, not just desktop.** Tap-target size, reflow and the
 order focus moves in all change on a phone. A pass taken only at 1440 never
-opens the width where those fail - which is how this project's own earlier
+opens the width where those fail, which is how this project's own earlier
 script ran for weeks.
 
 axe-core is found in `--axe`, the skill's `vendor/`, or npm global, and
@@ -173,8 +173,8 @@ argument is numbers, not impressions:
 | Anchors landing below the target | `scroll-padding-top` does not match the measured sticky header. Drive both from one CSS variable so they cannot drift apart. |
 
 Screen-reader-only elements (`.sr-only`, `.screen-reader-text`, skip links,
-clip-rect hidden) are excluded, because they are 1px on purpose. Images with no `src`
-yet are treated as lazy-load placeholders, not as broken images.
+clip-rect hidden) are excluded, because they are 1px on purpose. Images with no
+`src` yet are treated as lazy-load placeholders, not as broken images.
 
 ## After it runs: this is the part that matters
 

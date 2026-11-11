@@ -1,6 +1,6 @@
 ---
 name: meeting-intake
-description: Take a meeting recording, transcript or client file and work out what it actually means - the whole of it, nothing skipped, screen as well as speech - then say what has to be done, how, and why. Use whenever a video, audio file, transcript, minutes, brief or client document is handed over, or a path to one is given. This is the one for a SINGLE recording, transcript or set of minutes. When it arrives with scope documents, a crawl or a folder of other material, project-intake runs the whole thing and calls this for the recording. Triggers on "meeting", "recording", "transcript", "minutes", "call", "meeting ka video", "video dekho", "call sun ke batao", "kya decide hua".
+description: Take a meeting recording, transcript or client file and work out what it actually means. The whole of it, nothing skipped, screen as well as speech. Then say what has to be done, how, and why. Use whenever a video, audio file, transcript, minutes, brief or client document is handed over, or a path to one is given. This is the one for a SINGLE recording, transcript or set of minutes. When it arrives with scope documents, a crawl or a folder of other material, project-intake runs the whole thing and calls this for the recording. Triggers on "meeting", "recording", "transcript", "minutes", "call", "meeting ka video", "video dekho", "call sun ke batao", "kya decide hua".
 ---
 
 # Read the whole thing before deciding anything
@@ -91,10 +91,10 @@ Write it into the project, in English, as `meeting-<date>-brief.md`:
 
 Every line in the brief is one of these, and says which:
 
-- **Said** - it is in the transcript, with the timestamp.
-- **Shown** - it was on screen, with the frame.
-- **Inferred** - a reasonable reading, marked as yours.
-- **Not covered** - the meeting did not settle it.
+- **Said:** it is in the transcript, with the timestamp.
+- **Shown:** it was on screen, with the frame.
+- **Inferred:** a reasonable reading, marked as yours.
+- **Not covered:** the meeting did not settle it.
 
 Never promote an inference to a decision. A brief that states something the
 meeting did not decide will be acted on, and the client will be told their

@@ -1,19 +1,19 @@
 ---
 name: project-intake
-description: Files were handed over with little or no instruction - a folder, a meeting recording, a transcript, a scope document, a crawl export, a client's old site - and the job is to work out by yourself what the project is, what has to be done, how and why, then stop and get that understanding approved before building anything. Use whenever a path, a folder or a set of files arrives and the request is thin, whenever a project folder appears with documents in it, and at the start of any new client. This is the one for a SET of materials or a whole folder, where the project itself is not yet understood. For a single recording or transcript on its own use meeting-intake; for page copy supplied to build from use client-content-audit; to look at one file properly use verify-before-claiming. Triggers on "ye sab dekho", "ye folder dekho", "ye files dekho", "ye sab samjho", "scope of work", "naya project", "ab batao kya karna h", "kaam samjho", a bare folder path, several paths at once, or a message that is only attachments.
+description: Files were handed over with little or no instruction. A folder, a meeting recording, a transcript, a scope document, a crawl export, a client's old site. The job is to work out by yourself what the project is, what has to be done, how and why, then stop and get that understanding approved before building anything. Use whenever a path, a folder or a set of files arrives and the request is thin, whenever a project folder appears with documents in it, and at the start of any new client. This is the one for a SET of materials or a whole folder, where the project itself is not yet understood. For a single recording or transcript on its own use meeting-intake; for page copy supplied to build from use client-content-audit; to look at one file properly use verify-before-claiming. Triggers on "ye sab dekho", "ye folder dekho", "ye files dekho", "ye sab samjho", "scope of work", "naya project", "ab batao kya karna h", "kaam samjho", a bare folder path, several paths at once, or a message that is only attachments.
 ---
 
 # Work it out, do not ask what it is
 
 A folder was handed over. Nobody is going to explain it. The explanation is in
 the files, and the job is to read all of them and come back with what the work
-is - not with a question about what the work is.
+is, not with a question about what the work is.
 
 **Do not ask "what should I do with these?"** That question hands the thinking
 back. Read everything first. By the end of the reading there will be real
 questions, and they will be worth asking.
 
-## Stage 0 - read the project before reading the files
+## Stage 0: read the project before reading the files
 
 Always first, and in this order:
 
@@ -26,7 +26,7 @@ A sentence in a scope document reads differently once you know what the client
 has already refused. Interpreting first and reading the history afterwards is
 how a standing instruction gets broken.
 
-## Stage 1 - inventory and extract, before any opinion
+## Stage 1: inventory and extract, before any opinion
 
 ```bash
 python "C:\Claude-Code\.ai-system\skills\project-intake\materials.py" "<folder>" \
@@ -50,12 +50,12 @@ python "C:\Claude-Code\.ai-system\skills\verify-before-claiming\render.py" "<fol
 
 This is not optional and it is not a formality. On the first real folder this
 flow was run against, the extraction returned 3,504 words from the scope
-document and the entire project schedule - hand-over deadline, staging
-sign-off, go-live, support window - was in an embedded chart that contained
+document and the entire project schedule (hand-over deadline, staging
+sign-off, go-live, support window) was in an embedded chart that contained
 none of those words. A brief written from the text alone would have had no
 schedule in it, and nothing would have said so. Follow `verify-before-claiming`.
 
-## Stage 2 - the recording, if there is one
+## Stage 2: the recording, if there is one
 
 ```bash
 python "C:\Claude-Code\.ai-system\skills\meeting-intake\meeting.py" <video> \
@@ -67,7 +67,7 @@ on a shared screen is never read out loud. If the intake says the transcript
 stops early, the end of the meeting is missing, and that is where the
 decisions are.
 
-## Stage 3 - two versions of one document
+## Stage 3: two versions of one document
 
 This is the trap, and it arrives often: an old PDF and an updated doc, or a
 scope and a revised scope. The script reports when it sees more than one.
@@ -89,7 +89,7 @@ Reading its output:
 - **The figure table is the money.** A count that appears in one and not the
   other is a revised estimate. Decimals that differ by a leading digit
   (`1.1` against `4.1`) are usually a table column bleeding into the next in
-  the PDF, not a change - check the sentence they came from before raising it.
+  the PDF, not a change. Check the sentence they came from before raising it.
 - **A dropped line and an added line that say the same thing** are one line
   reformatted. The finding is the entry with no partner: on the real pair,
   eighteen entries resolved to one new sentence, and that sentence extended
@@ -104,7 +104,7 @@ Reading its output:
 - Never quietly work from one and ignore the other. The one you ignored is the
   one that gets quoted back at you.
 
-## Stage 4 - the live site, and the counts
+## Stage 4: the live site, and the counts
 
 For a migration or a rebuild, the old site is a source document too. Run
 `site-recon` for the domain, registrar, DNS, hosting, stack and email records,
@@ -140,7 +140,7 @@ python "C:\Claude-Code\.context-system\worklog\estimate.py" record "<project>" \
 `read` prints every table that has an hours column, with its own total, and
 says which table accounts for which line of the summary. **It does not pick
 one.** On the first real estimate it was pointed at, a summary billed 35 hours
-for a workstream whose own line items added up to 25 - a ten hour gap in a
+for a workstream whose own line items added up to 25, a ten hour gap in a
 document already sent to a client. Pick the table deliberately.
 
 Then record what the client actually **approved**, which is usually not
@@ -156,9 +156,9 @@ proceed with. Measured against all three the project came in **under**; against
 the priority workstream alone it came in at **1.53x**. Without the approved
 list the comparison means nothing, so items start undecided and `compare`
 refuses while any still are. If you do not know what was approved, leave it
-undecided and say so - do not guess it into the file.
+undecided and say so. Do not guess it into the file.
 
-## Stage 5 - the brief, and this is where it stops
+## Stage 5: the brief, and this is where it stops
 
 Write `<project>/project-brief-<date>.md`, in English. It answers:
 
@@ -179,11 +179,11 @@ Write `<project>/project-brief-<date>.md`, in English. It answers:
 
 Every line carries one of these labels, never mixed:
 
-- **Said** - in the transcript, with the timestamp.
-- **Shown** - on screen, with the frame.
-- **Written** - in a document, with the file and page.
-- **Inferred** - your reading, marked as yours.
-- **Not covered** - no source settles it.
+- **Said:** in the transcript, with the timestamp.
+- **Shown:** on screen, with the frame.
+- **Written:** in a document, with the file and page.
+- **Inferred:** your reading, marked as yours.
+- **Not covered:** no source settles it.
 
 An inference is never promoted to a decision. A brief that states something
 nobody decided will be built, and the client will be told their instruction
@@ -195,7 +195,7 @@ changed until the brief comes back approved. This gate exists because a wrong
 reading caught at the brief costs a paragraph and caught after the build costs
 the build.
 
-## Stage 6 onward - only after approval
+## Stage 6 onward: only after approval
 
 In order, each one its own skill: `build-route` to decide where the work
 happens, then the build, then `migration-parity` against every old page,

@@ -1,6 +1,6 @@
 ---
 name: study-reference
-description: Measure a reference page instead of guessing at it - type scale, colour, spacing, radii, shadows, container width, section rhythm, every transition and animation with its real duration and easing, what changes on hover, what animates in on scroll and how far it travels. Use when a client sends a site they like, when working from a bought template, when matching a competitor's standard, or before rebuilding any page whose look matters. Triggers on "reference", "template", "iske jaisa banao", "same as this site", "animation chahiye", "competitor", "inspiration", "aise dikhna chahiye".
+description: Measure a reference page instead of guessing at it. Type scale, colour, spacing, radii, shadows, container width, section rhythm, every transition and animation with its real duration and easing, what changes on hover, what animates in on scroll and how far it travels. Use when a client sends a site they like, when working from a bought template, when matching a competitor's standard, or before rebuilding any page whose look matters. Triggers on "reference", "template", "iske jaisa banao", "same as this site", "animation chahiye", "competitor", "inspiration", "aise dikhna chahiye".
 ---
 
 # Measure the reference, do not eyeball it
@@ -49,8 +49,8 @@ next person builds on it.
 
 It records a spec. It does not copy markup, CSS, images or fonts, and neither
 should you. A bought template licensed to the client is fair game. A
-competitor's site is fair for *standards* - how fast their page feels, what
-their type scale is - not for lifting their design. Fonts are licensed
+competitor's site is fair for *standards* (how fast their page feels, what
+their type scale is), not for lifting their design. Fonts are licensed
 separately from everything else; check before using the same family.
 
 ## What you get

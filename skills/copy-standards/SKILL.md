@@ -33,7 +33,8 @@ sentence. A spaced hyphen ` - ` is its own tell; prefer restructuring.
 - They are often stored as the entity `&#8212;` or `&mdash;`, so searching for
   the literal character finds nothing. Search for the character **and** the
   entities, in the database as well as the source.
-- Check rendered output too, not only source, because a renderer can introduce them.
+- Check rendered output too, not only source, because a renderer can introduce
+  them.
 - `→` is allowed. It is an arrow, not a dash.
 - **A dash inside code is not a dash.** Inline spans, fenced blocks and
   `<code>`, `<pre>`, `<kbd>` and `<samp>` quote literal text rather than
@@ -117,9 +118,9 @@ clearest tells there is. Join them into prose.
 
 Worth knowing, because a word list with no provenance is one person's taste:
 
-- `eugeniughelbur/clearmode` (MIT) - the four axes, the weights, and the
+- `eugeniughelbur/clearmode` (MIT): the four axes, the weights, and the
   per-audience numbers. Also a deterministic checker worth running on its own.
-- `aplaceforallmystuff/the-antislop` (MIT) - the horoscope test, tiered
+- `aplaceforallmystuff/the-antislop` (MIT): the horoscope test, tiered
   severity, and the structural tells including staccato and uniformity.
 - `jalaalrd/anti-ai-slop-writing` - the fullest vocabulary list, which cites
   the published studies behind it rather than an opinion. **No licence file**,
@@ -155,7 +156,7 @@ python "C:\Claude-Code\.ai-system\skills\copy-standards\copy.py" <file-or-url>
 It reports defects (a dash in any of its five stored forms, an exclamation
 mark, an emoji, a placeholder that never got replaced), judged findings
 (filler, heading skips, long paragraphs, bold everywhere), and three signals
-with **no threshold** - sentence-length spread, how many sentences carry a
+with **no threshold:** sentence-length spread, how many sentences carry a
 concrete specific, and reading grade.
 
 **It is not a detector and cannot be one.** A person can write something that

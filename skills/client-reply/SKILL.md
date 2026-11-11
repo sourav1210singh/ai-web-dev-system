@@ -13,7 +13,7 @@ marked "your decision", plus four more questions. The answer that came back
 was the right one: if we ask the client everything, what are we developers
 for.
 
-Make the call on every item the evidence supports - their own earlier
+Make the call on every item the evidence supports: their own earlier
 decisions, the old site, file and folder names, duplicates already present,
 rules they have already stated. Record the decision and a one-line reason.
 Never write "your decision" against something you could have worked out.

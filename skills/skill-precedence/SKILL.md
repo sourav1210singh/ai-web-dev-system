@@ -1,6 +1,6 @@
 ---
 name: skill-precedence
-description: What to do when two skills both apply - one that knows how a particular system is operated, and one that sets what good work is. Use whenever an account-level or client-specific skill fires alongside these standards, when two skills give different instructions, or when a pipeline skill would produce something the standards forbid. Triggers on two skills matching one request, a skill that conflicts with a standard, "which skill", "dono me se kaun sa", or any pipeline skill that ends by claiming work is done.
+description: What to do when two skills both apply. One that knows how a particular system is operated, and one that sets what good work is. Use whenever an account-level or client-specific skill fires alongside these standards, when two skills give different instructions, or when a pipeline skill would produce something the standards forbid. Triggers on two skills matching one request, a skill that conflicts with a standard, "which skill", "dono me se kaun sa", or any pipeline skill that ends by claiming work is done.
 ---
 
 # When two skills both apply
@@ -75,7 +75,7 @@ instructions are not new subjects.
 Two skills that half-cover one subject route worse than one that covers it
 fully, and the knowledge splits: the rule ends up in one file and the trap
 that proves it in another, so whichever one fires is missing half the reason.
-This has already happened once here - a rule about looking at a file before
+This has already happened once here: a rule about looking at a file before
 describing it was written as its own skill when `verify-before-claiming`
 already had a section called "Looking at it is not optional". It was folded
 back in.

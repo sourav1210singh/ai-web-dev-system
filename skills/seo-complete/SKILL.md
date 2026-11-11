@@ -21,7 +21,7 @@ Apply them at build time, not as a later pass.
 - **Lead with the primary keyword:** in the first five words of the title, and
   inside the first 120 characters of the description, which is the part an AI
   overview is most likely to lift.
-- **Avoid superlatives and boilerplate** - "Best", "Top", "Leading", a repeated
+- **Avoid superlatives and boilerplate:** "Best", "Top", "Leading", a repeated
   keyword. Google rewrites titles it reads as padded, and then the title you
   wrote is not the title anyone sees.
 - **Align the H1 with the title.** The closer they are, the less Google rewrites
@@ -50,8 +50,8 @@ opposite of what a checklist implies.
 
 **A page that gets impressions is already ranking, and rewriting its title can
 disturb that.** So on a live page, the default answer is **leave it alone**.
-Change a title only for a stated reason - the keyword is absent, the intent is
-wrong, it contradicts the H1 - and **length on its own is not a reason.** A
+Change a title only for a stated reason: the keyword is absent, the intent is
+wrong, it contradicts the H1. And **length on its own is not a reason.** A
 title at 68 characters that is ranking is worth more than a title at 58 that is
 not. Never rewrite a blog or article title in a sitewide pass.
 
@@ -197,7 +197,7 @@ and check the `rel=canonical` on each one points at the same single address.
   a genuinely missing page never reports itself. Request a URL that cannot
   exist and check the **status code**, not what the page looks like.
 - Keep `noindex` on private routes, studio or admin pages, and client-preview
-  pages - and confirm it is gone from production before launch.
+  pages, and confirm it is gone from production before launch.
 
 ## Redirects and 404s
 
@@ -226,14 +226,14 @@ The quality-focused updates act on this, and three parts of it are countable
 rather than a matter of taste.
 
 - **Thin pages.** Under 300 words on a page that is meant to rank. Contact,
-  thank-you, privacy and archive pages are exempt - they are not competing on
-  depth.
+  thank-you, privacy and archive pages are exempt, because they are not
+  competing on depth.
 - **Keyword stuffing.** One term taking more than about 6% of a page's words
   reads as stuffing rather than as writing. Natural prose almost never puts a
   single non-stopword above 2%. Report the term and the share, not an opinion.
 - **Hidden text that links off-site.** Substantial text a visitor cannot see,
   outside any menu or dialog, whose links leave the site. **This one is a
-  compromise until proven otherwise** - look for modified files and unknown
+  compromise until proven otherwise:** look for modified files and unknown
   admin users, and check whether the pages are indexed, before deleting
   anything.
 
@@ -259,13 +259,13 @@ Audit in this order, because each step changes what the next one means: **name,
 then phone, then address, then the map pin, then the schema.**
 
 - **The confirmed values are the source of truth**, and they come from the
-  client. Never infer them from the site - the site is the thing being audited.
+  client. Never infer them from the site. The site is the thing being audited.
   If they are not written down, ask for them before starting.
 - **Be granular on the address.** A wrong ZIP, a missing suite, "Ste" against
-  "Suite", "W Carmel Dr" against "West Carmel Drive" - each one is a finding on
+  "Suite", "W Carmel Dr" against "West Carmel Drive". Each one is a finding on
   its own.
 - **More than one phone number across the site is a finding**, but a second
-  number can be legitimate - a fax, a department line. Flag it for the client to
+  number can be legitimate: a fax, a department line. Flag it for the client to
   confirm rather than picking one.
 - **The schema's `name`, `telephone` and `address` must match the visible
   NAP.** Schema that disagrees with the page is worse than no schema.
@@ -291,7 +291,7 @@ The tooling for this lives outside here, but two rules travel with it:
   terms.
 - **What to exclude by default:** the client's own brand, anything two words or
   shorter, and "near me". But **"local SEO" as a service term is not a "near
-  me" keyword** - someone searching "best local seo agency" is a business owner
+  me" keyword:** someone searching "best local seo agency" is a business owner
   hiring, not a consumer looking for something nearby. Confusing the two drops
   the client's most commercial keywords.
 
@@ -302,14 +302,14 @@ Never apply one country's search volumes to another country's pages.
 
 ## Competitors
 
-- **Pick them for relevance** - same niche, same city or region, similar
-  services - and confirm the list with the client before analysing anyone. The
+- **Pick them for relevance:** same niche, same city or region, similar
+  services, and confirm the list with the client before analysing anyone. The
   tool's idea of a competitor is whoever overlaps on keywords, which is often
   somebody the client has never heard of.
 - Two things are measurable without any paid tool and are usually the most
   useful: **whether each competitor is actually publishing** (does a blog
   exist, how often, when was the last post, which of them are dormant), and
-  **what their negative reviews say repeatedly** - billing, wait times, staff,
+  **what their negative reviews say repeatedly:** billing, wait times, staff,
   hours. Each recurring complaint is a thing the client can be better at, which
   is a content and positioning brief rather than a statistic.
 - One backlink per referring domain, deduplicated, with spam TLDs dropped.
@@ -339,7 +339,7 @@ Never apply one country's search volumes to another country's pages.
   being fetchable: `GPTBot`, `ClaudeBot`, `PerplexityBot`, `Google-Extended`,
   `Bytespider`. A blanket block, or a `Disallow` under one of their user-agent
   blocks, removes the site from AI answers entirely while leaving Google search
-  untouched - so nothing in the client's search reporting shows it.
+  untouched, so nothing in the client's search reporting shows it.
   Blocking them can be a deliberate decision. Make sure it was one.
 
 ## Before claiming the SEO work is done
@@ -371,7 +371,7 @@ to prevent:
 
 **It will not call a page an orphan from a partial crawl.** A page linked only
 from pages that were not read would look orphaned, so below full sitemap
-coverage - or with no readable sitemap at all - the count is withheld and the
+coverage, or with no readable sitemap at all, the count is withheld and the
 report says which it was. A number that looks authoritative and is not is worse
 than no number.
 

@@ -16,7 +16,7 @@ session. You never create an account, reset a password, or type a credential.
 similar names, and an automation browser often shares a name with a personal
 one while having its own empty cookie jar. Being signed in to one proves
 nothing about the other. If the named profile cannot be reached from here, say
-so and ask - do not reach for a similarly named browser because it happens to
+so and ask. Do not reach for a similarly named browser because it happens to
 be available. The login page you land on will otherwise be read as "the
 account is logged out" or "the site is down", which is a false report built on
 the wrong window.

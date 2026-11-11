@@ -13,7 +13,7 @@ three weeks, then zero for two months. Nothing had broken: the forms had been
 replaced with links to an off-site "schedule a call" page during a CTA tidy-up,
 and one page ended up with seventeen of them.
 
-The leftovers were visible in the code the whole time - a component still
+The leftovers were visible in the code the whole time. A component still
 named for a form that rendered only a link, and a prop nothing read.
 
 So when conversions go to zero, before debugging delivery: open the page and
@@ -48,7 +48,7 @@ instead of saying the form works.
 | Synthetic JS clicks in the WP admin | WordPress settings | The setting looks saved and is not. Always save through the real UI and reload to confirm. |
 | A page rebuilt without its form | landing pages | The old page had a working lead form; the new one looks better and captures nothing. |
 | SFTP upload reporting success on a DNS failure | file deploys | `-w` prints "uploaded". Verify by checksum, never by the tool's own word. |
-| Email sent but undelivered | any | SPF, DKIM or a missing DMARC alignment. Check the destination, not the send log. See below - most of this is now measurable. |
+| Email sent but undelivered | any | SPF, DKIM or a missing DMARC alignment. Check the destination, not the send log. See below, most of this is now measurable. |
 
 ## Will the mail authenticate at all
 
@@ -62,7 +62,7 @@ not judging them, and the faults that matter all look fine in a DNS panel.
 
 **The one worth knowing about: SPF has a hard limit of ten DNS-querying terms.**
 RFC 7208 section 4.6.4 names them - `include`, `a`, `mx`, `ptr`, `exists` and
-the `redirect` modifier - and requires a receiver to return **permerror** past
+the `redirect` modifier, and requires a receiver to return **permerror** past
 ten, which means SPF fails for every message the domain sends. `ip4`, `ip6` and
 `all` cost nothing.
 
@@ -82,7 +82,7 @@ The rest of what it checks:
 
 | Finding | Why it is what it is |
 |---|---|
-| Two SPF records | A blocker. Not "the first one wins" - two records is a permerror and SPF fails entirely. Merge them. |
+| Two SPF records | A blocker. Not "the first one wins": two records is a permerror and SPF fails entirely. Merge them. |
 | `+all` | A blocker, and worse than no SPF: it explicitly authorises every sender on the internet. |
 | `?all`, or no `all` at all | Asserts nothing. `~all` while a change beds in, `-all` once the sender list is known to be complete. |
 | No MX | A blocker if the client reads mail here. If mail lives elsewhere on purpose, record that so nobody "fixes" it. |
@@ -94,13 +94,13 @@ The rest of what it checks:
 Two honest limits, which the report states:
 
 - **Coherent records are necessary, not sufficient.** They do not prove a
-  message arrived - reputation, content and the receiving server decide too.
+  message arrived. Reputation, content and the receiving server decide too.
 - **Only the common DKIM selector names are tried.** No selector found means
   none of those names resolved, not that there is no DKIM. Confirm with the
   sending service.
 
 So this does not replace the rule at the top of this skill. **Send a real test
-and confirm it in the destination inbox** - the inbox, not the send log, and
+and confirm it in the destination inbox,** the inbox, not the send log, and
 look in the spam folder before calling it delivered.
 
 `fix-job` runs it on **golive**, **watch** and **drop**: a bad domain move kills
@@ -162,7 +162,7 @@ direction nobody questions.
 What counts as a conversion action: `tel:`, `wa.me`, `mailto:`, forms, add to
 cart, a booking link, a popup or CTA trigger, a file download, a chat widget, a
 video. A page load cannot tell you which of them fire, because they fire on
-click - so the report lists them and says so rather than implying they are
+click, so the report lists them and says so rather than implying they are
 tracked.
 
 ## AJAX forms need their own success signal
@@ -172,7 +172,7 @@ most common reason a form "has tracking" and reports nothing.
 
 **A form that submits without a page load cannot use a native Form Submission
 trigger.** The trigger either never fires, or fires on a submit that failed
-validation - which is worse, because the number looks healthy.
+validation, which is worse, because the number looks healthy.
 
 | Plugin | What to listen for |
 |---|---|
@@ -186,7 +186,7 @@ validation - which is worse, because the number looks healthy.
 
 Each one pushes a `dataLayer` event, and the tag fires on that custom event
 rather than on a form submission. `analytics.js` reports a plugin it finds with
-no matching listener anywhere on the page - **check the container before
+no matching listener anywhere on the page: **check the container before
 concluding it is missing**, because a listener installed through a GTM custom
 HTML tag is injected at runtime.
 
@@ -216,7 +216,7 @@ reporting Google builds for them. `generate_lead` for a lead form, not
 
 Read the container's existing tags and triggers first, and inspect the site
 before deciding what needs tracking. Do not assume the list. Duplicate tracking
-is not a smaller problem than no tracking - it inflates every number, which is
+is not a smaller problem than no tracking. It inflates every number, which is
 the one failure that survives review because the graph still looks right.
 
 Two platform traps worth knowing before promising a client anything:
@@ -228,7 +228,7 @@ Two platform traps worth knowing before promising a client anything:
 
 `--click "<selector>"` fires one interaction and reports what was sent, which
 is how you check a conversion actually registers. **Only on a page you have
-been told you may exercise** - never fire a real submission on a live client
+been told you may exercise.** Never fire a real submission on a live client
 form to test a tag.
 
 `--consent` clicks the cookie banner's accept button, because most tags

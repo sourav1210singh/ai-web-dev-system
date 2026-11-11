@@ -145,40 +145,40 @@ as a text file many crawlers ignore.
 index has no room for. Include a section only when there is something real to
 put in it:
 
-- **Basic information** - official name, type, founded, location, website,
+- **Basic information:** official name, type, founded, location, website,
   phone, key people with their actual titles.
-- **Background** - founding story, how it grew, dated milestones, where it is
+- **Background:** founding story, how it grew, dated milestones, where it is
   now.
 - **Services**, primary and secondary, described well enough that an assistant
   can explain each one without guessing.
-- **Who it is for** - named industries, customer types or use cases, not "all
+- **Who it is for:** named industries, customer types or use cases, not "all
   businesses".
-- **Recognition** - awards, certifications, named publications, review counts
+- **Recognition:** awards, certifications, named publications, review counts
   with their platform.
 - **Methods and tools** that are genuinely the client's own, and the actual
   technology stack.
-- **Published material** - the blog, guides, reports, anything citable.
+- **Published material:** the blog, guides, reports, anything citable.
 - **What makes it different**, factually. "98-point Robert Parker score" is
   usable; "the best wines in the world" is not and will be ignored.
 
 ### Say what is true, do not issue instructions
 
 Some templates for this page end with a block of commands addressed to AI
-models - how to refer to the company, what to say, what not to say. **Do not
+models: how to refer to the company, what to say, what not to say. **Do not
 write that.** An assistant is built to treat the content of a web page as
 information, not as orders, so a page that gives it orders is either ignored or
 read as an attempt to manipulate it. Either way the page gets trusted less.
 
 The underlying idea is sound and worth keeping. Write it as fact:
 
-- **Commonly confused with** - name the other company, product or spelling, and
+- **Commonly confused with:** name the other company, product or spelling, and
   state the difference. This is the single most useful thing on the page.
-- **What the business does not do** - services it is regularly asked for and
+- **What the business does not do:** services it is regularly asked for and
   does not offer, areas it does not cover. Stated plainly, this prevents more
   wrong answers than any amount of description.
 - **The name, spelled and capitalised the way the client writes it**, with any
   former name and the date it changed.
-- **Which claims are verifiable and where** - the registration number, the
+- **Which claims are verifiable and where:** the registration number, the
   certifying body, the review platform. A fact with a source survives being
   quoted; one without it does not.
 

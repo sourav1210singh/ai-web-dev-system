@@ -72,7 +72,7 @@ needs no editing.
 | Skill | What it enforces |
 |---|---|
 | `fix-job` | Runs client work as a job with state, in three types: `fix` (something live is wrong), `intake` (a new client: read everything, change nothing) and `golive` (the launch gate, which refuses to close while a blocker stands). Every check runs at once and verify diffs against the before snapshot. |
-| `verify-before-claiming` | Finishing is not the goal; work that is right is. Analyse before deciding, read the whole thing before changing it, never fill a gap with something plausible. Nothing with a visual form is described from its extracted text - it is rendered and looked at. Nothing is reported as done, fixed, working or live until that work has been checked from more than one angle and the result looked at. Carries the proof table, by kind of claim. |
+| `verify-before-claiming` | Finishing is not the goal; work that is right is. Analyse before deciding, read the whole thing before changing it, never fill a gap with something plausible. Nothing with a visual form is described from its extracted text. It is rendered and looked at. Nothing is reported as done, fixed, working or live until that work has been checked from more than one angle and the result looked at. Carries the proof table, by kind of claim. |
 | `scope-discipline` | Change only what was asked. Capture the rendered HTML before, diff it after; anything but a whitespace difference is a regression. Report what changed, what did not, and what you noticed and left alone. |
 | `copy-standards` | No em or en dashes, no AI filler vocabulary, no invented facts. Clearly marked placeholders instead of plausible-sounding inventions. |
 | `skill-precedence` | What happens when two skills both apply: the one that knows how a system is operated, and the one that sets what good work is. The second does not lose for being less specific. |
@@ -105,7 +105,7 @@ needs no editing.
 | Skill | What it keeps |
 |---|---|
 | `meeting-intake` | Takes a recording, transcript or client file and works out what was decided, what has to be done and why, from the whole of it. Checks a supplied transcript against the recording's real length, and reads the frames too, because what is on a shared screen is almost never said out loud. |
-| `project-intake` | Files handed over with no instruction - a folder, a recording, two versions of a scope document, a crawl export - read end to end, reconciled against each other and against the live site, and turned into a brief that stops for approval before anything is built. |
+| `project-intake` | Files handed over with no instruction (a folder, a recording, two versions of a scope document, a crawl export), read end to end, reconciled against each other and against the live site, and turned into a brief that stops for approval before anything is built. |
 | `site-recon` | Everything discoverable about a client's existing site, and the short list of what genuinely has to come from them |
 | `client-log` | A dated, append-only record of everything the client gave or said, with the files filed beside it |
 | `client-content-audit` | What arrived, what is thin, what is truncated, and what to refuse to publish |
@@ -255,9 +255,9 @@ what the skill is for.
 
 ## Status
 
-In daily use: 24 skills, one agent, thirteen tools and four hooks: session start,
-the context recorder, a guard on writes that land outside the project, and the
-claim gate.
+In daily use: 24 skills, one agent, thirteen tools and four hooks. They are
+session start, the context recorder, a guard on writes that land outside the
+project, and the claim gate.
 
 Test suites: 38 gate cases, 49 fix-job cases, 42 project-intake cases,
 22 migration-parity cases, 19 meeting-intake cases, 19 install cases,

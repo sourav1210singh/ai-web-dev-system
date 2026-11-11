@@ -1,6 +1,6 @@
 ---
 name: fix-job
-description: Run client site work end to end as a job with state, in five types - fix (something live is wrong), intake (a new client, read everything, change nothing), golive (the launch gate, nothing ships with a blocker standing), drop (rankings or traffic fell: diagnose before changing anything, and check for a manual penalty before concluding it was an algorithm) and watch (a site that is already live: run it weekly and it reports only what changed, including a form that has quietly disappeared or a page that has doubled in weight). Every check runs at once, the job stops at the human gate, and verify diffs against the before state. Use when a client reports a problem, when a new client arrives, before any launch, or when picking up work left half done. Triggers on "fix karo", "ye issue hai", "client ne bola hai", "form kaam nahi kar raha", "naya client", "new client", "intake", "go live", "launch", "live karna hai", "job", "resume", "watch", "traffic down", "traffic gir gaya", "ranking gir gayi", "penalty", "algorithm update", "organic drop", "leads kam ho gaye", "monitor karo", "sab theek chal raha hai", "leads aa rahe hain", "weekly check". It owns "go live": the launch gate runs site-recon, migration-parity, responsive-qa, launch-files and security-pass as its checks, so those do not need calling separately.
+description: Run client site work end to end as a job with state, in five types: fix (something live is wrong), intake (a new client, read everything, change nothing), golive (the launch gate, nothing ships with a blocker standing), drop (rankings or traffic fell: diagnose before changing anything, and check for a manual penalty before concluding it was an algorithm) and watch (a site that is already live: run it weekly and it reports only what changed, including a form that has quietly disappeared or a page that has doubled in weight). Every check runs at once, the job stops at the human gate, and verify diffs against the before state. Use when a client reports a problem, when a new client arrives, before any launch, or when picking up work left half done. Triggers on "fix karo", "ye issue hai", "client ne bola hai", "form kaam nahi kar raha", "naya client", "new client", "intake", "go live", "launch", "live karna hai", "job", "resume", "watch", "traffic down", "traffic gir gaya", "ranking gir gayi", "penalty", "algorithm update", "organic drop", "leads kam ho gaye", "monitor karo", "sab theek chal raha hai", "leads aa rahe hain", "weekly check". It owns "go live": the launch gate runs site-recon, migration-parity, responsive-qa, launch-files and security-pass as its checks, so those do not need calling separately.
 ---
 
 # Client work, run as a job
@@ -19,7 +19,7 @@ a gate, and what they refuse to do.
 python job.py new "<name>" --domain <d> --dir "<project>" --type intake
 ```
 
-## intake - read everything, change nothing
+## intake: read everything, change nothing
 
 For a new client or a takeover. Runs recon, launch files and responsive QA
 together, and reports what the domain says about itself: registrar,
@@ -32,7 +32,7 @@ things that matter: the facts with how each was checked, the risks including
 what must survive a change, and the short list of what genuinely has to come
 from the client. See `site-recon` for what that report should contain.
 
-## watch - after it is live, which is where most of the risk is
+## watch: after it is live, which is where most of the risk is
 
 Every other type ends at handover, and a job that ends at handover is a job
 that finds out from the client. Run this one again on the same id, weekly, and
@@ -88,9 +88,9 @@ configuration, which is the user's to do. `--schedule` prints the exact
 actually registered and when the run last happened, and says so plainly:
 
 - never run, and no task registered
-- last ran more than ten days ago - **a schedule that stopped looks exactly
-  like a set of sites with no problems**, which is why staleness is reported as
-  loudly as a finding
+- last ran more than ten days ago, because **a schedule that stopped looks
+  exactly like a set of sites with no problems**, which is why staleness is
+  reported as loudly as a finding
 - no open watch jobs at all, which is itself worth knowing if those sites are
   live
 
@@ -98,7 +98,7 @@ A session that is about to tell someone the sites are healthy should check this
 first. "No problems reported" and "nothing has been checked for a month" read
 identically in a job file and mean opposite things.
 
-## golive - the launch gate
+## golive: the launch gate
 
 Runs what `fix` runs, plus the security pass, and **close refuses while a
 blocker is standing** and exits non-zero. A launch gate that waves things
@@ -107,7 +107,7 @@ through is not a gate.
 What holds a launch is deliberately narrow: no https, an invalid certificate,
 active mixed content, a form posting in the clear, a readable `.env`, a key
 shipped into the bundle, and no way back. A missing Content-Security-Policy is
-reported and does not hold the launch - a gate that refuses to open for the
+reported and does not hold the launch. A gate that refuses to open for the
 normal state of the web is a gate people learn to force.
 
 ### The way back
@@ -118,8 +118,8 @@ python "C:\Claude-Code\.ai-system\skills\fix-job\rollback.py" <project>
 ```
 
 `--build` writes `<project>\.claude-context\rollback.json`, filling in what the
-recon output already knows - the records about to change, the mail records that
-must survive, the nameservers, the host, the TTL - and leaving the fields only
+recon output already knows: the records about to change, the mail records that
+must survive, the nameservers, the host, the TTL, and leaving the fields only
 a person can answer **empty and named**, because an empty field is a question
 and a guessed one is a false answer.
 
@@ -148,14 +148,14 @@ Two details worth keeping:
   already holding the old value keep it for its full term, so dropping the TTL
   an hour before a change buys nothing. It has to be done at least one old-TTL
   period in advance. The TTL figures a resolver reports are the time left on
-  its cached copy, so they are lower bounds - read the zone's own value in the
+  its cached copy, so they are lower bounds. Read the zone's own value in the
   DNS panel before promising anyone a revert window.
 
 If it ships anyway, that is a decision someone makes, not a check that is
 skipped. `--force` closes it and writes `CLOSED OVER STANDING BLOCKERS` into
 the job history, so the record says it was chosen rather than missed.
 
-## drop - why has traffic fallen
+## drop: why has traffic fallen
 
 A diagnosis, not a fix. It changes nothing and ends with a prioritised plan.
 
@@ -169,7 +169,7 @@ This is the order, and getting it wrong costs weeks. **A manual penalty and an
 algorithmic drop have completely different remedies.** One is a reconsideration
 request after fixing a named violation; the other is quality work with no
 switch to flip. Open Search Console and read Manual Actions and Security Issues
-first, and write down what it said - including "no issues detected", because
+first, and write down what it said, including "no issues detected", because
 that is the finding that makes the rest of the analysis mean something.
 
 ### Quantify it, then date it
@@ -231,7 +231,7 @@ the rest, and do not lead with them.
 
 A ten-minute fix that stops a spam signal still goes in the first week.
 
-## fix - one fix, end to end
+## fix: one fix, end to end
 
 A fix is not one action. It is: work out where the site lives, read what is
 actually there, measure what is wrong, make the change, wait for the person

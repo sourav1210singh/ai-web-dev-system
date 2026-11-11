@@ -236,7 +236,7 @@ card-heavy page; 80-96px for marketing. Far outside that in either direction is
 a decision to make deliberately, not by accident.
 
 **When the brand font is not licensed for this build**, name the substitute in
-writing and say what was adjusted to match - usually the closest open-source
+writing and say what was adjusted to match, usually the closest open-source
 face plus a small line-height correction. Leaving it unsaid means the next
 person picks a different one and the site drifts between pages.
 

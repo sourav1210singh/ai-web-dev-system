@@ -1,6 +1,6 @@
 ---
 name: migration-parity
-description: Everything on the client's old page must exist on the page that replaces it - every heading, paragraph, phone number, email address, form field, image, alt text and outbound link. Use when rebuilding an existing site, moving a site to a new platform, replacing a page, or before any go-live that retires old URLs. Triggers on "migration", "old site", "purani website", "redesign", "rebuild", "content carry over", "same content", "old page se sab", "redirect".
+description: Everything on the client's old page must exist on the page that replaces it. Every heading, paragraph, phone number, email address, form field, image, alt text and outbound link. Use when rebuilding an existing site, moving a site to a new platform, replacing a page, or before any go-live that retires old URLs. Triggers on "migration", "old site", "purani website", "redesign", "rebuild", "content carry over", "same content", "old page se sab", "redirect".
 ---
 
 # Nothing from the old page may quietly disappear
@@ -67,8 +67,8 @@ item inside it is gone. On one rebuild every URL, redirect, document, form and
 heading matched, and a logo row shipped five marks where the old site had six.
 Nobody noticed until the client did.
 
-For every section that repeats items - logo rows, card grids, carousels,
-lists - diff the old page's `<img alt>` set against the new one. A one-item
+For every section that repeats items (logo rows, card grids, carousels,
+lists), diff the old page's `<img alt>` set against the new one. A one-item
 gap shows up immediately.
 
 When restoring one, measure it rather than matching the row. In that case the

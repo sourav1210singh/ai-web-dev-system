@@ -10,7 +10,7 @@ description: How the per-site MCP servers in this workspace are built, secured, 
 Row level security protects tables, not views. A plain auto-updatable view
 owned by the database superuser keeps the default grants, so the anonymous
 role can INSERT, UPDATE and DELETE through it with nothing but the publishable
-key - and because the write runs with the owner's rights, the base table's RLS
+key, and because the write runs with the owner's rights, the base table's RLS
 never applies.
 
 Found on a live library: a PATCH and a DELETE through the public view came

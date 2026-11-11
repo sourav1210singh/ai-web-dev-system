@@ -1,6 +1,6 @@
 ---
 name: security-pass
-description: Check whether a site is safe to put live, measured rather than assumed - the transport headers (HSTS, CSP, framing, referrer policy), TLS, mixed content, cookie flags, published source maps, and whether a secret key has been shipped into the browser bundle, with the four Supabase key types told apart so the two that are meant to be public are not reported. Plus the short fixed list of files that must never be readable (.env, .git, config backups). Also what to do when a key really has leaked, which is not what most people do. Use before any go-live, after any deploy that rebuilds the bundle, at the start of a new client, and when a client asks whether their site is secure. Triggers on "security", "secure hai", "safe hai kya", "headers check karo", "CSP", "HSTS", "SSL", "certificate expired", "key leak ho gayi", "api key", "service_role", "mixed content", "vulnerability", "pentest", "hack ho gaya", "site safe hai".
+description: Check whether a site is safe to put live, measured rather than assumed. The transport headers (HSTS, CSP, framing, referrer policy), TLS, mixed content, cookie flags, published source maps, and whether a secret key has been shipped into the browser bundle, with the four Supabase key types told apart so the two that are meant to be public are not reported. Plus the short fixed list of files that must never be readable (.env, .git, config backups). Also what to do when a key really has leaked, which is not what most people do. Use before any go-live, after any deploy that rebuilds the bundle, at the start of a new client, and when a client asks whether their site is secure. Triggers on "security", "secure hai", "safe hai kya", "headers check karo", "CSP", "HSTS", "SSL", "certificate expired", "key leak ho gayi", "api key", "service_role", "mixed content", "vulnerability", "pentest", "hack ho gaya", "site safe hai".
 ---
 
 # Security pass
@@ -38,7 +38,7 @@ grows it stops being a pre-launch check and becomes a scanner.
 | No https, or an invalid certificate | Everything typed into the enquiry form crosses the network in the clear. An expired certificate is reported and the pass continues, so you get the rest of the picture in one run. |
 | http does not redirect to https | A visitor who types the bare domain never reaches the secure site. |
 | HSTS missing or short | OWASP's recommended header is `max-age=63072000; includeSubDomains; preload`. Under a year is reported as short. `preload` is consent to be added to the browser list; submitting the domain is a separate step the owner does. |
-| No CSP, or one that controls no scripts | Nothing limits what an injected tag may run. Reported as major, never as a blocker - see below. |
+| No CSP, or one that controls no scripts | Nothing limits what an injected tag may run. Reported as major, never as a blocker, see below. |
 | Page can be framed by anything | No `X-Frame-Options` and no `frame-ancestors`. The page inside someone else's wrapper can harvest what a visitor types. |
 | Mixed content | Checked three ways, because one is not enough: the browser upgrades a passive http subresource before it reaches the network log and blocks active ones outright, so a network-only check sees a clean page while the markup still says `http://`. |
 | Cookie flags | A session cookie without `Secure` or without `HttpOnly`. Ordinary third-party cookies are grouped into one line, because a consent banner and a tag manager set five of them and five identical lines push the real finding off the top. |
@@ -68,7 +68,7 @@ Supabase site. From Supabase's own documentation:
 | legacy `service_role` (a JWT starting `eyJ`) | **Never.** The old form of the secret key. |
 
 The two legacy keys are both long-lived JWTs starting `eyJ` and nothing about
-their shape tells them apart - the tool decodes the payload and reads the
+their shape tells them apart, so the tool decodes the payload and reads the
 `role` claim. A scanner that matches on `eyJ` either flags every Supabase site
 or none of them. The legacy pair is deprecated at the end of 2026 and both
 systems work at once until then, so all four are checked.
@@ -76,7 +76,7 @@ systems work at once until then, so all four are checked.
 And the thing the key check cannot tell you: the publishable key only protects
 anything if the tables have row level security policies. A public key over an
 unprotected table is a public table. That is a database question, not a header
-question - ask it.
+question. Ask it.
 
 ## When a key really has leaked, rotate before you tidy
 
@@ -96,7 +96,7 @@ So:
 3. Then remove it from the source, move it to a server-side environment
    variable, and rebuild.
 4. Check what the key could reach, and say so plainly. A leaked Supabase secret
-   or `service_role` key is not "someone could read a table" - it bypasses row
+   or `service_role` key is not "someone could read a table". It bypasses row
    level security, so it is read and write on every table, including every
    other customer's personal data. That is a same-day conversation with the
    client, not a line in a monthly report.
@@ -158,9 +158,9 @@ node "C:\Claude-Code\.ai-system\skills\security-pass\sectest.js"
 92 checks. The ones worth keeping green above all others: the Supabase
 publishable and legacy `anon` keys must not be reported, no report may contain a
 secret it found, and a 200 that is really the app's own HTML must not be
-reported as a readable file - a single-page app answers 200 for every unknown
-path, and trusting the status code reports seven breaches on a site that has
-none. The same trap already caught this workspace once with robots.txt.
+reported as a readable file, because a single-page app answers 200 for every
+unknown path, and trusting the status code reports seven breaches on a site
+that has none. The same trap already caught this workspace once with robots.txt.
 
 One thing to know before editing the pattern table: `security.js` assembles the
 private-key pattern from two strings instead of writing it out, because

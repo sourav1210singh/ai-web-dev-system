@@ -1,6 +1,6 @@
 ---
 name: verify-before-claiming
-description: What counts as proof, by the kind of claim, and the answer shape for anything a client will read. Also the rule that nothing with a visual form - a PDF, Word or Excel file, video, recording, image, design or page - is ever described from its extracted text: it is rendered into images and looked at first. Nothing is reported as done, fixed, working, live or deployed until that same piece of work has been checked, from more than one angle, with the result looked at. And the rule on pace: finishing is not the goal, work that is right is - analyse before deciding, read the whole thing before changing it, never fill a gap with something plausible, and write down any assumption that cannot be avoided. Use at the start of any task, before writing any reply that states an outcome, and whenever a tool or another agent reports success. Triggers on "done", "ho gaya", "kar diya", "fixed", "is it working", "verify karo", "test karo", "check karo", "confirm", "ye file dekho", "ye video dekho", "ye pdf dekho", "dekh ke batao", "kaisa lag raha hai", "screenshot", "jaldi mat karo", "achese karo", "dhyan se", "sahi kaam chahiye", "assumption mat lo", "sure ho".
+description: What counts as proof, by the kind of claim, and the answer shape for anything a client will read. Also the rule that nothing with a visual form (a PDF, Word or Excel file, video, recording, image, design or page) is ever described from its extracted text: it is rendered into images and looked at first. Nothing is reported as done, fixed, working, live or deployed until that same piece of work has been checked, from more than one angle, with the result looked at. And the rule on pace: finishing is not the goal, work that is right is. Analyse before deciding, read the whole thing before changing it, never fill a gap with something plausible, and write down any assumption that cannot be avoided. Use at the start of any task, before writing any reply that states an outcome, and whenever a tool or another agent reports success. Triggers on "done", "ho gaya", "kar diya", "fixed", "is it working", "verify karo", "test karo", "check karo", "confirm", "ye file dekho", "ye video dekho", "ye pdf dekho", "dekh ke batao", "kaisa lag raha hai", "screenshot", "jaldi mat karo", "achese karo", "dhyan se", "sahi kaam chahiye", "assumption mat lo", "sure ho".
 ---
 
 # Verify before claiming
@@ -16,7 +16,7 @@ a go-live. In every case a single angle was trusted.
 ## Finishing is not the goal
 
 The goal is work that is right. Ending the turn is not an achievement, and a
-fast wrong answer costs far more than a slow correct one - it gets believed,
+fast wrong answer costs far more than a slow correct one. It gets believed,
 built on, and sent to a client before anyone finds out.
 
 **There is no deadline on a reply. There is a real cost to a wrong one.**
@@ -48,7 +48,7 @@ Four from this work, each one the cost of moving fast:
   of them real; the formats differ, not the versions. Reported straight, that
   is nine hundred invented findings handed to a client.
 - A skill was written as a new file when an existing one already had a section
-  saying the same thing - because the existing set was never read first.
+  saying the same thing, because the existing set was never read first.
 - "I looked in four places and did not find it" was written up as "it is not
   on this machine." It was in the fifth place. The honest sentence was
   available and shorter.
@@ -100,8 +100,8 @@ not taking it. If anything is wrong, fix it and look again before replying.
 
 A parser returns the words in a document and drops everything else without
 saying so, and silence reads exactly like there was nothing there. So anything
-with a visual form - a PDF, a Word, Excel or PowerPoint file, a video, an audio
-recording, a photograph, a design - is **rendered into images and opened**
+with a visual form (a PDF, a Word, Excel or PowerPoint file, a video, an audio
+recording, a photograph, a design) is **rendered into images and opened**
 before a word is said about what is in it.
 
 ```bash
@@ -112,7 +112,7 @@ python "C:\Claude-Code\.ai-system\skills\verify-before-claiming\render.py" \
 A PDF becomes page images. A .docx, .xlsx or .pptx gives up the pictures buried
 in its zip. A recording becomes frames across the whole of it. A page becomes
 screenshots at phone and desktop width. An image too large to open comes back
-scaled. Then **open every file it lists** - it prints the count on purpose, and
+scaled. Then **open every file it lists:** it prints the count on purpose, and
 that is the number to open, not a suggestion.
 
 What this has already caught:
@@ -128,7 +128,7 @@ What this has already caught:
   them real. As a page image the table was readable and added up.
 - **What is on a shared screen is never read out loud**, so it is in the
   recording and in none of the transcript.
-- **A share card that measured perfectly was unusable** - correct dimensions,
+- **A share card that measured perfectly was unusable:** correct dimensions,
   correct margins, white logo on bright concrete. Every measurement passed.
 
 **Say what you could not see.** The tool reports what it failed to render
@@ -228,5 +228,5 @@ usually a statement about our own access, and a placeholder that ships is a
 placeholder the client reads.
 
 A refusal is never folded into a broken count. One live client site answers 403
-to a browser user agent and 200 to Googlebot - the page was always fine, and an
+to a browser user agent and 200 to Googlebot. The page was always fine, and an
 hour went into "fixing" it.

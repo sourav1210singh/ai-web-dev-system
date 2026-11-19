@@ -24,6 +24,10 @@ sys.path.insert(0, os.path.join(
 LOG = os.path.join(SYS, "hook.log")
 STATE = os.path.join(SYS, "gate-state.json")
 CONFIG = os.path.join(SYS, "gate.json")
+# Quoted in the block message. Worked out from where this system is, because a
+# hard-coded C:\Claude-Code pointed at a drive that does not hold it on any
+# machine where the workspace lives elsewhere.
+RQA = os.path.join(SYS, "skills", "responsive-qa", "rqa.js")
 TAIL = 8 * 1024 * 1024
 
 # --- a claim that work is finished -------------------------------------
@@ -155,7 +159,39 @@ def last_turn(rows):
                 texts.append(b.get("text", ""))
             elif b.get("type") == "tool_use":
                 tools.append((b.get("name") or "", b.get("input") or {}))
-    return ts, texts, tools
+    return ts, texts, expand_batches(tools)
+
+
+def expand_batches(tools):
+    """A browser_batch is several tool calls in one, nested under
+    input.actions. The evidence checks read each call's own name and its
+    top-level action, so a screenshot taken inside a batch was invisible to
+    them and a turn that had looked was blocked as if it had not. Found
+    19 Nov 2026 from three such blocks in runs.log.
+
+    Each step becomes a call of its own, named the way it would be named on
+    its own (mcp__Claude_Browser__browser_batch + computer becomes
+    mcp__Claude_Browser__computer). The batch itself is kept too, so nothing
+    that already matched on it stops matching. A malformed batch is left as
+    it is and counts for nothing.
+    """
+    out = []
+    for name, inp in tools:
+        out.append((name, inp))
+        if not name.endswith("browser_batch"):
+            continue
+        steps = inp.get("actions") if isinstance(inp, dict) else None
+        if not isinstance(steps, list):
+            continue
+        prefix = name[:-len("browser_batch")]
+        for step in steps:
+            if not isinstance(step, dict):
+                continue
+            sub = str(step.get("name") or "")
+            sub_inp = step.get("input")
+            if sub and isinstance(sub_inp, dict):
+                out.append((prefix + sub, sub_inp))
+    return out
 
 
 # --- anything a human would judge with their eyes ----------------------
@@ -434,15 +470,15 @@ def main():
             "Open it and take screenshots at 390px and 1440px, then actually "
             "read them. If anything is wrong, fix it and look again before "
             "replying.\n\n"
-            "  node \"C:\\\\Claude-Code\\\\.ai-system\\\\skills\\\\responsive-qa"
-            "\\\\rqa.js\" <url> --out <project>\\\\.claude-context\\\\qa\n\n"
+            "  node \"%s\" <url> --out %s\n\n"
             "That screenshots six widths and reports what it measured. For a "
             "single check, the browser pane's screenshot action is enough.\n\n"
             "If the page cannot be reached from here, say so plainly and say "
             "what you would need. That answer is allowed."
             % (claim, "" if not ok else
                "  Something was checked (%s), but that is not the same as "
-               "looking at the result." % how))}))
+               "looking at the result." % how,
+               RQA, os.path.join("<project>", ".claude-context", "qa")))}))
         return
 
     if ok:

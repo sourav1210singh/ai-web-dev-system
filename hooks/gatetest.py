@@ -4,7 +4,11 @@ import io, json, os, shutil, subprocess, sys, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SYS = os.path.dirname(HERE)
-ROOT = r"C:\Claude-Code"
+# The workspace is the folder this system sits in, worked out from this
+# file's location like the gate itself does. A hard-coded C:\Claude-Code put
+# the test folder outside the workspace on any other drive, where the gate
+# correctly ignores it, so every "BLOCKS" case failed for the wrong reason.
+ROOT = os.path.dirname(SYS)
 TEST_FOLDER = os.path.join(ROOT, "_gatetest")
 PY = sys.executable
 RESULTS = []
@@ -49,7 +53,7 @@ def run(tpath, sid="s1", cwd=TEST_FOLDER):
 
 # a non-UI change, so these cases exercise the generic evidence tier.
 # UI files go through the stricter visual tier, tested separately below.
-WRITE = ("Write", {"file_path": r"C:\Claude-Code\_gatetest\build.py",
+WRITE = ("Write", {"file_path": os.path.join(TEST_FOLDER, "build.py"),
                    "content": "x"})
 
 
@@ -138,7 +142,7 @@ def main():
     ok("Hinglish claim -> blocks", blocked)
 
     # --- the visual tier: eyes, not code ---
-    CSS = ("Write", {"file_path": r"C:\Claude-Code\_gatetest\hero.tsx",
+    CSS = ("Write", {"file_path": os.path.join(TEST_FOLDER, "hero.tsx"),
                      "content": "x"})
     SHOT = ("mcp__Claude_Browser__computer", {"action": "screenshot"})
     RQA = ("Bash", {"command": 'node rqa.js https://x --out q'})
@@ -150,6 +154,9 @@ def main():
     ok("visual block asks for screenshots", "390px" in reason)
     ok("visual block says code review is not looking",
        "not looking" in reason.lower())
+    rqa_path = os.path.join(SYS, "skills", "responsive-qa", "rqa.js")
+    ok("visual block quotes rqa.js where it really is on this machine",
+       rqa_path in reason, rqa_path)
 
     reset(); transcript(t, "Done, the hero looks right now.", [CSS, SHOT])
     _rc, blocked, _r, _e = run(t)
@@ -324,6 +331,47 @@ def main():
                         [CSS])
     _rc, blocked, _r, _e = run(t)
     ok("UI change + honest 'not looked' -> allowed", not blocked)
+
+    # A browser_batch carries its steps nested under input.actions, and the
+    # gate only read each call's own name and top-level action, so a
+    # screenshot taken inside a batch counted as never having looked. Found
+    # 19 Nov 2026: three replies blocked although each turn had screenshots.
+    def batch(prefix, *steps):
+        return (prefix + "__browser_batch",
+                {"actions": [{"name": n, "input": i} for n, i in steps]})
+    PANE = "mcp__Claude_Browser"
+    CHROME = "mcp__claude-in-chrome"
+    nav = ("navigate", {"url": "https://x"})
+    shot = ("computer", {"action": "screenshot"})
+
+    reset(); transcript(t, "Done, the hero looks right now.",
+                        [CSS, batch(PANE, nav, shot)])
+    _rc, blocked, _r, _e = run(t)
+    ok("UI change + screenshot inside a browser-pane batch -> allowed",
+       not blocked)
+
+    reset(); transcript(t, "Done, the hero looks right now.",
+                        [CSS, batch(CHROME, nav, shot)])
+    _rc, blocked, _r, _e = run(t)
+    ok("UI change + screenshot inside a Chrome batch -> allowed", not blocked)
+
+    reset(); transcript(t, "Done, the hero looks right now.",
+                        [CSS, batch(PANE, nav,
+                                    ("javascript_tool", {"action": "javascript_exec"}))])
+    _rc, blocked, _r, _e = run(t)
+    ok("UI change + a batch that never took a screenshot -> still BLOCKS",
+       blocked)
+
+    reset(); transcript(t, "Fixed. It works now.",
+                        [WRITE, batch(PANE, ("get_page_text", {}))])
+    _rc, blocked, _r, _e = run(t)
+    ok("non-visual claim + a batch that read the page -> allowed", not blocked)
+
+    reset(); transcript(t, "Fixed. It works now.",
+                        [WRITE, (PANE + "__browser_batch", {"actions": "not a list"})])
+    _rc, blocked, _r, _e = run(t)
+    ok("a malformed batch is not evidence and does not crash -> BLOCKS",
+       blocked)
 
     # 11 - the gate's first real miss, found 11 Nov by running it against the
     # recorded corpus instead of against invented examples. Romanised Hindi

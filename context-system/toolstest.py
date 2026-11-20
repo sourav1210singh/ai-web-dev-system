@@ -151,8 +151,12 @@ def main():
             shutil.rmtree(spaced, ignore_errors=True)
 
         # ---------------------------------------------------- memcheck.py
+        # Derived, not written out. Pinning "C--Claude-Code-Some-Client" here
+        # passed on the machine it was typed on and would have failed on every
+        # other one, which is the same mistake the tool itself had.
         ok("a folder name becomes the transcript directory name",
-           memcheck.sanitise("Some Client") == "C--Claude-Code-Some-Client",
+           memcheck.sanitise("Some Client") ==
+           (c.PREFIX + "-Some Client").replace(" ", "-"),
            memcheck.sanitise("Some Client"))
         empty = os.path.join(tmp, "empty")
         os.makedirs(empty)
@@ -173,11 +177,12 @@ def main():
 
         # ------------------------------------------------ worklog/range.py
         ok("a flattened name reads back as the folder",
-           daterange.unsanitise("C--Claude-Code-Some-Project") == "Some Project",
-           daterange.unsanitise("C--Claude-Code-Some-Project"))
+           daterange.unsanitise(c.PREFIX + "-Some-Project") == "Some Project",
+           daterange.unsanitise(c.PREFIX + "-Some-Project"))
         ok("the workspace root is named rather than left blank",
-           daterange.unsanitise("C--Claude-Code") == "(root) Claude-Code",
-           daterange.unsanitise("C--Claude-Code"))
+           daterange.unsanitise(c.PREFIX) ==
+           "(root) " + os.path.basename(c.ROOT),
+           daterange.unsanitise(c.PREFIX))
         ok("a plain string message is its own text",
            daterange.text_of({"content": "hello"}) == "hello")
         ok("a block message keeps only the text blocks",

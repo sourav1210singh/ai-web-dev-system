@@ -10,6 +10,12 @@ folder and by day.
 import io, json, os, re, sys
 from collections import defaultdict
 
+# The workspace spelling comes from ctxlib, which works it out from where it
+# sits. Written out by hand it was C--Claude-Code, so on any other workspace
+# the folder names came back with the prefix still attached.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from ctxlib import PREFIX, ROOT as WORKSPACE  # noqa: E402
+
 ROOT = os.path.join(os.path.expanduser("~"), ".claude", "projects")
 START = sys.argv[1] if len(sys.argv) > 1 else "2026-10-12"
 END = sys.argv[2] if len(sys.argv) > 2 else "2026-10-17"
@@ -18,8 +24,9 @@ FULL = "--full" in sys.argv
 
 def unsanitise(name):
     """C--Claude-Code-Some-Project -> Some Project (best effort)."""
-    n = name.replace("C--Claude-Code", "").strip("-")
-    return n.replace("-", " ") if n else "(root) Claude-Code"
+    n = name.replace(PREFIX, "").strip("-")
+    return n.replace("-", " ") if n else \
+        "(root) " + os.path.basename(WORKSPACE)
 
 
 def text_of(msg):

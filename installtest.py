@@ -6,7 +6,7 @@ check that without another machine is to install into a different root with a
 different home folder, and then look at what landed. Nothing here touches the
 real ~/.claude or the real workspace.
 """
-import io, json, os, shutil, subprocess, sys, tempfile
+import io, json, os, re, shutil, subprocess, sys, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RESULTS = []
@@ -169,6 +169,111 @@ def main():
         cfg = json.loads(io.open(sp, encoding="utf-8").read())
         ok("--no-hooks leaves the settings file alone",
            not cfg.get("hooks"), cfg)
+
+        # --- no code may carry the folder it was written in ------------------
+        # Six files held one of these and every one of them failed quietly on
+        # another machine rather than loudly: leakcheck.py compared the repo
+        # against an empty client list and reported CLEAN, and the guard on
+        # stray writes watched a home directory belonging to nobody. Nothing
+        # in the suite looked, because installtest checked one skill document
+        # and no code at all.
+        #
+        # The needles come from install.py's own constant, so there is one
+        # definition of "the folder this was written in" and not two.
+        sys.path.insert(0, sysdir)
+        import importlib
+        inst = importlib.import_module("install")
+        importlib.reload(inst)
+        authored = inst.AUTHORED_ROOT.decode("utf-8")
+        flat = authored.replace(":", "-").replace("\\", "-")
+        home_literal = os.path.join("C:\\", "Users", "admin")
+        needles = (authored, authored.replace("\\", "/"), flat, home_literal,
+                   home_literal.replace("\\", "/"))
+        # A module-level constant holding a machine's own path is the bug.
+        # The same string in a comment explaining the bug, or indented as a
+        # test fixture, is not, so this matches an assignment at column zero
+        # and not a mention.
+        ASSIGN = re.compile(r"(?m)^[A-Za-z_][A-Za-z0-9_]*\s*=[^\n]*(" +
+                            "|".join(re.escape(n) for n in needles) + r")")
+        ALLOWED = {"install.py": "AUTHORED_ROOT is the string being rewritten"}
+        offenders, scanned = [], 0
+        for base in (sysdir, ctx, sk):
+            for dirpath, dirnames, names in os.walk(base):
+                dirnames[:] = [d for d in dirnames
+                               if d not in ("node_modules", "__pycache__",
+                                            ".git", "vendor")]
+                for n in sorted(names):
+                    if not n.endswith((".py", ".js")):
+                        continue
+                    scanned += 1
+                    body = io.open(os.path.join(dirpath, n), encoding="utf-8",
+                                   errors="replace").read()
+                    m = ASSIGN.search(body)
+                    if m and n not in ALLOWED:
+                        offenders.append("%s: %s" % (n, m.group(0).strip()[:60]))
+        ok("no installed code assigns the folder it was written in",
+           not offenders, "; ".join(sorted(set(offenders))[:4]) or
+           "%d files scanned" % scanned)
+        ok("install.py still carries the one string that is meant to be there",
+           isinstance(inst.AUTHORED_ROOT, bytes) and authored,
+           "%s (%s)" % (authored, ALLOWED["install.py"]))
+
+        # Reading the text is not enough and the fix that prompted this proves
+        # it: the guard built its path with os.path.join("C:\\", "Users",
+        # "admin"), so there was no literal in the file to find. The only
+        # honest check is where these values actually point when the code runs
+        # from the clone.
+        def resolve(label, pathdir, code):
+            p = run([sys.executable, "-X", "utf8", "-c",
+                     "import sys;sys.path.insert(0,%r);%s" % (pathdir, code)],
+                    env)
+            return label, (p.stdout or "").strip(), (p.stderr or "").strip()
+
+        probes = [
+            resolve("leakcheck's client root", sysdir,
+                    "import leakcheck;print(leakcheck.ROOT)"),
+            resolve("clog's client root",
+                    os.path.join(sysdir, "skills", "client-log"),
+                    "import clog;print(clog.ROOT)"),
+            resolve("the context system's workspace", ctx,
+                    "import ctxlib;print(ctxlib.ROOT)"),
+        ]
+        for label, got, err in probes:
+            ok("%s resolves inside the clone" % label,
+               got and os.path.normcase(got) == os.path.normcase(work),
+               got or err[-120:])
+
+        label, flatgot, err = resolve("prefix", ctx,
+                                      "import ctxlib;print(ctxlib.PREFIX)")
+        ok("the transcript prefix follows the workspace, not the author's",
+           flatgot and flatgot != flat, "%s vs authored %s" % (flatgot, flat))
+        # These two do opposite jobs, so they are checked in opposite
+        # directions. memcheck builds the transcript directory name and has to
+        # use this workspace's prefix. range strips it, and the proof that it
+        # used the right one is that nothing of the prefix is left behind.
+        _l, got, err = resolve("memcheck", ctx,
+                               "import memcheck;print(memcheck.sanitise('X'))")
+        ok("memcheck names the transcript directory after THIS workspace",
+           got.startswith(flatgot.replace(" ", "-")) and flat not in got,
+           got or err[-140:])
+
+        _l, got, err = resolve(
+            "range", os.path.join(ctx, "worklog"),
+            "import importlib;r=importlib.import_module('range');"
+            "print(r.unsanitise('%s-X'))" % flatgot)
+        ok("the worklog strips this workspace's prefix, leaving the folder",
+           got == "X", got or err[-140:])
+
+        # And the guard's stray list has to be this user's, not a remembered
+        # one. The check that catches the assembled form.
+        g = run([sys.executable, "-X", "utf8", "-c",
+                 "import sys;sys.path.insert(0,%r);"
+                 "import hook_guard_write as h;print(chr(10).join(h.STRAY))"
+                 % ctx], env)
+        stray = [l for l in (g.stdout or "").splitlines() if l.strip()]
+        ok("the stray-write guard watches the home it is running under",
+           stray and all(l.lower().startswith(home.lower()) for l in stray),
+           "; ".join(stray[:2]) or (g.stderr or "")[-120:])
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 

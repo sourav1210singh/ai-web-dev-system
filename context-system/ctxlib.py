@@ -34,6 +34,11 @@ def _workspace():
 
 
 ROOT         = _workspace()
+# Claude Code names a transcript directory after the working directory with
+# its separators flattened, so C:\Claude-Code becomes C--Claude-Code. Four
+# files wrote that string out by hand, which is right on the machine it was
+# written on and wrong everywhere else, so it lives here once.
+PREFIX       = ROOT.replace(":", "-").replace("\\", "-").replace("/", "-")
 
 
 # ---------------------------------------------------------------- text utils

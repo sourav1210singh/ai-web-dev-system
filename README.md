@@ -63,6 +63,18 @@ projects, and the four hooks that run them. Every path is worked out from where
 the files actually are, so a clone onto another machine or into another folder
 needs no editing.
 
+That sentence was written before it was true. Somebody installed this from the
+clone on 19 November and found the claim gate quoting a path on a drive they do
+not have; measuring the rest of the tree found **six files** carrying a folder
+or a user name that was only ever right on the machine they were written on,
+and each one failed quietly rather than loudly. `leakcheck.py` compared the
+repo against an empty client list and reported CLEAN. The guard on stray
+writes watched a home directory belonging to nobody. `installtest.py` now
+installs into a different root under a different home and checks where these
+values actually point, because reading the text is not enough: the guard built
+its path with `os.path.join("C:\\", "Users", "admin")`, so there was no
+literal in the file to find.
+
 ---
 
 ## The skills
@@ -309,7 +321,7 @@ In daily use: 25 skills, one agent, 27 tools and four hooks. The hooks are
 session start, the context recorder, a guard on writes that land outside the
 project, and the claim gate.
 
-**1,374 checks across 30 test suites, all passing**, plus a full-file verifier
+**1,389 checks across 30 test suites, all passing**, plus a full-file verifier
 and a leak check. One total rather than a count per suite, because ten numbers
 drift ten ways and these were wrong in four places before anyone measured them
 again.

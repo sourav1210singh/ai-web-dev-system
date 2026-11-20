@@ -13,7 +13,12 @@ Exit 1 if anything is found. Nothing is changed.
 import io, os, re, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = r"C:\Claude-Code"
+# The workspace is the folder this repo sits in. Derived, because hard-coded
+# it pointed at a folder that does not exist on another machine, and then the
+# client list read empty and this reported CLEAN having compared the repo
+# against nothing. A safety check that passes by finding no inputs is worse
+# than no safety check.
+ROOT = os.path.dirname(HERE)
 SKIP_DIRS = {".git", "node_modules", "__pycache__", ".next", "dist"}
 SKIP_FILES = {"leakcheck.py", "leakcheck-report.txt"}
 TEXT = (".md", ".py", ".js", ".json", ".txt", ".yml", ".yaml", ".cmd", ".sh",

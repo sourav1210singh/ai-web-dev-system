@@ -15,7 +15,26 @@ The ledger is <project>\\.claude-context\\CLIENT-LOG.md, append only.
 import argparse, datetime, hashlib, io, os, re, shutil, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = r"C:\Claude-Code"
+
+
+def _workspace():
+    """The folder holding the client projects, worked out from this file.
+
+    This tool is always run by the absolute command printed in its skill
+    document, which install.py rewrites to point inside the repo, so walking
+    up to the .ai-system folder and taking its parent is the answer wherever
+    the repo was cloned. Hard-coded it was C:\\Claude-Code, which is another
+    machine's folder.
+    """
+    at = HERE
+    while os.path.dirname(at) != at:
+        if os.path.basename(at) == ".ai-system":
+            return os.path.dirname(at)
+        at = os.path.dirname(at)
+    return os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
+
+
+ROOT = _workspace()
 KINDS = ("ask", "decision", "asset", "approval", "complaint", "info")
 
 

@@ -5,11 +5,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ctxlib import slugify, oneline
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-from ctxlib import ROOT
-# Claude Code names a project directory after the working directory
-# with its separators flattened, so this is the workspace spelled the
-# same way: C:\Claude-Code becomes C--Claude-Code.
-PREFIX = ROOT.replace(":", "-").replace("\\", "-").replace("/", "-")
+from ctxlib import ROOT, PREFIX
+# PREFIX is the workspace spelled the way Claude Code names a transcript
+# directory, with the separators flattened. It lives in ctxlib because four
+# files used to write it out by hand.
 
 # Which old session really belongs to which folder, what was recorded in the
 # wrong place, which turns inside one thread were another client's work: all
@@ -118,7 +117,7 @@ def load_plan():
         by.setdefault(r["project_dir"], []).append(r)
     plan, moved = [], {}
     for pdir in sorted(by):
-        if pdir == "C--Claude-Code":
+        if pdir == PREFIX:
             continue                      # this meta-session, nothing to carry over
         groups = group_folder(by[pdir])
         keep = []
@@ -165,7 +164,8 @@ if __name__ == "__main__":
     L = []
     for p in plan:
         L.append("%-28s  %-6s  folder=%s" % (
-            p["project_dir"].replace("C--Claude-Code-", ""), p["mode"].upper(), p["folder"]))
+            p["project_dir"].replace(PREFIX + "-", ""), p["mode"].upper(),
+            p["folder"]))
         for g in p["groups"]:
             L.append("      %-34s slug=%-34s sessions=%-2d prompts=%-4d %s..%s" % (
                 oneline(g["label"], 34), g["slug"], len(g["sessions"]),

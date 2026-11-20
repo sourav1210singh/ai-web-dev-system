@@ -11,7 +11,12 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 LOG = os.path.join(HERE, "hook.log")
 
-HOME = os.path.join("C:\\", "Users", "admin")
+# This user's own home, not the one this file was written on. Hard-coded, it
+# pointed at C:\Users\admin, so on any other account the stray locations below
+# did not exist and the guard never warned about anything. It is the hook that
+# exists because a script once wrote over every project's context, and it
+# would have been silent.
+HOME = os.path.expanduser("~")
 STRAY = [os.path.join(HOME, x) for x in ("Downloads", "Desktop", "Documents",
                                          "OneDrive")]
 IGNORE_PARTS = ("\\appdata\\", "\\temp\\", "\\scratchpad\\", "\\.git\\",

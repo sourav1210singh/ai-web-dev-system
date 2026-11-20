@@ -16,7 +16,12 @@ SKIP = {".context-system"}
 
 
 def sanitise(name):
-    return ("C--Claude-Code-" + name).replace(" ", "-")
+    """A project folder's name, spelled the way Claude Code names its
+    transcript directory. The prefix comes from ctxlib rather than being
+    written out, or this returns a directory name that exists only on the
+    machine the string was typed on, and memcheck then compares two places
+    that both hold nothing and reports that nothing is being written."""
+    return (c.PREFIX + "-" + name).replace(" ", "-")
 
 
 def newest(d):

@@ -27,6 +27,11 @@ import io, json, os, re, sys
 from collections import defaultdict
 from datetime import datetime
 
+# The workspace spelling, worked out from where ctxlib sits rather than
+# written out. Hard-coded it was another machine's folder name.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from ctxlib import PREFIX, ROOT as WORKSPACE  # noqa: E402
+
 ROOT = os.path.join(os.path.expanduser("~"), ".claude", "projects")
 GAP = 30 * 60
 
@@ -49,8 +54,9 @@ def nice(folder):
     # of it. Stripping the separators matters now that the labels are optional:
     # the old form left the root folder as "C  Claude Code" and a folder whose
     # name ends in a dash with a trailing space.
-    n = folder.replace("C--Claude-Code", "").strip("-")
-    return n.replace("-", " ") if n else "(root) Claude-Code"
+    n = folder.replace(PREFIX, "").strip("-")
+    return n.replace("-", " ") if n else \
+        "(root) " + os.path.basename(WORKSPACE)
 
 
 def text_of(o):

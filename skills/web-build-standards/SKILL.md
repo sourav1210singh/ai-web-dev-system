@@ -262,6 +262,29 @@ person picks a different one and the site drifts between pages.
 `study-reference` measures all of this off a real page and writes it out as a
 `DESIGN.md` that can be handed straight to an agent.
 
+### Count it on your own page, do not eyeball it
+
+Every number above was stated here and measured on nothing. Point the same
+measurement at what you just built:
+
+```bash
+node "C:\Claude-Code\.ai-system\skills\study-reference\study.js" <your-url> --out <project>\.claude-context\qa\look
+node "C:\Claude-Code\.ai-system\skills\web-build-standards\look.js" <project>\.claude-context\qa\look\spec.json
+```
+
+It judges the widest view and every finding quotes the rule it came from, so
+it is a measurement and not an opinion: font sizes in play, shadow tiers,
+whether spacing sits on a base unit, whether one thing is allowed to shout,
+a purple to blue wash by hue rather than by name, section rhythm, and from
+section 1 whether anything reveals on scroll or responds to hover. A major
+exits non-zero, so it can gate a claim.
+
+**Two things it will not do.** It does not say the page is good. A clean run
+means nothing measured here is wrong, and a person still has to look at it.
+And it reads fluid type correctly rather than punishing it: `clamp()` computes
+to fractional pixels, so a page obeying section 2 shows ten values where the
+design has six roles, and it says so instead of calling it drift.
+
 ---
 
 ## 4. SEO is part of the build, not a later pass
@@ -335,3 +358,5 @@ components, and shared classes need combo classes rather than edits.
 5. A real form submission was made and its arrival confirmed
 6. Title, description, H1, alts, canonical, schema in place
 7. Screenshots taken at 390, 768 and 1440 and actually looked at
+8. `look.js` has run against your own build and its majors are fixed, so the
+   page is not flat, not a shadow ladder, and not carrying fourteen font sizes

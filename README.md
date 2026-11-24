@@ -5,7 +5,7 @@ with a system that carries what every project already knows, checks its own
 work before it claims anything, and refuses to ship the things that make a site
 look AI-made.
 
-This repository is that system: 25 skills, one agent, four hooks and 27 tools,
+This repository is that system: 25 skills, one agent, four hooks and 28 tools,
 all built out of real client work and the mistakes it produced.
 
 ---
@@ -174,6 +174,7 @@ impressions. `scaffold.py` is the exception: it builds.
 | `rollback.py` | Is there a way back from this launch, and has anyone checked. Builds the plan from what recon already knows, then checks the plan is real rather than written |
 | `watchrun.py` | Runs every open watch job and records when it last ran, because nothing here ran by itself. Prints the schedule command rather than registering it, since system configuration is the user's. `--status` is a finding, not a note: it is MAJOR and non-zero when the run is stale **and when nothing is being watched at all**, because an empty schedule reports exactly what a full one that found nothing reports |
 | `scaffold.py` | A site skeleton that already passes this system's own gates, tested by serving it and running the real SEO, accessibility and security passes against it |
+| `look.js` | Judges a page we built against the house look rules, which were stated in numbers and measured on nothing until now: font sizes in play, shadow tiers, spacing off its base unit, whether one thing is allowed to shout, a purple to blue wash by hue rather than by name, and whether anything reveals on scroll or responds to hover. Every finding quotes the rule it came from. It reads fluid type as fluid type rather than as drift, and a clean run says plainly that this is not the same as the page being good |
 | `install.py` | Set the whole system up on a machine: skills, agents, the context system and the hooks, every file checksum verified and every path resolved from where the files are |
 | `leakcheck.py` | Reads the client names off the machine and refuses to let any of them into this repository |
 | `runtests.py` | Every suite with one command, found by what they print rather than by filename, then the figures below checked against what was just measured. It exists because a number nobody can re-derive in one command is a number that drifts, and all of these had |
@@ -317,11 +318,11 @@ what the skill is for.
 
 ## Status
 
-In daily use: 25 skills, one agent, 27 tools and four hooks. The hooks are
+In daily use: 25 skills, one agent, 28 tools and four hooks. The hooks are
 session start, the context recorder, a guard on writes that land outside the
 project, and the claim gate.
 
-**1,424 checks across 31 test suites, all passing**, plus a full-file verifier
+**1,455 checks across 32 test suites, all passing**, plus a full-file verifier
 and a leak check. One total rather than a count per suite, because ten numbers
 drift ten ways and these were wrong in four places before anyone measured them
 again.

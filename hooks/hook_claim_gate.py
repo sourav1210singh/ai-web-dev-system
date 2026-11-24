@@ -82,7 +82,7 @@ EVIDENCE_BASH = re.compile(
     # test-suite one below, which was fixed for suites and never for these.
     # gatetest.py pins this list against the tools on disk, so a tool added
     # later fails the suite until it is classified.
-    r"rqa\.js|seo\.js|a11y\.js|perf\.js|security\.js|analytics\.js|"
+    r"rqa\.js|seo\.js|a11y\.js|perf\.js|security\.js|analytics\.js|look\.js|"
     r"crossbrowser\.js|study\.js|designmd\.js|"
     r"check\.py|preflight\.py|recon\.py|mail\.py|parity\.py|copy\.py|"
     r"job\.py|watchrun\.py|rollback\.py|materials\.py|render\.py|"

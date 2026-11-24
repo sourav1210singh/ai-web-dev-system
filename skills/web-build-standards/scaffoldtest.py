@@ -281,6 +281,36 @@ try:
            not any("key" in f["id"] or "secret" in f["id"] for f in s["findings"]))
         ok("the transport checks were skipped rather than failed on localhost",
            s.get("devHost") is True)
+
+        # The responsive pass, which this file never ran. It checked SEO,
+        # accessibility and security and stopped, so the scaffold shipped
+        # failing the one gate nobody pointed at it: a skip link pushed
+        # 9,999px off canvas read as overflow, the placeholder figure ran 3px
+        # past a 390px viewport, four tap targets sat under 44x44, and the
+        # hero measured 836px tall for 211px of content. All found by running
+        # it by hand on 24 Nov, none of it by this suite.
+        p = run_node("responsive-qa/rqa.js", base, os.path.join(qa, "rqa"),
+                     ["--widths", "390,1440"])
+        r = json.loads(io.open(os.path.join(qa, "rqa", "findings.json"),
+                               encoding="utf-8").read())
+        ok("the responsive pass ran at both widths and got a page",
+           len(r.get("viewports", [])) == 2
+           and all(v.get("status") == 200 for v in r["viewports"]),
+           [v.get("width") for v in r.get("viewports", [])])
+        # Findings are nested under viewports. Read at the top level they come
+        # back empty and a broken page reports as clean, which is a mistake
+        # this system has already made once.
+        rf = [f for v in r.get("viewports", [])
+              for f in (v.get("findings") or [])]
+        bad = [f for f in rf if f.get("sev") in ("BLOCKER", "MAJOR")]
+        ok("the scaffold passes it with no blocker or major",
+           not bad, [f.get("kind") for f in bad] or "clean at 390 and 1440")
+
+        wide = r["viewports"][-1]
+        hero = (wide.get("scale") or {}).get("hero") or {}
+        ok("and the hero is not mostly empty space",
+           hero.get("height") and hero["dead"] <= hero["height"] * 0.5,
+           "%spx empty of %spx" % (hero.get("dead"), hero.get("height")))
     finally:
         srv.shutdown()
 finally:

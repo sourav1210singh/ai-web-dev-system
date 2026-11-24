@@ -157,21 +157,36 @@ a { color: var(--accent); }
   border-radius: 4px;
 }
 
+/* Hidden by clipping, not by being pushed off the canvas. left: -9999px
+   leaves a real element 9,999px outside the viewport, which the responsive
+   pass reads as horizontal overflow and which some browsers will scroll to.
+   Clipping keeps it where it is, one pixel wide, and screen readers still
+   reach it. */
 .skip {
-  position: absolute; left: -9999px; top: 0;
-  background: var(--paper); color: var(--ink);
-  padding: calc(var(--unit) * 1.5); z-index: 100;
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip-path: inset(50%%); white-space: nowrap;
+  background: var(--paper); color: var(--ink); z-index: 100;
 }
-.skip:focus { left: var(--unit); }
+.skip:focus {
+  width: auto; height: auto; overflow: visible; clip-path: none;
+  left: var(--unit); top: var(--unit);
+  padding: calc(var(--unit) * 1.5);
+}
 
 .wrap { width: min(1120px, 100%% - calc(var(--unit) * 4)); margin-inline: auto; }
 
 /* --- the overflow fixes, measured at 320 and 360px on a live site ------- */
 .grid > *, .flex-row > * { min-width: 0; }
 h1, h2, h3 { overflow-wrap: break-word; }
-@media (max-width: 480px) { h1, h2, h3 { hyphens: auto; } }
+/* No hyphens: auto on headings. It was here for overflow safety, which the
+   line above already gives: break-word only breaks a word that genuinely
+   cannot fit, while hyphens: auto breaks ordinary words at syllables. On a
+   390px screen it rendered the h1 as "from people who an-swer the phone",
+   which reads as cheap and was caught by looking at the screenshot rather
+   than by any check. */
 .row { display: flex; gap: var(--unit); flex-wrap: wrap; }
 .row b, .row a { overflow-wrap: anywhere; }
+.row a { display: inline-flex; align-items: center; min-height: 44px; }
 .stats { display: grid; gap: calc(var(--unit) * 2);
          grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (min-width: 768px) { .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
@@ -194,19 +209,31 @@ h1, h2, h3 { overflow-wrap: break-word; }
 }
 .site-head .wrap { display: flex; align-items: center; justify-content: space-between;
                    min-height: var(--header-h); gap: var(--unit); }
-.brand { font-weight: 650; font-size: var(--text-md); text-decoration: none; color: var(--ink); }
+/* A link in a header, a nav or a footer row is a touch target, so it carries
+   the 44px minimum rather than the height of its own text. Measured on this
+   scaffold before the rule existed: the nav links were 38x23 and the phone
+   number 91x23, all of them below the minimum the responsive pass enforces. */
+.brand { font-weight: 650; font-size: var(--text-md); text-decoration: none;
+         color: var(--ink); display: inline-flex; align-items: center;
+         min-height: 44px; }
 .site-nav { display: flex; gap: calc(var(--unit) * 2); }
-.site-nav a { color: var(--ink); text-decoration: none; }
+.site-nav a { color: var(--ink); text-decoration: none;
+              display: inline-flex; align-items: center; justify-content: center;
+              min-height: 44px; min-width: 44px; }
 .site-nav a:hover { text-decoration: underline; }
 
 /* --- hero fits the first screen ----------------------------------------- */
 .hero {
   display: grid; align-content: center;
-  min-height: calc(100vh - var(--header-h));
-  min-height: calc(100svh - var(--header-h));
-  padding-block: calc(var(--unit) * 5);
+  /* Height comes from the content and its padding, not from a forced screen.
+     Pinned to 100svh this measured 836px tall for 211px of content on a
+     1440x900 screen: 625px empty, 75%% of the section, which is exactly what
+     a client means by "it looks unfinished". A full-screen hero is for a
+     page that has something to fill it with, and this one ships without an
+     image on purpose. A shorter hero still clears the fold check, because
+     the thing that check guards against is a hero taller than the screen. */
+  padding-block: clamp(calc(var(--unit) * 4), 8vh, calc(var(--unit) * 10));
 }
-@media (max-height: 900px) { .hero { padding-block: calc(var(--unit) * 3); } }
 /* Modest display weight. The loud moment on this page is the one number
    below, not the heading. */
 .hero h1 { font-size: var(--text-xl); line-height: 1.15; margin: 0 0 var(--unit); font-weight: 650; }
@@ -237,7 +264,12 @@ section h2 { font-size: var(--text-lg); margin: 0 0 calc(var(--unit) * 2); font-
 .card p { margin: 0; color: var(--muted); }
 
 /* The one loud thing on the page. */
-.figure { font-size: 3.5rem; line-height: 1; font-weight: 700; letter-spacing: -0.02em; }
+/* Fluid, because this is the loudest thing on the page and a long value
+   overflows a phone at a fixed size. The word PLACEHOLDER at 3.5rem ran 3px
+   past a 390px viewport, which is the same thing a real figure like
+   "2,400 jobs" would do. */
+.figure { font-size: clamp(2rem, 7vw, 3.5rem); line-height: 1; font-weight: 700;
+          letter-spacing: -0.02em; }
 .figure + span { color: var(--muted); }
 
 .media { overflow: hidden; border-radius: var(--radius); }

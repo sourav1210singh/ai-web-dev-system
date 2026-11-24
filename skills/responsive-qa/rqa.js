@@ -246,11 +246,20 @@ function auditInPage(isMobile) {
       const dead = Math.round(hr.height - content);
       scale.hero = { height: Math.round(hr.height), content, dead,
                      align: getComputedStyle(heroEl).alignItems };
-      if (dead > 200 && vw >= 1024)
-        add("MINOR", "hero-dead-space",
+      // Graded by proportion, not by the raw gap. 200px of slack on a tall
+      // hero is breathing room; a hero that is more than half empty is the
+      // thing a client means by "it looks unfinished", and reporting that as
+      // a minor let it through, because the house checklist only requires
+      // majors to be fixed. Measured on the scaffold's own homepage: 836px
+      // tall for 211px of content, 75 percent empty, and it passed.
+      if (dead > 200 && vw >= 1024) {
+        const share = dead / hr.height;
+        add(share > 0.5 ? "MAJOR" : "MINOR", "hero-dead-space",
             `Hero is ${Math.round(hr.height)}px tall for ${content}px of content: `
-            + `${dead}px of empty space. A top-aligned hero grows this with every `
-            + `extra pixel of screen height.`, heroEl);
+            + `${dead}px of empty space, ${Math.round(share * 100)}% of the `
+            + `section. A top-aligned hero grows this with every extra pixel `
+            + `of screen height.`, heroEl);
+      }
       if (dead < 24 && vw < 768)
         add("MINOR", "hero-no-breathing-room",
             `Hero content fills the hero exactly (${dead}px slack). The text `

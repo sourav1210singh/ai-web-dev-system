@@ -14,10 +14,14 @@ import io, os, re, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 # The workspace is the folder this repo sits in. Derived, because hard-coded
-# it pointed at a folder that does not exist on another machine, and then the
-# client list read empty and this reported CLEAN having compared the repo
-# against nothing. A safety check that passes by finding no inputs is worse
-# than no safety check.
+# it named one machine's folder: on a machine without it this died with
+# FileNotFoundError, and on a machine that happened to have one it read the
+# wrong set of clients. Measured both ways on 24 Nov rather than assumed.
+#
+# The quieter failure is below and does not depend on this line at all: a
+# workspace holding no client folders yields no terms, and a check with
+# nothing to check against passes every time. main() refuses to call that
+# clean.
 ROOT = os.path.dirname(HERE)
 SKIP_DIRS = {".git", "node_modules", "__pycache__", ".next", "dist"}
 SKIP_FILES = {"leakcheck.py", "leakcheck-report.txt"}
@@ -234,9 +238,6 @@ def main():
     print("# Leak check - %s\n" % HERE)
     print("checked %d file(s) against %d client term(s)\n"
           % (len(list(files())), len(terms)))
-    if not hits:
-        print("CLEAN. Nothing client-identifying, no credentials, no personal paths.")
-        return 0
     seen = set()
     for kind, rel, ln, snip in hits:
         k = (kind, rel, ln)
@@ -245,8 +246,25 @@ def main():
         seen.add(k)
         print("  %-22s %s:%d" % (kind, rel, ln))
         print("      %s" % snip)
-    print("\n%d finding(s). Fix before publishing." % len(seen))
-    return 1
+    if seen:
+        print("\n%d finding(s). Fix before publishing." % len(seen))
+
+    # A check with nothing to check against passes every time, which is the
+    # worst way for a gate to fail because it looks exactly like success. A
+    # workspace with no client folders yields no terms, and that is the normal
+    # state of a fresh clone, so this would have waved every one of them
+    # through. The secret and path patterns do not need the client list and
+    # still ran; the half that did not run is named rather than rounded up.
+    if not terms:
+        print("\nNOT A PASS. No client folders were found under %s, so the "
+              "client name half of this check never ran." % ROOT)
+        print("Keys, addresses, credentials and personal paths were checked "
+              "and are reported above. Client names were not checked at all.")
+        return 1
+
+    if not seen:
+        print("CLEAN. Nothing client-identifying, no credentials, no personal paths.")
+    return 1 if seen else 0
 
 
 if __name__ == "__main__":

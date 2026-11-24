@@ -29,6 +29,25 @@ Every one of these exists because it was asked for on a real project, usually
 more than once. Apply them by default. If one does not fit, say which and why
 rather than skipping it silently.
 
+## Pick the references before you write anything
+
+The standards below stop a page being wrong. They do not make it good. A build
+that meets every one of them and was designed from nobody's example comes out
+generically correct and forgettable, and that is the usual complaint about a
+site built this way.
+
+So the first step of any new site, page or redesign is not code:
+
+1. Open three to five real references. `study-reference/ui-sources.md` lists
+   where, what each costs, which ones refuse a scraper, and the licence on
+   every component library worth shipping. Two sources answer to an agent
+   directly with no account.
+2. Show them and agree **one** direction. This is the user's call, not yours.
+3. Measure it with `study.js`, which writes `DESIGN.md`.
+4. Hand that file to the scaffold below with `--design`.
+
+Skipping to step 4 with no reference is how a page ends up defensible and dull.
+
 ## Start from the scaffold rather than from nothing
 
 ```bash

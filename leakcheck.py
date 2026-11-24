@@ -34,7 +34,13 @@ GENERIC = {"all", "check", "extra", "use", "water", "green", "environment",
            # ordinary English words that happen to be in a folder name
            "hero", "river", "mount", "studio", "group", "media", "design",
            "dashboard", "portal", "admin", "client", "project", "system",
-           "template", "demo", "test", "site", "sites", "page", "pages"}
+           "template", "demo", "test", "site", "sites", "page", "pages",
+           # A deliverables folder of our own is not a client. A folder called
+           # "reports" turned every occurrence of the ordinary English word in
+           # this repo into a finding, 103 of them, all false. The tools here
+           # report things for a living, so the word is unavoidable, and a
+           # pre-push gate that cries wolf is the one that gets switched off.
+           "report", "reports"}
 
 # Tools and platforms, which are not clients even though their domains turn up
 # in the project memories. A note saying a client's site is on Webflow puts

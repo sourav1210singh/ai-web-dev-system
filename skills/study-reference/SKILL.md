@@ -45,6 +45,20 @@ of filling them with plausible values. Those are yours to supply from the real
 design. A design document that guesses is worse than a short one, because the
 next person builds on it.
 
+## When there is no reference yet
+
+This skill assumes somebody handed you a site to match. Often nobody has, and
+that is where a build goes generic: every value defensible, nothing memorable,
+because nothing set a standard.
+
+**Do not start building. Go and find three to five references first**, show
+them, and agree one direction. Where to look, what each source costs, which
+ones a browser can open and which ones refuse a fetch, and the licence on every
+component library worth shipping, are all in **`ui-sources.md`** beside this
+file. Two of those sources answer to an agent directly and need no account.
+
+Then come back here and measure the one that was chosen.
+
 ## Use it only where you are entitled to
 
 It records a spec. It does not copy markup, CSS, images or fonts, and neither

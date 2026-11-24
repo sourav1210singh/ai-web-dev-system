@@ -100,6 +100,17 @@ The direct build is the only route where Claude carries the work end to end,
 because the only thing at risk is a folder on this machine. The other two touch
 something live that somebody is paying for.
 
+## Before any of the three, if this is a new look
+
+The route decides **where** the work happens. It does not decide what the page
+should look like, and a build that skips that question comes out correct and
+forgettable whichever route it took.
+
+If this is a new site, a new page or a redesign, find the references first:
+`study-reference/ui-sources.md` lists where to look, what each source costs,
+and the licence on anything you would ship. Agree one direction with the user,
+measure it, and only then start building on the route below.
+
 ## The one rule across all three
 
 Whatever the route, the work is not finished because the tool reported success.
